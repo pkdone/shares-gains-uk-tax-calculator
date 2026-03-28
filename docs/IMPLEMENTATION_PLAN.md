@@ -113,6 +113,14 @@ A milestone is done when:
 - key assumptions are documented
 - follow-up work is clearly listed
 
+### 4.3 Milestone completion (record-keeping)
+
+For each milestone in Section 7:
+
+1. When a **task** is finished, change its `- [ ]` checkbox to `- [x]` in that milestone’s **Tasks** list.
+2. When **all** tasks and **Exit criteria** for the milestone are satisfied, set the milestone **Status** line to `Complete` and add **Completed (YYYY-MM-DD)** if helpful.
+3. Optionally add **Validated:** `npm run validate` on \<date\> under that milestone so delivery is auditable without relying on git history alone.
+
 ---
 
 ## 5. Technical Architecture
@@ -427,33 +435,85 @@ export default tseslint.config(
 
 ### Milestone 2 — First thin vertical slice (manual ledger)
 
+**Status:** Not started
+
 **Goal:** prove the architecture with a manual "add acquisition → add disposal → view ledger" flow. No import parsing; data entered via forms.
 
-#### Scope
-
-- **Zod → JSON Schema → MongoDB `$jsonSchema` pipeline** (`src/infrastructure/persistence/schema-registry.ts`): sanitisation logic, lazy-loaded registry (deferred from M1)
-- **Base repository pattern**: abstract interface in `src/domain/repositories/`, concrete base in `src/infrastructure/repositories/` (deferred from M1)
-- **ADR-003: Repository abstraction design** and **ADR-004: Error taxonomy** (deferred from M1)
-- **Portfolio entity** + schema + repository (domain → infrastructure → UI)
-- **Share holding event entity** (acquisition and disposal) + schema + repository
-- Domain schemas in `src/domain/schemas/`, persistence schemas derived in `src/infrastructure/`
-- Portfolio CRUD: create portfolio, view portfolio
-- Add acquisition (manual form): date, symbol, quantity, price per share (GBP), fees
-- Add disposal (manual form): date, symbol, quantity, price per share (GBP), fees
-- Ledger view: list all events in a portfolio, grouped by tax year
-- Route handlers or server actions for all mutations
-- Unit tests for domain schemas and any validation logic
-- Integration tests for repository CRUD
-
 This milestone is **GBP-only** and has **no calculation logic** — it proves the stack end-to-end.
+
+#### Stakeholder decisions (2026-03-28)
+
+- **Stub user:** `STUB_USER_ID` (string) in environment; seed script **upserts** by `userId`; all tenant-scoped documents use this value until authentication (ADR-007).
+- **Manual events:** store **gross/price components and fees in separate fields**; derive net amounts for display; Milestone 4 calculation consumes the same explicit fields.
+- **Ledger tax-year grouping:** events use **UTC date-only** calendar dates (no time-of-day); group into **UK tax years** (6 April–5 April), consistent with PRD Appendix 3.
+- **Symbol:** single **free-text ticker** per event for this milestone; ISIN may be added later if imports require it.
+
+#### Tasks
+
+**ADRs**
+
+- [ ] **ADR-003:** Repository abstraction design (`docs/adrs/`)
+- [ ] **ADR-004:** Error taxonomy (`docs/adrs/`)
+
+**Persistence**
+
+- [ ] Zod → JSON Schema sanitisation pipeline and lazy **schema registry** for MongoDB `$jsonSchema` (e.g. `src/infrastructure/persistence/schema-registry.ts` or equivalent)
+- [ ] Apply validators on **new** collections (`createCollection` / `collMod` per project rules)
+
+**Domain**
+
+- [ ] Canonical Zod schemas: **portfolio**, **share holding events** (acquisition vs disposal) in `src/domain/schemas/`
+- [ ] Repository **interfaces** in `src/domain/repositories/`
+
+**Infrastructure**
+
+- [ ] Persistence record schemas (extend domain with `_id`, timestamps, `userId`); derive MongoDB validators from Zod
+- [ ] Repository **implementations** (base pattern deferred from M1); MongoDB access only here
+- [ ] Update **stub user seed script**: read `STUB_USER_ID`, **upsert** by `userId` (no duplicate logical users on re-run)
+
+**Application**
+
+- [ ] Use cases / command handlers: create portfolio, add acquisition, add disposal, list ledger (names match ubiquitous language)
+
+**Interfaces**
+
+- [ ] Next.js App Router: portfolio creation, acquisition/disposal **forms**, **ledger** view
+- [ ] Route handlers or server actions for mutations and queries; validate HTTP payloads in the interface layer
+- [ ] Resolve current user from validated **`STUB_USER_ID`** in config
+
+**Tests**
+
+- [ ] Unit tests: domain schemas; UK tax-year derivation from date-only values
+- [ ] Integration tests: repository CRUD (existing `src/test/integration/` pattern)
+
+#### Likely files to create or modify
+
+| File | Action |
+|------|--------|
+| `docs/adrs/003-repository-abstraction-design.md`, `004-error-taxonomy.md` | create (align naming with `001-` / `002-` in `docs/adrs/`) |
+| `src/shared/config/env.ts` | extend — validate `STUB_USER_ID` |
+| `.env.example` | add `STUB_USER_ID` |
+| `scripts/seed-user.ts` | modify — upsert by `userId`, use env |
+| `src/infrastructure/persistence/schema-registry.ts` (or equivalent) | create |
+| `src/domain/schemas/*.ts` | create |
+| `src/domain/repositories/*.ts` | create |
+| `src/infrastructure/repositories/*.ts` | create |
+| `src/application/**/*.ts` | create — use cases / handlers |
+| `src/app/**` — portfolio and ledger routes, forms | create / modify |
+| `src/test/unit/**`, `src/test/integration/**` | create — mirror production tree |
 
 #### Exit criteria
 
 - [ ] create a portfolio, add acquisitions and disposals, view them in a ledger
+- [ ] ledger lists events grouped by **UK tax year** (6 April–5 April) using **date-only** semantics per stakeholder decisions above
 - [ ] data persists in Atlas across page reloads
-- [ ] domain/application/infrastructure boundaries are clean
+- [ ] domain / application / infrastructure boundaries are clean
 - [ ] `npm run validate` passes
 - [ ] no major structural rework needed
+
+#### Completion record
+
+When this milestone is finished: set **Status** to `Complete`, check every task and exit criterion above, and record **Validated:** `npm run validate` on \<date\>.
 
 ---
 
@@ -589,10 +649,17 @@ The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. B
 | 13 | Sell transaction prices | Assume available eventually; manual entry acceptable as fallback |
 | 14 | Stock Options / ESPP scope | RSU-only. Options and ESPP are permanently out of scope. Import pipeline must filter them out. |
 | 15 | Tax Withholding "Taxable Gain" currency | USD. Divide by Vested Qty to derive per-share USD market value at vest for CGT acquisition cost. |
+| 16 | Stub user for Milestone 2+ | `STUB_USER_ID` (string) in env; seed **upserts** by `userId`; tenant-scoped documents use this until auth (ADR-007). |
+| 17 | Manual acquisition/disposal economics (M2) | Store gross/price components and **fees in separate fields**; derive net for display; M4 uses the same explicit fields. |
+| 18 | Ledger tax-year grouping (M2) | **UTC date-only** calendar dates; UK tax year **6 April–5 April** for grouping. |
+| 19 | Symbol field (M2) | Single **free-text ticker** per event; ISIN deferred unless M3+ requires it. |
+| 20 | PRD workspace theme vs Portfolio | **Portfolio** is the top-level organising entity; PRD §8.1 updated to match (2026-03-28). |
 
 ### 8.2 Still open
 
-- **Multiple symbols:** The sample data is all MDB. If the user holds RSUs in multiple companies, is that a realistic scenario to support?
+Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. Remaining product questions:
+
+- **Multiple symbols:** The sample data is all MDB. If the user holds RSUs in multiple companies, is that a realistic scenario to support? (Milestone 2 allows multiple tickers in one portfolio; full product stance TBD.)
 - **Authentication provider:** When auth is eventually added, is there a preferred provider (NextAuth, Clerk, Auth0, etc.)?
 - **Brought-forward losses:** How should the user input their available loss pool from prior years? A simple number input per tax year on the portfolio?
 
@@ -684,6 +751,8 @@ Before implementation starts, confirm:
 - [x] Milestone 1 scope is documented with file list and exit criteria
 - [x] ADR-001 and ADR-002 written before M1 implementation begins
 - [x] Milestone 1 scope approved by stakeholder (planning refinement 2026-03-28)
+- [x] Milestone 2 scope, tasks, exit criteria, and stakeholder decisions recorded (2026-03-28); PRD §8.1 aligned with Portfolio model
+- [ ] Milestone 2 delivered: all Milestone 2 tasks and exit criteria in Section 7 checked; Status `Complete`; `npm run validate` recorded under Completion record
 
 ---
 

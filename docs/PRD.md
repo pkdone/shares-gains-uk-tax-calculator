@@ -156,13 +156,14 @@ This section is intentionally thematic rather than final. It should be refined a
 
 ### 8.1 User workspace
 
-The application should support a user returning to an existing workspace rather than treating each interaction as a one-shot calculation.
+The application should support a user returning to saved work rather than treating each interaction as a one-shot calculation.
 
-**TBD detail to refine later:**
+**Agreed model (stakeholder decision; see `docs/IMPLEMENTATION_PLAN.md` Section 3.2):**
 
-- what is the top-level object: user workspace, tax year, calculation case, or portfolio
-- how should saved work be organised
-- what is draft vs final vs archived
+- **Top-level object:** a **Portfolio** — the primary organising entity for share events and later calculations. It belongs to a user and can span multiple tax years; tax-year views are **derived** from portfolio data, not separate top-level entities.
+- **Multi-user:** the data model includes `userId` on persisted documents from the start. **Authentication is deferred;** development uses a **stub user** identified by environment (`STUB_USER_ID`) until an auth approach is chosen (see ADR-007 in the implementation plan).
+- **Saved work:** users create and open portfolios; acquisitions, disposals, and imports attach to a portfolio. Organisation within a portfolio is by instrument (e.g. ticker) and **UK tax year** (6 April–5 April) for views such as the ledger.
+- **Draft vs final vs archived:** not prescribed for early milestones; may be introduced when workflows need explicit locking or reporting packs. Until then, persisted portfolio data is the source of truth the user can edit and revisit.
 
 ### 8.2 Import and transaction data handling
 
