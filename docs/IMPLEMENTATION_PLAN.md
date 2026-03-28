@@ -316,7 +316,7 @@ This milestone produces a running app with no business features — only infrast
 | `src/shared/config/env.ts` | create |
 | `src/shared/errors/app-error.ts` | create |
 | `src/infrastructure/persistence/mongodb-client.ts` | create |
-| `scripts/seed-user.ts` | create (stub user seed script) |
+| `scripts/seed-users.ts` | create (stub user seed script) |
 | `src/test/unit/shared/config/env.test.ts` | create |
 | `src/test/integration/infrastructure/persistence/mongodb-client.int.test.ts` | create |
 | `docker/Dockerfile` | create |
@@ -435,7 +435,9 @@ export default tseslint.config(
 
 ### Milestone 2 — First thin vertical slice (manual ledger)
 
-**Status:** Not started
+**Status:** Complete  
+**Completed:** 2026-03-28  
+**Validated:** `npm run validate` on 2026-03-28
 
 **Goal:** prove the architecture with a manual "add acquisition → add disposal → view ledger" flow. No import parsing; data entered via forms.
 
@@ -452,39 +454,39 @@ This milestone is **GBP-only** and has **no calculation logic** — it proves th
 
 **ADRs**
 
-- [ ] **ADR-003:** Repository abstraction design (`docs/adrs/`)
-- [ ] **ADR-004:** Error taxonomy (`docs/adrs/`)
+- [x] **ADR-003:** Repository abstraction design (`docs/adrs/`)
+- [x] **ADR-004:** Error taxonomy (`docs/adrs/`)
 
 **Persistence**
 
-- [ ] Zod → JSON Schema sanitisation pipeline and lazy **schema registry** for MongoDB `$jsonSchema` (e.g. `src/infrastructure/persistence/schema-registry.ts` or equivalent)
-- [ ] Apply validators on **new** collections (`createCollection` / `collMod` per project rules)
+- [x] Zod → JSON Schema sanitisation pipeline and lazy **schema registry** for MongoDB `$jsonSchema` (e.g. `src/infrastructure/persistence/schema-registry.ts` or equivalent)
+- [x] Apply validators on **new** collections (`createCollection` / `collMod` per project rules)
 
 **Domain**
 
-- [ ] Canonical Zod schemas: **portfolio**, **share holding events** (acquisition vs disposal) in `src/domain/schemas/`
-- [ ] Repository **interfaces** in `src/domain/repositories/`
+- [x] Canonical Zod schemas: **portfolio**, **share holding events** (acquisition vs disposal) in `src/domain/schemas/`
+- [x] Repository **interfaces** in `src/domain/repositories/`
 
 **Infrastructure**
 
-- [ ] Persistence record schemas (extend domain with `_id`, timestamps, `userId`); derive MongoDB validators from Zod
-- [ ] Repository **implementations** (base pattern deferred from M1); MongoDB access only here
-- [ ] Update **stub user seed script**: read `STUB_USER_ID`, **upsert** by `userId` (no duplicate logical users on re-run)
+- [x] Persistence record schemas (extend domain with `_id`, timestamps, `userId`); derive MongoDB validators from Zod
+- [x] Repository **implementations** (base pattern deferred from M1); MongoDB access only here
+- [x] Update **stub user seed script**: read `STUB_USER_ID`, **upsert** by `userId` (no duplicate logical users on re-run)
 
 **Application**
 
-- [ ] Use cases / command handlers: create portfolio, add acquisition, add disposal, list ledger (names match ubiquitous language)
+- [x] Use cases / command handlers: create portfolio, add acquisition, add disposal, list ledger (names match ubiquitous language)
 
 **Interfaces**
 
-- [ ] Next.js App Router: portfolio creation, acquisition/disposal **forms**, **ledger** view
-- [ ] Route handlers or server actions for mutations and queries; validate HTTP payloads in the interface layer
-- [ ] Resolve current user from validated **`STUB_USER_ID`** in config
+- [x] Next.js App Router: portfolio creation, acquisition/disposal **forms**, **ledger** view
+- [x] Route handlers or server actions for mutations and queries; validate HTTP payloads in the interface layer
+- [x] Resolve current user from validated **`STUB_USER_ID`** in config
 
 **Tests**
 
-- [ ] Unit tests: domain schemas; UK tax-year derivation from date-only values
-- [ ] Integration tests: repository CRUD (existing `src/test/integration/` pattern)
+- [x] Unit tests: domain schemas; UK tax-year derivation from date-only values
+- [x] Integration tests: repository CRUD (existing `src/test/integration/` pattern)
 
 #### Likely files to create or modify
 
@@ -493,7 +495,7 @@ This milestone is **GBP-only** and has **no calculation logic** — it proves th
 | `docs/adrs/003-repository-abstraction-design.md`, `004-error-taxonomy.md` | create (align naming with `001-` / `002-` in `docs/adrs/`) |
 | `src/shared/config/env.ts` | extend — validate `STUB_USER_ID` |
 | `.env.example` | add `STUB_USER_ID` |
-| `scripts/seed-user.ts` | modify — upsert by `userId`, use env |
+| `scripts/seed-users.ts` | modify — upsert by `userId`, use env |
 | `src/infrastructure/persistence/schema-registry.ts` (or equivalent) | create |
 | `src/domain/schemas/*.ts` | create |
 | `src/domain/repositories/*.ts` | create |
@@ -504,16 +506,16 @@ This milestone is **GBP-only** and has **no calculation logic** — it proves th
 
 #### Exit criteria
 
-- [ ] create a portfolio, add acquisitions and disposals, view them in a ledger
-- [ ] ledger lists events grouped by **UK tax year** (6 April–5 April) using **date-only** semantics per stakeholder decisions above
-- [ ] data persists in Atlas across page reloads
-- [ ] domain / application / infrastructure boundaries are clean
-- [ ] `npm run validate` passes
-- [ ] no major structural rework needed
+- [x] create a portfolio, add acquisitions and disposals, view them in a ledger
+- [x] ledger lists events grouped by **UK tax year** (6 April–5 April) using **date-only** semantics per stakeholder decisions above
+- [x] data persists in Atlas across page reloads
+- [x] domain / application / infrastructure boundaries are clean
+- [x] `npm run validate` passes
+- [x] no major structural rework needed
 
 #### Completion record
 
-When this milestone is finished: set **Status** to `Complete`, check every task and exit criterion above, and record **Validated:** `npm run validate` on \<date\>.
+Milestone 2 delivered 2026-03-28; see **Status** and **Validated** above.
 
 ---
 
@@ -752,7 +754,7 @@ Before implementation starts, confirm:
 - [x] ADR-001 and ADR-002 written before M1 implementation begins
 - [x] Milestone 1 scope approved by stakeholder (planning refinement 2026-03-28)
 - [x] Milestone 2 scope, tasks, exit criteria, and stakeholder decisions recorded (2026-03-28); PRD §8.1 aligned with Portfolio model
-- [ ] Milestone 2 delivered: all Milestone 2 tasks and exit criteria in Section 7 checked; Status `Complete`; `npm run validate` recorded under Completion record
+- [x] Milestone 2 delivered: all Milestone 2 tasks and exit criteria in Section 7 checked; Status `Complete`; `npm run validate` recorded under Completion record
 
 ---
 

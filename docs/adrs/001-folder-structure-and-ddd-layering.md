@@ -66,8 +66,8 @@ All canonical Zod schemas live in `src/domain/schemas/`. Other layers derive fro
 | Layer | Schema location | Derivation |
 |-------|----------------|------------|
 | Domain | `src/domain/schemas/` | Canonical definitions |
-| Persistence | `src/infrastructure/persistence/schemas/` | `.extend()` with `_id`, `createdAt`, `updatedAt` |
-| Transport | `src/app/` (co-located with route handlers) | `.pick()`, `.omit()`, `.extend()` for request/response shapes |
+| Persistence | `src/infrastructure/persistence/schemas/` | `.extend()` domain bases (e.g. `shareAcquisitionBaseSchema`, `portfolioCreateSchema`) with tenancy and timestamps; keep string ids in Zod for `$jsonSchema`; map BSON `ObjectId` in repository code only |
+| Transport | `src/app/` (co-located with route handlers) | `.pick()`, `.omit()`, `.extend()` for request/response and form payloads (e.g. `portfolioNameSchema` for create-portfolio) |
 
 Never duplicate a schema definition. Always derive via Zod composition methods.
 

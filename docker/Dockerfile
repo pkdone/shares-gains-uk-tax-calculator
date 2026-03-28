@@ -11,6 +11,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG MONGODB_URI=mongodb://127.0.0.1:27017/docker-build
 ENV MONGODB_URI=${MONGODB_URI}
+ARG STUB_USER_ID=stub-seed-users
+ENV STUB_USER_ID=${STUB_USER_ID}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

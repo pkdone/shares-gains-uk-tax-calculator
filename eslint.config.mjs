@@ -94,4 +94,11 @@ export default tseslint.config(
     files: ['eslint.config.mjs'],
     ...tseslint.configs.disableTypeChecked,
   },
+
+  {
+    files: ['src/shared/app-logger.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 );

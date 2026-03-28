@@ -1,0 +1,44 @@
+import { DomainError } from '@/shared/errors/app-error';
+
+/**
+ * UK tax year label (e.g. `2024-25`) for the period 6 April–5 April inclusive,
+ * using UTC date-only calendar components of `isoDate` (YYYY-MM-DD).
+ */
+export function ukTaxYearLabelFromDateOnly(isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) {
+    throw new DomainError('Expected date-only string YYYY-MM-DD');
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    throw new DomainError('Invalid date components');
+  }
+
+  const t = new Date(`${isoDate}T00:00:00.000Z`);
+  if (Number.isNaN(t.getTime())) {
+    throw new DomainError('Invalid calendar date');
+  }
+
+  let startYear: number;
+  if (month > 4 || (month === 4 && day >= 6)) {
+    startYear = year;
+  } else {
+    startYear = year - 1;
+  }
+
+  const endYear = startYear + 1;
+  const endTwoDigits = String(endYear).slice(-2).padStart(2, '0');
+  return `${startYear}-${endTwoDigits}`;
+}

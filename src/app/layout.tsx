@@ -14,7 +14,9 @@ export default function RootLayout({
 }>): React.ReactElement {
   return (
     <html lang="en-GB">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

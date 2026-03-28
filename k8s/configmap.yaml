@@ -6,3 +6,4 @@ metadata:
     app: shares-gains-uk-tax-calculator
 data:
   NODE_ENV: "production"
+  STUB_USER_ID: "stub-seed-users"

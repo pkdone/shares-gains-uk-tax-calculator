@@ -25,13 +25,44 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
    npm ci
    ```
 
+3. **Provision the database** (once per Atlas database / environment — creates collections, `$jsonSchema` validators, and indexes):
+
+   ```bash
+   npm run db:init
+   ```
+
+4. **Seed stub user(s)** (after `db:init`; currently one user from `STUB_USER_ID`):
+
+   ```bash
+   npm run seed:users
+   ```
+
+## Database provisioning
+
+| Command | Purpose |
+|--------|---------|
+| `npm run db:init` | Idempotent setup: managed collections, validators, indexes. **Run before** first app use or `seed:users` on a new database. |
+| `npm run db:teardown` | Drops managed collections (development reset). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
+
+**Teardown example** (destructive; use only on a database you intend to wipe):
+
+```bash
+ALLOW_DB_TEARDOWN=1 npm run db:teardown
+```
+
+After teardown, the app will not start until you run **`npm run db:init`** again. Run **`npm run seed:users`** afterward if you need the stub user document recreated.
+
+The application **`getMongoClient()`** does not create collections at runtime; it checks that provisioned collections exist and fails with a clear error if you skipped `db:init`.
+
+**Suggested order for a new environment:** `db:init` → `seed:users` → `npm run dev`.
+
 ## Development
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Health check: [http://localhost:3000/api/health](http://localhost:3000/api/health) (`db` is `connected` when Atlas is reachable).
+Open [http://localhost:3000](http://localhost:3000). Health check: [http://localhost:3000/api/health](http://localhost:3000/api/health) (`db` is `connected` when Atlas is reachable and the database is provisioned).
 
 ## Quality gate
 
@@ -39,26 +70,18 @@ Open [http://localhost:3000](http://localhost:3000). Health check: [http://local
 npm run validate
 ```
 
-Runs `build`, `lint`, and `test`. **Build** loads the same env as Next.js (`/.env.local`); ensure `MONGODB_URI` is set so server modules that validate config can compile. For CI without secrets, pass a non-empty placeholder URI for the build step only, for example:
+Runs `build`, `lint`, `npm test`, and `npm run test:integration`. **Build** loads the same env as Next.js (`/.env.local`); ensure `MONGODB_URI` is set so server modules that validate config can compile. For CI without secrets, pass a non-empty placeholder URI for the build step only, for example:
 
 ```bash
 MONGODB_URI='mongodb://127.0.0.1:27017/ci-build' npm run build
 ```
 
+Integration tests need a **reachable** Atlas URI and will run `db:init` logic in setup when needed.
+
 ## Tests
 
-- **Unit** tests live under `src/test/unit/` and run with `npm test` (included in `npm run validate`).
-- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (not part of `validate`). They need a **reachable** MongoDB at `MONGODB_URI`. Jest loads `.env.local` and `.env` first (see `src/test/jest-setup.ts`); if `MONGODB_URI` is still unset, a localhost placeholder is applied so config validation can load — use a real Atlas URI in `.env.local` (or export `MONGODB_URI` in CI) so the Mongo integration test can connect and pass.
-
-## Seed script (stub user)
-
-Proves read/write against Atlas using a minimal `users` document:
-
-```bash
-npm run seed:user
-```
-
-Requires `MONGODB_URI` in `.env` or `.env.local` (not the Jest fallback).
+- **Unit** tests live under `src/test/unit/` and run with `npm test`.
+- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (included in **`npm run validate`**). They need a **reachable** MongoDB at `MONGODB_URI`. Jest loads `.env.local` and `.env` first (see `src/test/jest-setup.ts`); if `MONGODB_URI` is still unset, a localhost placeholder is applied so config validation can load — use a real Atlas URI in `.env.local` (or export `MONGODB_URI` in CI). Each integration suite calls `ensureTestDatabase()` in `beforeAll` to apply the same provisioning as `npm run db:init`.
 
 ## Docker
 
@@ -68,7 +91,7 @@ Build (uses a dummy `MONGODB_URI` only for the Next.js compile step; override at
 docker build -f docker/Dockerfile -t shares-gains-uk-tax-calculator:latest .
 ```
 
-Run with your Atlas URI:
+Run with your Atlas URI (run **`db:init`** against that database once before traffic, e.g. from a CI job or an init container):
 
 ```bash
 docker run --rm -p 3000:3000 -e MONGODB_URI='mongodb+srv://...' shares-gains-uk-tax-calculator:latest
@@ -81,6 +104,8 @@ Example manifests are in `k8s/`. Replace the placeholder secret with your connec
 ```bash
 kubectl apply -f k8s/
 ```
+
+Ensure the target Atlas database has been provisioned with **`npm run db:init`** (or equivalent automation) for that environment.
 
 ## Documentation
 

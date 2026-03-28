@@ -13,14 +13,17 @@
     "test": "jest",
     "test:integration": "JEST_INTEGRATION=1 jest",
     "validate": "npm run build && npm run lint && npm test && npm run test:integration",
-    "seed:user": "tsx scripts/seed-user.ts"
+    "seed:users": "tsx scripts/seed-users.ts",
+    "db:init": "tsx scripts/db-init.ts",
+    "db:teardown": "tsx scripts/db-teardown.ts"
   },
   "dependencies": {
     "mongodb": "^6.15.0",
     "next": "^15.2.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
