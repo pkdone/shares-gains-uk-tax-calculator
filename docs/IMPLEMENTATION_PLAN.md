@@ -80,6 +80,16 @@ The following real-world export files inform the import pipeline design. They ar
 - [x] **Milestone 2 scope: manual data entry slice** (not import). A small "add acquisition + add disposal + view ledger" flow to prove the full stack before introducing CSV/XLSX parsing complexity.
 - [x] **Calculation engine (Milestone 4): Section 104 pool first, GBP-only.** Reproduce HS284 Example 3 as primary acceptance test. Same-day and 30-day matching rules layered on afterward. FX conversion added after pool mechanics are solid.
 
+### 3.3 Milestone 1 planning refinement (2026-03-28)
+
+- [x] **Bootstrap approach: manual setup.** No `create-next-app`. Manually initialise `package.json`, install dependencies explicitly, and create all files from scratch for full control.
+- [x] **ESLint: flat config (`eslint.config.mjs`).** ESLint 9 flat config format with `typescript-eslint` type-checked mode. Dev dependencies: `eslint`, `typescript-eslint`, `@next/eslint-plugin-next`, `eslint-plugin-react`, `eslint-plugin-react-hooks`.
+- [x] **Tailwind CSS v4: CSS-based config.** No `tailwind.config.ts`; Tailwind v4 uses `@import "tailwindcss"` and `@theme` in `globals.css`. `postcss.config.mjs` is the only config file.
+- [x] **Stub user seed: minimal script.** A seed script (not startup-time logic) that writes a simple hardcoded user document to prove MongoDB write/read. Gets a proper schema in M2.
+- [x] **Schema registry and base repository: deferred to M2.** The Zod → JSON Schema → MongoDB `$jsonSchema` pipeline and abstract repository pattern have no real consumers in M1. They move to M2 where Portfolio and share event schemas are the first consumers.
+- [x] **ADR-003 and ADR-004: deferred to M2.** M1 implementations (AppError, MongoDB client) are simple enough without formal ADRs. Write them when M2 demands structured patterns.
+- [x] **`@typescript-eslint/promise-function-async`: strict (`"error"`).** Per the project rule: "The ESLint configuration is the source of truth." Tune with rule options later if specific patterns need exemption.
+
 ---
 
 ## 4. Delivery Strategy
@@ -172,14 +182,13 @@ Target structure after Milestone 1:
 │     └─ project.mdc
 ├─ docs/
 │  ├─ adrs/
-│  │  └─ 001-folder-structure-and-ddd-layering.md
+│  │  ├─ 001-folder-structure-and-ddd-layering.md
+│  │  └─ 002-environment-and-configuration-loading.md
 │  ├─ references/
 │  │  └─ hs284-example-3-2024-notes.md
 │  ├─ HS284_Example_3_2024.pdf
 │  ├─ IMPLEMENTATION_PLAN.md
 │  └─ PRD.md
-├─ scripts/
-│  └─ fetch-boe-fx-rates.ts
 ├─ src/
 │  ├─ app/
 │  │  ├─ api/
@@ -190,18 +199,13 @@ Target structure after Milestone 1:
 │  │  └─ page.tsx
 │  ├─ domain/
 │  │  ├─ entities/
-│  │  ├─ errors/
-│  │  ├─ repositories/
 │  │  ├─ schemas/
 │  │  ├─ services/
 │  │  └─ value-objects/
 │  ├─ application/
 │  ├─ infrastructure/
-│  │  ├─ persistence/
-│  │  │  ├─ mongodb-client.ts
-│  │  │  ├─ schema-registry.ts
-│  │  │  └─ schemas/
-│  │  └─ repositories/
+│  │  └─ persistence/
+│  │     └─ mongodb-client.ts
 │  ├─ shared/
 │  │  ├─ config/
 │  │  │  └─ env.ts
@@ -225,11 +229,12 @@ Target structure after Milestone 1:
 │  └─ secret.yaml
 ├─ public/
 ├─ .env.example
-├─ .eslintrc.json
 ├─ .gitignore
+├─ eslint.config.mjs
 ├─ jest.config.ts
 ├─ next.config.ts
 ├─ package.json
+├─ postcss.config.mjs
 ├─ tsconfig.json
 └─ README.md
 ```
@@ -265,17 +270,15 @@ This milestone produces a running app with no business features — only infrast
 
 #### Tasks
 
-- [ ] Initialise Next.js 15 + React 19 + TypeScript + Tailwind CSS via `create-next-app`
+- [ ] Manually initialise `package.json` (`npm init`), install Next.js 15, React 19, TypeScript, Tailwind CSS v4, and all dev dependencies; create `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, and `src/app/` entry points from scratch
 - [ ] Establish DDD source directory layout (`domain/`, `application/`, `infrastructure/`, `shared/`)
 - [ ] Add `AppError` base class and initial error taxonomy (`src/shared/errors/`)
 - [ ] Add Zod-based environment validation (`src/shared/config/env.ts`): validate `MONGODB_URI`, `NODE_ENV`, and any other required env vars on startup
 - [ ] Add MongoDB client singleton (`src/infrastructure/persistence/mongodb-client.ts`): lazy connection, graceful shutdown, connection-health check
-- [ ] Add Zod → JSON Schema → MongoDB `$jsonSchema` pipeline (`src/infrastructure/persistence/schema-registry.ts`): sanitisation logic, lazy-loaded registry
-- [ ] Add base repository pattern: abstract interface in `src/domain/repositories/`, concrete base in `src/infrastructure/repositories/`
-- [ ] Add stub user seed: a known user document seeded on first startup (or via script) so the app has a `userId` to associate data with
+- [ ] Add stub user seed script: a standalone script that writes a known user document to prove MongoDB write/read (not startup-time logic; gets a proper schema in M2)
 - [ ] Add `GET /api/health` route handler returning `{ status: "ok", db: "connected" | "disconnected" }`
 - [ ] Add landing page (`src/app/page.tsx`): minimal styled page confirming the app is running
-- [ ] Add ESLint configuration: Next.js + TypeScript plugin + strict project rules from `project.mdc`
+- [ ] Add ESLint flat config (`eslint.config.mjs`): type-checked mode via `typescript-eslint` with `projectService: true`, `@next/eslint-plugin-next` flat config, `eslint-plugin-react`, `eslint-plugin-react-hooks`, and the full project rule set (see Section 7.1.1 below for complete config)
 - [ ] Add Jest configuration: TypeScript transform, path aliases, unit/integration separation
 - [ ] Add unit tests for environment validation (valid, missing, malformed)
 - [ ] Add integration test for MongoDB client (connects, health check)
@@ -290,22 +293,20 @@ This milestone produces a running app with no business features — only infrast
 
 | File | Action |
 |------|--------|
-| `package.json` | create (via `create-next-app`, then modify scripts) |
-| `tsconfig.json` | create (via `create-next-app`, then refine paths) |
+| `package.json` | create (manual `npm init`, then install deps and add scripts) |
+| `tsconfig.json` | create |
 | `next.config.ts` | create |
-| `.eslintrc.json` | create with strict rules |
+| `eslint.config.mjs` | create with type-checked flat config and full project rule set |
 | `jest.config.ts` | create |
-| `tailwind.config.ts` | create (via `create-next-app`) |
+| `postcss.config.mjs` | create (Tailwind CSS v4 PostCSS integration) |
 | `src/app/layout.tsx` | create |
 | `src/app/page.tsx` | create |
-| `src/app/globals.css` | create |
+| `src/app/globals.css` | create (Tailwind v4: `@import "tailwindcss"`) |
 | `src/app/api/health/route.ts` | create |
 | `src/shared/config/env.ts` | create |
 | `src/shared/errors/app-error.ts` | create |
 | `src/infrastructure/persistence/mongodb-client.ts` | create |
-| `src/infrastructure/persistence/schema-registry.ts` | create |
-| `src/domain/repositories/base-repository.ts` | create (interface) |
-| `src/infrastructure/repositories/base-mongo-repository.ts` | create (abstract impl) |
+| `scripts/seed-user.ts` | create (stub user seed script) |
 | `src/test/unit/shared/config/env.test.ts` | create |
 | `src/test/integration/infrastructure/persistence/mongodb-client.int.test.ts` | create |
 | `docker/Dockerfile` | create |
@@ -317,11 +318,101 @@ This milestone produces a running app with no business features — only infrast
 | `.gitignore` | modify |
 | `README.md` | modify |
 
+#### 7.1.1 ESLint configuration (`eslint.config.mjs`)
+
+**Dev dependencies:** `eslint` (v9+), `typescript-eslint`, `@next/eslint-plugin-next`, `eslint-plugin-react`, `eslint-plugin-react-hooks`
+
+**Base:** `tseslint.configs.recommendedTypeChecked` with `projectService: true` for type-checked linting.
+
+**Rules requiring type information:** `prefer-regexp-exec`, `prefer-readonly`, `promise-function-async`, `require-array-sort-compare`, `switch-exhaustiveness-check`, `restrict-template-expressions`.
+
+**Extension rule:** `@typescript-eslint/default-param-last` extends base `default-param-last` — the base rule must be explicitly disabled.
+
+Target config structure:
+
+```mjs
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import nextPlugin from '@next/eslint-plugin-next';
+import tseslint from 'typescript-eslint';
+import reactPlugin from 'eslint-plugin-react';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
+
+const tsconfigRootDir = dirname(fileURLToPath(import.meta.url));
+
+export default tseslint.config(
+  { ignores: ['.next/', 'node_modules/'] },
+
+  ...tseslint.configs.recommendedTypeChecked,
+
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir,
+      },
+    },
+  },
+
+  // Next.js flat config (core-web-vitals includes recommended)
+  // Verify exact export name against installed @next/eslint-plugin-next version
+  nextPlugin.flatConfigs['core-web-vitals'],
+
+  // React
+  {
+    plugins: { react: reactPlugin, 'react-hooks': reactHooksPlugin },
+    settings: { react: { version: 'detect' } },
+    rules: {
+      'react/no-array-index-key': 'error',
+      'react/jsx-key': 'error',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+
+  // Project-specific rules
+  {
+    rules: {
+      'no-lonely-if': 'error',
+      'default-param-last': 'off',
+      '@typescript-eslint/default-param-last': 'error',
+      '@typescript-eslint/prefer-regexp-exec': 'error',
+      '@typescript-eslint/explicit-member-accessibility': [
+        'error', { accessibility: 'no-public' },
+      ],
+      '@typescript-eslint/member-ordering': 'error',
+      '@typescript-eslint/no-empty-object-type': [
+        'error', { allowInterfaces: 'with-single-extends' },
+      ],
+      '@typescript-eslint/prefer-readonly': 'error',
+      '@typescript-eslint/promise-function-async': 'error',
+      '@typescript-eslint/require-array-sort-compare': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/restrict-template-expressions': ['error', {
+        allowNumber: true,
+        allowBoolean: true,
+        allowArray: false,
+        allowNullish: false,
+        allowRegExp: false,
+      }],
+      'no-console': 'error',
+      'no-nested-ternary': 'error',
+      'no-negated-condition': 'warn',
+      'prefer-regex-literals': 'error',
+    },
+  },
+);
+```
+
 #### Exit criteria
 
 - [ ] `npm run dev` starts the app; landing page renders; `/api/health` returns `200`
 - [ ] environment validation rejects missing or malformed `MONGODB_URI`
 - [ ] MongoDB client connects to Atlas and reports healthy
+- [ ] stub user seed script runs successfully (writes and reads back a user document)
 - [ ] `npm run validate` passes (build + lint + test)
 - [ ] `docker build` succeeds
 - [ ] Kubernetes manifests are syntactically valid
@@ -335,6 +426,9 @@ This milestone produces a running app with no business features — only infrast
 
 #### Scope
 
+- **Zod → JSON Schema → MongoDB `$jsonSchema` pipeline** (`src/infrastructure/persistence/schema-registry.ts`): sanitisation logic, lazy-loaded registry (deferred from M1)
+- **Base repository pattern**: abstract interface in `src/domain/repositories/`, concrete base in `src/infrastructure/repositories/` (deferred from M1)
+- **ADR-003: Repository abstraction design** and **ADR-004: Error taxonomy** (deferred from M1)
 - **Portfolio entity** + schema + repository (domain → infrastructure → UI)
 - **Share holding event entity** (acquisition and disposal) + schema + repository
 - Domain schemas in `src/domain/schemas/`, persistence schemas derived in `src/infrastructure/`
@@ -512,8 +606,8 @@ The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. B
 
 | ADR | Milestone | Rationale |
 |-----|-----------|-----------|
-| ADR-003: Repository abstraction design | M1–M2 | Interface in domain, generic base in infrastructure, collection-specific implementations. |
-| ADR-004: Error taxonomy | M1–M2 | `AppError` hierarchy: validation, domain, persistence, configuration, import errors. |
+| ADR-003: Repository abstraction design | M2 | Interface in domain, generic base in infrastructure, collection-specific implementations. Deferred from M1 (no real consumer until M2). |
+| ADR-004: Error taxonomy | M2 | `AppError` hierarchy: validation, domain, persistence, configuration, import errors. Deferred from M1 (simple enough without formal ADR until M2). |
 | ADR-005: Import pipeline design | M3 | How files are uploaded, parsed, normalised, validated, and committed. Extensibility for new formats. |
 | ADR-006: Calculation engine boundary design | M4 | Input/output contracts, pure-function design, separation from persistence and UI. |
 | ADR-007: Authentication and user model | When auth is added | Provider choice, session model, user document shape, migration from stub user. |
@@ -582,8 +676,8 @@ Before implementation starts, confirm:
 - [x] initial repo structure is agreed (Section 6)
 - [x] validation strategy is agreed (Section 10)
 - [x] Milestone 1 scope is documented with file list and exit criteria
-- [ ] ADR-001 and ADR-002 written before M1 implementation begins
-- [ ] Milestone 1 scope approved by stakeholder
+- [x] ADR-001 and ADR-002 written before M1 implementation begins
+- [x] Milestone 1 scope approved by stakeholder (planning refinement 2026-03-28)
 
 ---
 
