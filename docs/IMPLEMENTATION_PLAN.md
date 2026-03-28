@@ -1,6 +1,6 @@
 # Implementation Plan - Shares Gains UK Tax Calculator
 
-**Status:** Draft
+**Status:** Draft — post-interview refinement
 **Prepared by:** Paul Done
 **Last updated:** 2026-03-28
 
@@ -24,7 +24,7 @@ This plan should be based on:
 - `docs/PRD.md`
 - `.cursor/rules/project.mdc`
 - the current repository state
-- stakeholder answers to unresolved product questions
+- stakeholder answers to unresolved product questions (see Section 3)
 - any future ADRs or architecture notes
 - **`docs/HS284_Example_3_2024.pdf`** — HMRC HS284 Example 3 (2024 artefact in repo); worked example for pool formation, partial disposals, and roll-forward alignment referenced in `docs/PRD.md` **Appendix 4** and **Appendix 5**
 - **`docs/references/hs284-example-3-2024-notes.md`** — text companion to the PDF; use for milestones below and to record transcribed figures from the PDF
@@ -35,19 +35,50 @@ This plan should be based on:
 - **Any milestone** that claims satisfaction of PRD **Appendix 4** validation points involving HS284 Example 3: re-check the PDF (and update the notes file if you transcribe key figures for regression checks).
 - **Precedence:** `docs/PRD.md` overrides the PDF if they conflict; document deliberate differences in an ADR or PRD change note (per PRD **Appendix 5**).
 
+### 2.2 Sample data files (reference only, not committed)
+
+The following real-world export files inform the import pipeline design. They are **not** committed to the repository (add to `.gitignore`).
+
+| File | Source | Content |
+|------|--------|---------|
+| `ByBenefitType_expanded.xlsx` | Morgan Stanley at Work / E\*Trade Equity Edge Online "By Benefit Type" report | RSU grant, vest schedule, tax withholding, and sellable-shares data. Hierarchical: Grant → Vest Schedule → Tax Withholding rows. 697 rows, 63 columns, single sheet "Restricted Stock". All MDB. |
+| `E_TRADE - Stock Plan Orders.pdf` | Morgan Stanley at Work / E\*Trade "Orders" page PDF export | 269 stock plan orders (sell-to-cover at vest + voluntary disposals). Contains order date, qty, order type, price type. **Does not contain sale price, proceeds, or fees.** |
+
+**Key data observations:**
+
+- The XLSX provides acquisition data (vest events with dates, quantities, tax withholding details) but not sale/disposal prices.
+- The PDF provides disposal order history but not execution prices or proceeds.
+- Neither file alone is sufficient for a complete CGT calculation. The user will also need trade confirmations or a "Gains & Losses" report for actual sale prices.
+- The XLSX uses mixed date formats: `DD-MMM-YYYY` for grant/release dates, `MM/DD/YYYY` for vest dates.
+- The XLSX is sparse — each record type uses a different subset of the 63 columns.
+- Some PDF orders show `0` exercised qty or `--`, indicating cancelled or unfilled orders.
+- "Shares Traded for Taxes" at vest are **not** treated as disposals; only net shares received are tracked as acquisitions (stakeholder decision).
+
 ---
 
-## 3. Agreed Early Decisions
+## 3. Agreed Decisions
 
-These decisions are already confirmed:
+### 3.1 Tooling (confirmed in Milestone 0)
 
-- Package manager: `npm`
-- Next.js routing approach: **App Router**
-- Testing framework: `Jest`
-- Linting: `ESLint` with Next.js + TypeScript configuration plus strict project rules
-- Validation command: `npm run validate`
+- [x] Package manager: `npm`
+- [x] Routing approach: Next.js **App Router**
+- [x] Testing framework: `Jest`
+- [x] Linting: `ESLint` with Next.js + TypeScript configuration plus strict project rules
+- [x] Validation command: `npm run validate`
 
-These decisions should be reflected in the initial scaffolding and tooling.
+### 3.2 Product decisions (stakeholder interview, 2026-03-28)
+
+- [x] **Multi-user application.** Data model includes `userId` on every document from day one. Real authentication deferred; Milestone 1 uses a stub/seed user.
+- [x] **Top-level domain object: Portfolio.** A portfolio is the primary organising entity. It belongs to a user and can span multiple tax years. Tax-year views are derived from portfolio data, not separate top-level entities.
+- [x] **CGT rate tier: user-selectable.** Support basic (10%/18%), higher (20%/24%), and additional (same as higher for CGT purposes) rate tiers. Default to "additional" in the UI. The app does not compute the user's income tax band — the user declares it.
+- [x] **Sell-to-cover at vest: not modelled as disposals.** When RSUs vest and shares are sold to cover PAYE/NI, only the net shares received are tracked as acquisitions. The withheld shares are treated as never received.
+- [x] **Import formats: XLSX and CSV** (and later, potentially parsed PDF). The E\*Trade "ByBenefitType" export (XLSX) is the first target for acquisition/vesting import. Sale/disposal data will require a separate source (e.g. trade confirmations or "Gains & Losses" report) because the Orders PDF lacks execution prices.
+- [x] **FX rates: on-demand download script.** Provide a script to fetch Bank of England daily USD/GBP spot rates (XUDLUSS series) and seed them into MongoDB. Run once to initialise; re-run to update.
+- [x] **MongoDB Atlas required for all environments.** No local MongoDB fallback. The `MONGODB_URI` env var points to Atlas in dev, Docker, and Kubernetes. The developer provides their own Atlas connection string.
+- [x] **Kubernetes: vanilla manifests.** Deployment + Service + ConfigMap/Secret. No specific cluster provider assumptions.
+- [x] **No tax filing or submission — ever.** This is a permanent product boundary, not a deferred feature. The app produces computation packs and summaries for the user's own records. SA108 field alignment is for reference only.
+- [x] **Milestone 2 scope: manual data entry slice** (not import). A small "add acquisition + add disposal + view ledger" flow to prove the full stack before introducing CSV/XLSX parsing complexity.
+- [x] **Calculation engine (Milestone 4): Section 104 pool first, GBP-only.** Reproduce HS284 Example 3 as primary acceptance test. Same-day and 30-day matching rules layered on afterward. FX conversion added after pool mechanics are solid.
 
 ---
 
@@ -68,328 +99,474 @@ These decisions should be reflected in the initial scaffolding and tooling.
 A milestone is done when:
 - the scoped functionality is implemented
 - the code structure is consistent with project rules
-- validation passes
+- `npm run validate` passes
 - key assumptions are documented
 - follow-up work is clearly listed
 
 ---
 
-## 5. Proposed Technical Architecture
+## 5. Technical Architecture
 
 ### 5.1 Application shape
 
 A single Next.js application using the App Router and providing:
-- a user-facing web interface
-- route handlers or server-side endpoints as needed
-- domain services for business logic
+- a user-facing web interface (React + Tailwind CSS)
+- Next.js route handlers and/or server actions for mutations and queries
+- domain services for business rules
 - repository-based persistence against MongoDB Atlas
 - Docker packaging
 - Kubernetes deployment manifests
 
-### 5.2 Layering
+### 5.2 DDD layering
 
-The codebase should be structured so that:
-- React components focus on presentation and interaction
-- route handlers and server-side logic orchestrate requests
-- domain services implement business rules
-- repositories encapsulate database access
-- zod schemas validate inputs and configuration
-- shared errors and config are centralised
+Per `project.mdc`, the codebase follows Domain-Driven Design with strict dependency direction:
 
-### 5.3 Persistence
+| Layer | Location | Responsibility |
+|-------|----------|---------------|
+| **Domain** | `src/domain/` | Entities, value objects, aggregates, domain services, domain events, repository interfaces, canonical Zod schemas. No framework or DB dependencies. |
+| **Application** | `src/application/` | Use cases, command/query handlers, orchestration, DTO mapping at boundaries. Not the home for core business rules. |
+| **Infrastructure** | `src/infrastructure/` | Repository implementations, MongoDB driver usage, persistence schemas (derived from domain schemas), external API adapters (e.g. BoE FX client), framework glue. |
+| **Interfaces** | `src/app/` | Next.js App Router pages, layouts, route handlers, React components. Transport-level validation (request schemas derived from domain schemas). |
+| **Shared** | `src/shared/` | Cross-cutting technical utilities only (errors, config, logging). No domain concepts. |
 
-MongoDB Atlas is the external database.
-Use the native MongoDB Node.js driver.
+**Dependency rule:** `interfaces` → `application` → `domain` ← `infrastructure`. Domain never depends outward.
 
-All persistence should flow through repository classes.
+### 5.3 Schema strategy (Zod)
 
-### 5.4 Validation
+Canonical domain schemas live in `src/domain/schemas/`. All other schemas derive from them:
 
-Use zod for:
-- environment validation
-- request and input validation
-- import data validation
-- domain model validation
-- transformation boundaries
+- **Domain schemas** (`src/domain/schemas/`): source of truth for domain shape and invariants.
+- **Persistence schemas** (`src/infrastructure/persistence/schemas/`): extend domain schemas with `_id`, timestamps, etc. Used for MongoDB `$jsonSchema` validation.
+- **Request/response schemas** (`src/app/` or `src/interfaces/`): pick/omit/extend from domain schemas for HTTP payloads.
+
+Composition via `.pick()`, `.omit()`, `.extend()` — never duplicate definitions.
+
+### 5.4 Persistence
+
+MongoDB Atlas via the native Node.js driver. All database access through repository implementations in `src/infrastructure/`. Repository interfaces defined in `src/domain/repositories/`.
+
+**Schema enforcement:** Zod → JSON Schema → MongoDB `$jsonSchema` validator. One shared pipeline to sanitise Zod-derived JSON Schema for MongoDB compatibility (strip `$schema`, `format`, `pattern` where unsupported; coerce `integer` to `number`; map `const` to single-value `enum`; handle `_id` as `objectId`).
 
 ### 5.5 Testing
 
-Use Jest for:
-- unit tests for business logic
-- unit tests for parsing and transformation logic
-- integration tests for repository and API behaviour
+- `src/test/unit/` — mirrors `src/` structure. Unit tests for domain logic, parsing, transformation, validation.
+- `src/test/integration/` — mirrors `src/` structure. Integration tests for repositories, API routes, persistence.
+- No co-located tests next to production code.
 
 ### 5.6 Deployment
 
-The app must support:
-- local development
-- Docker execution
-- Kubernetes deployment
-- environment-based configuration for Atlas connectivity
+- **Local dev:** `npm run dev` against developer's Atlas instance.
+- **Docker:** multi-stage build, `MONGODB_URI` via env var.
+- **Kubernetes:** Deployment + Service + ConfigMap + Secret. Vanilla manifests, no Helm or operator dependencies.
 
 ---
 
-## 6. Proposed Repository Structure
+## 6. Repository Structure
 
-This is the initial target structure and may be refined during planning:
+Target structure after Milestone 1:
 
 ```text
 /
 ├─ .cursor/
-│└─ rules/
-│ └─ project.mdc
+│  └─ rules/
+│     └─ project.mdc
 ├─ docs/
-│├─ PRD.md
-│└─ IMPLEMENTATION_PLAN.md
+│  ├─ adrs/
+│  │  └─ 001-folder-structure-and-ddd-layering.md
+│  ├─ references/
+│  │  └─ hs284-example-3-2024-notes.md
+│  ├─ HS284_Example_3_2024.pdf
+│  ├─ IMPLEMENTATION_PLAN.md
+│  └─ PRD.md
+├─ scripts/
+│  └─ fetch-boe-fx-rates.ts
 ├─ src/
-│├─ app/
-││├─ api/
-││├─ globals.css
-││├─ layout.tsx
-││└─ page.tsx
-│├─ components/
-││├─ ui/
-││└─ feature/
-│├─ domain/
-││├─ errors/
-││├─ models/
-││├─ schemas/
-││├─ services/
-││└─ value-objects/
-│├─ repositories/
-│├─ lib/
-││├─ config/
-││├─ db/
-││└─ utils/
-│└─ test/
-│ ├─ integration/
-│ └─ unit/
+│  ├─ app/
+│  │  ├─ api/
+│  │  │  └─ health/
+│  │  │     └─ route.ts
+│  │  ├─ globals.css
+│  │  ├─ layout.tsx
+│  │  └─ page.tsx
+│  ├─ domain/
+│  │  ├─ entities/
+│  │  ├─ errors/
+│  │  ├─ repositories/
+│  │  ├─ schemas/
+│  │  ├─ services/
+│  │  └─ value-objects/
+│  ├─ application/
+│  ├─ infrastructure/
+│  │  ├─ persistence/
+│  │  │  ├─ mongodb-client.ts
+│  │  │  ├─ schema-registry.ts
+│  │  │  └─ schemas/
+│  │  └─ repositories/
+│  ├─ shared/
+│  │  ├─ config/
+│  │  │  └─ env.ts
+│  │  └─ errors/
+│  │     └─ app-error.ts
+│  └─ test/
+│     ├─ unit/
+│     │  └─ shared/
+│     │     └─ config/
+│     │        └─ env.test.ts
+│     └─ integration/
+│        └─ infrastructure/
+│           └─ persistence/
+│              └─ mongodb-client.int.test.ts
 ├─ docker/
+│  └─ Dockerfile
 ├─ k8s/
+│  ├─ deployment.yaml
+│  ├─ service.yaml
+│  ├─ configmap.yaml
+│  └─ secret.yaml
 ├─ public/
 ├─ .env.example
+├─ .eslintrc.json
+├─ .gitignore
+├─ jest.config.ts
+├─ next.config.ts
 ├─ package.json
 ├─ tsconfig.json
-└─ ...
+└─ README.md
 ```
-
 
 ---
 
 ## 7. Milestone Plan
 
-### Milestone 0 - Planning and repo bootstrap
+### Milestone 0 — Planning and repo bootstrap
 
 **Goal:** establish the repo, docs, project rules, and initial engineering direction.
 
-#### Tasks
-
-- [ ] Create repo
-- [ ] Add starter PRD
-- [ ] Add project rule
-- [ ] Confirm package manager choice
-- [ ] Confirm Next.js App Router approach
-- [ ] Confirm initial testing and linting setup
-- [ ] Review unresolved product questions
+**Status: complete.**
 
 #### Recorded decisions
 
-- [x] Package manager: npm
-- [x] Routing approach: Next.js App Router
-- [x] Testing framework: Jest
-- [x] Linting: ESLint with Next.js + TypeScript plus project-specific strict rules
-- [x] Validation command: `npm run validate`
+All decisions listed in Section 3.
 
 #### Exit criteria
 
-- [ ] repo exists
-- [ ] planning documents exist
-- [ ] initial architecture direction is agreed
+- [x] repo exists with git history
+- [x] `docs/PRD.md` and `docs/IMPLEMENTATION_PLAN.md` exist
+- [x] `.cursor/rules/project.mdc` is in place
+- [x] product interview complete; key questions resolved
 
 ---
 
-### Milestone 1 - Application foundation
+### Milestone 1 — Application foundation
 
-**Goal:** create a production-grade application skeleton with validated configuration and deployable runtime assets.
+**Goal:** create a production-grade application skeleton with validated configuration, MongoDB connectivity, DDD folder structure, and deployable runtime assets.
+
+This milestone produces a running app with no business features — only infrastructure, config validation, a health endpoint, and deployment packaging.
 
 #### Tasks
 
-- [ ] Bootstrap Next.js + React + TypeScript + Tailwind
-- [ ] Establish source directory layout
-- [ ] Add zod-based environment validation
-- [ ] Add MongoDB connection scaffolding
-- [ ] Add repository base patterns
-- [ ] Add shared error and config structure
-- [ ] Add Jest setup
-- [ ] Add ESLint config
-- [ ] Add Dockerfile(s)
-- [ ] Add initial Kubernetes manifests
-- [ ] Add a basic landing or health page
-- [ ] Ensure app starts and builds locally
+- [ ] Initialise Next.js 15 + React 19 + TypeScript + Tailwind CSS via `create-next-app`
+- [ ] Establish DDD source directory layout (`domain/`, `application/`, `infrastructure/`, `shared/`)
+- [ ] Add `AppError` base class and initial error taxonomy (`src/shared/errors/`)
+- [ ] Add Zod-based environment validation (`src/shared/config/env.ts`): validate `MONGODB_URI`, `NODE_ENV`, and any other required env vars on startup
+- [ ] Add MongoDB client singleton (`src/infrastructure/persistence/mongodb-client.ts`): lazy connection, graceful shutdown, connection-health check
+- [ ] Add Zod → JSON Schema → MongoDB `$jsonSchema` pipeline (`src/infrastructure/persistence/schema-registry.ts`): sanitisation logic, lazy-loaded registry
+- [ ] Add base repository pattern: abstract interface in `src/domain/repositories/`, concrete base in `src/infrastructure/repositories/`
+- [ ] Add stub user seed: a known user document seeded on first startup (or via script) so the app has a `userId` to associate data with
+- [ ] Add `GET /api/health` route handler returning `{ status: "ok", db: "connected" | "disconnected" }`
+- [ ] Add landing page (`src/app/page.tsx`): minimal styled page confirming the app is running
+- [ ] Add ESLint configuration: Next.js + TypeScript plugin + strict project rules from `project.mdc`
+- [ ] Add Jest configuration: TypeScript transform, path aliases, unit/integration separation
+- [ ] Add unit tests for environment validation (valid, missing, malformed)
+- [ ] Add integration test for MongoDB client (connects, health check)
+- [ ] Add `npm run validate` script: `build && lint && test`
+- [ ] Add Dockerfile (multi-stage: deps → build → runtime)
+- [ ] Add Kubernetes manifests (`k8s/`): Deployment, Service, ConfigMap, Secret
+- [ ] Add `.env.example` with documented variables
+- [ ] Update `README.md` with setup and run instructions
+- [ ] Update `.gitignore` (exclude sample data files, `.env`, node_modules, `.next`)
+
+#### Likely files to create or modify
+
+| File | Action |
+|------|--------|
+| `package.json` | create (via `create-next-app`, then modify scripts) |
+| `tsconfig.json` | create (via `create-next-app`, then refine paths) |
+| `next.config.ts` | create |
+| `.eslintrc.json` | create with strict rules |
+| `jest.config.ts` | create |
+| `tailwind.config.ts` | create (via `create-next-app`) |
+| `src/app/layout.tsx` | create |
+| `src/app/page.tsx` | create |
+| `src/app/globals.css` | create |
+| `src/app/api/health/route.ts` | create |
+| `src/shared/config/env.ts` | create |
+| `src/shared/errors/app-error.ts` | create |
+| `src/infrastructure/persistence/mongodb-client.ts` | create |
+| `src/infrastructure/persistence/schema-registry.ts` | create |
+| `src/domain/repositories/base-repository.ts` | create (interface) |
+| `src/infrastructure/repositories/base-mongo-repository.ts` | create (abstract impl) |
+| `src/test/unit/shared/config/env.test.ts` | create |
+| `src/test/integration/infrastructure/persistence/mongodb-client.int.test.ts` | create |
+| `docker/Dockerfile` | create |
+| `k8s/deployment.yaml` | create |
+| `k8s/service.yaml` | create |
+| `k8s/configmap.yaml` | create |
+| `k8s/secret.yaml` | create |
+| `.env.example` | create |
+| `.gitignore` | modify |
+| `README.md` | modify |
 
 #### Exit criteria
 
-- [ ] app runs locally
-- [ ] config is validated on startup
-- [ ] Docker build works
-- [ ] Kubernetes manifests exist in initial form
-- [ ] validation commands run successfully
+- [ ] `npm run dev` starts the app; landing page renders; `/api/health` returns `200`
+- [ ] environment validation rejects missing or malformed `MONGODB_URI`
+- [ ] MongoDB client connects to Atlas and reports healthy
+- [ ] `npm run validate` passes (build + lint + test)
+- [ ] `docker build` succeeds
+- [ ] Kubernetes manifests are syntactically valid
+- [ ] DDD folder structure is established with placeholder READMEs or index files where helpful
 
 ---
 
-### Milestone 2 - First thin vertical slice
+### Milestone 2 — First thin vertical slice (manual ledger)
 
-**Goal:** prove the architecture with one complete end-to-end workflow.
+**Goal:** prove the architecture with a manual "add acquisition → add disposal → view ledger" flow. No import parsing; data entered via forms.
 
-#### Candidate scope
+#### Scope
 
-Implement one small but realistic feature slice that includes:
+- **Portfolio entity** + schema + repository (domain → infrastructure → UI)
+- **Share holding event entity** (acquisition and disposal) + schema + repository
+- Domain schemas in `src/domain/schemas/`, persistence schemas derived in `src/infrastructure/`
+- Portfolio CRUD: create portfolio, view portfolio
+- Add acquisition (manual form): date, symbol, quantity, price per share (GBP), fees
+- Add disposal (manual form): date, symbol, quantity, price per share (GBP), fees
+- Ledger view: list all events in a portfolio, grouped by tax year
+- Route handlers or server actions for all mutations
+- Unit tests for domain schemas and any validation logic
+- Integration tests for repository CRUD
 
-- one persisted entity
-- one repository
-- one domain service
-- one route or server-side mutation path
-- one UI page
-- validation
-- unit tests
-- integration tests
+This milestone is **GBP-only** and has **no calculation logic** — it proves the stack end-to-end.
 
 #### Exit criteria
 
-- [ ] a complete slice works end-to-end
-- [ ] the architecture feels practical
-- [ ] tests cover the key logic boundaries
-- [ ] no major structural rework is immediately required
+- [ ] create a portfolio, add acquisitions and disposals, view them in a ledger
+- [ ] data persists in Atlas across page reloads
+- [ ] domain/application/infrastructure boundaries are clean
+- [ ] `npm run validate` passes
+- [ ] no major structural rework needed
 
 ---
 
-### Milestone 3 - Import workflow foundation
+### Milestone 3 — Import workflow foundation
 
-**Goal:** establish the first meaningful import-oriented workflow for stock transaction data.
+**Goal:** import RSU vesting data from the E\*Trade "ByBenefitType" XLSX export and normalise it into share acquisition events.
 
-#### Candidate tasks
+#### Scope
 
-- [ ] define import file boundary and input contract
-- [ ] define internal transaction or event model
-- [ ] add parsing and normalisation services
-- [ ] add validation and error reporting for imported data
-- [ ] add UI for import review
-- [ ] add unit tests for import and transformation logic
+- XLSX file parsing (using a library such as `xlsx` or `exceljs`)
+- Parser for the E\*Trade "ByBenefitType" hierarchical format: extract Grant → Vest Schedule → Tax Withholding records
+- Normalisation service: transform parsed rows into acquisition events (net shares = Vested Qty − Shares Traded for Taxes; market value derived from Tax Withholding "Taxable Gain" / Vested Qty)
+- Validation: missing fields, inconsistent quantities, unknown record types, date format normalisation
+- Import review UI: show parsed events before committing to the portfolio
+- Error surface: clear messages for unparseable rows, missing market values, etc.
+- Unit tests for parser, normaliser, and validator
+- **Deferred:** sell transaction import (requires a data source with execution prices, which the current PDF does not provide)
+
+#### Data source gap: sell transactions
+
+The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. Before Milestone 3 ships, investigate whether the E\*Trade "Gains & Losses" report or individual trade confirmations provide execution prices in a parseable format (CSV or XLSX). If not, disposals continue to be entered manually (as established in Milestone 2) until a suitable data source is identified.
 
 #### Exit criteria
 
-- [ ] at least one import flow is demonstrated end-to-end
-- [ ] normalised data model is testable and understandable
-- [ ] invalid input is surfaced clearly
+- [ ] XLSX upload → parsed vesting events displayed for review → committed as acquisitions in portfolio
+- [ ] validation errors surfaced clearly
+- [ ] normalised data matches manual spot checks against the sample XLSX
+- [ ] `npm run validate` passes
 
 ---
 
-### Milestone 4 - Calculation engine foundation
+### Milestone 4 — Calculation engine foundation
 
-**Goal:** introduce modular calculation behaviour without coupling it tightly to the UI.
+**Goal:** implement the Section 104 pool calculation engine (GBP-only) with explainable outputs, independently testable from the UI.
 
-#### Candidate tasks
+#### Scope
 
-- [ ] define calculation input and output contracts
-- [ ] add calculation services
-- [ ] add explanation and breakdown structures
-- [ ] add focused unit tests for calculation rules
-- [ ] keep calculation logic isolated from rendering concerns
+- Section 104 pool: formation, partial disposal (pool_cost × sold/held), roll-forward
+- Reproduce HS284 Example 3 as the primary acceptance test (see Section 2.1)
+- Calculation input/output contracts (domain schemas)
+- Per-disposal breakdown: matching source (pool only in this milestone), allowable cost, gain/loss
+- Pool roll-forward schedule: pool shares and pool cost after each event
+- Tax-year summary: total gains, total losses, net gains
+- Annual exempt amount (AEA) application
+- Loss netting: current-year losses before brought-forward; brought-forward only down to AEA
+- CGT rate computation: user-selected tier (basic/higher/additional), including the 2024-25 mid-year rate change
+- Calculation service in `src/domain/services/` — pure logic, no DB or UI dependencies
+- Unit tests for every calculation rule; HS284 Example 3 as an end-to-end calculation test
+- **Deferred to a later milestone:** same-day matching, 30-day matching, FX conversion
 
 #### Exit criteria
 
-- [ ] calculations are independently testable
-- [ ] outputs are understandable and inspectable
-- [ ] business rules are not buried in UI code
+- [ ] HS284 Example 3 pool arithmetic reproduced exactly
+- [ ] per-disposal breakdowns and pool roll-forward are correct and inspectable
+- [ ] AEA, loss netting, and rate-tier logic are covered by tests
+- [ ] calculation service is independently testable (no DB or UI coupling)
+- [ ] `npm run validate` passes
 
 ---
 
-### Milestone 5 - User trust and operational hardening
+### Milestone 5 — FX conversion and share matching rules
 
-**Goal:** make the system more credible for real user-facing use.
+**Goal:** add USD→GBP conversion using Bank of England rates, and implement same-day and 30-day matching rules.
 
-#### Candidate tasks
+#### Scope
 
-- [ ] add history or audit-friendly change tracking where needed
-- [ ] improve error handling and user messaging
-- [ ] improve data quality warnings and unresolved-item handling
-- [ ] refine Docker and Kubernetes assets
-- [ ] review security and configuration handling
-- [ ] improve operational and support docs
+- BoE FX rate download script (`scripts/fetch-boe-fx-rates.ts`): fetch XUDLUSS series, store in MongoDB, handle missing dates (fall back to most recent prior published rate)
+- FX rate repository + domain service: look up rate by date, apply fallback, flag when fallback is used
+- Per-transaction GBP conversion: acquisition costs and disposal proceeds converted at transaction-date rate
+- Same-day matching rule: disposals matched to same-day acquisitions first
+- 30-day (bed and breakfasting) rule: remaining disposals matched to acquisitions within 30 days after disposal
+- Updated calculation engine: matching priority order (same-day → 30-day → Section 104 pool)
+- Visible applied FX rate per transaction in outputs
+- Updated per-disposal breakdown: matching source now shows "same day", "30-day", or "pool"
+- Unit tests for FX lookup, fallback logic, and all matching rules
+- Integration test for FX rate repository
 
 #### Exit criteria
 
-- [ ] important user actions are traceable where required
-- [ ] deployment assets are credible
-- [ ] the product is easier to operate, support, and trust
+- [ ] FX download script works and populates rates in MongoDB
+- [ ] calculation engine applies correct matching order
+- [ ] all PRD Appendix 4 validation points pass (same-day, 30-day directionality, FX per-transaction)
+- [ ] `npm run validate` passes
 
 ---
 
-## 8. Immediate Open Questions
+### Milestone 6 — User trust and operational hardening
 
-These questions should be answered before Milestone 2 is finalised:
+**Goal:** make the system credible for real user-facing use.
 
-- what is the primary top-level object
-- what is the minimum useful end-to-end workflow
-- what import format should be supported first
-- what exact calculation behaviour is in or out for the first meaningful slice
-- what explanation output is required for user trust
-- what persistence model is needed from day one
-- is authentication required immediately or can it be deferred
-- what operational constraints exist for Docker and Kubernetes deployment
+#### Scope
+
+- "Do I need to report?" section per tax year (PRD Appendix 1 thresholds)
+- Reporting threshold logic: 4×AEA proceeds (pre-2023-24), £50,000 (2023-24 onward)
+- RSU timing explanations (same-day vest+sell, 30-day scenarios) — in-product plain-English guidance
+- 2024-25 rate change flag and explanation
+- Computation pack export: print view or PDF with transaction ledger, FX rates, per-disposal computations, pool roll-forward
+- CSV export of computed disposals with matching source
+- Data quality warnings: missing vest prices, incomplete portfolios, unresolved items
+- Assumption labelling: "additional-rate assumption" (or selected tier) visible on all outputs
+- "Not professional tax advice" disclaimer
+- Refined Docker and Kubernetes assets
+- Security review: env var handling, no secrets in logs, sensitive data treatment
+- Updated README and operational docs
+
+#### Exit criteria
+
+- [ ] outputs are useful for Self Assessment record keeping
+- [ ] deployment assets are production-credible
+- [ ] material assumptions are surfaced in UI and exports
+- [ ] `npm run validate` passes
+
+---
+
+## 8. Open Questions
+
+### 8.1 Resolved
+
+| # | Question | Resolution |
+|---|----------|-----------|
+| 1 | Primary top-level object | Portfolio |
+| 2 | Single-user or multi-user | Multi-user (stub user for now) |
+| 3 | Authentication timing | Deferred; stub user in M1 |
+| 4 | Import format first | E\*Trade "ByBenefitType" XLSX for acquisitions |
+| 5 | Minimum end-to-end workflow | Manual add acquisition + disposal + ledger (M2) |
+| 6 | Calculation scope for first engine | Section 104 pool, GBP-only, HS284 Example 3 (M4) |
+| 7 | CGT rate assumption | User-selectable tier (basic/higher/additional), default additional |
+| 8 | Sell-to-cover treatment | Not modelled as disposals; net shares only |
+| 9 | FX rate source mechanism | On-demand download script, seeded into MongoDB |
+| 10 | Local MongoDB | Not supported; Atlas required for all environments |
+| 11 | Kubernetes specifics | Vanilla manifests, no provider assumptions |
+| 12 | Tax filing/submission | Never; permanent product boundary |
+| 13 | Sell transaction prices | Assume available eventually; manual entry acceptable as fallback |
+| 14 | Stock Options / ESPP scope | RSU-only. Options and ESPP are permanently out of scope. Import pipeline must filter them out. |
+| 15 | Tax Withholding "Taxable Gain" currency | USD. Divide by Vested Qty to derive per-share USD market value at vest for CGT acquisition cost. |
+
+### 8.2 Still open
+
+- **Multiple symbols:** The sample data is all MDB. If the user holds RSUs in multiple companies, is that a realistic scenario to support?
+- **Authentication provider:** When auth is eventually added, is there a preferred provider (NextAuth, Clerk, Auth0, etc.)?
+- **Brought-forward losses:** How should the user input their available loss pool from prior years? A simple number input per tax year on the portfolio?
 
 ---
 
 ## 9. ADR Candidates
 
-Potential decisions that may deserve ADRs:
+### Write before Milestone 1
 
-- choice of application folder structure
-- Next.js server action vs route-handler boundaries
-- repository abstraction design
-- error taxonomy
-- environment and config loading strategy
-- test structure and execution strategy
-- import pipeline design
-- calculation-service boundary design
-- authentication and authorization approach
+| ADR | Rationale |
+|-----|-----------|
+| **ADR-001: Folder structure and DDD layering** | Records the `domain/application/infrastructure/interfaces/shared` structure, dependency rule, and schema-derivation strategy. Multiple engineers (and AI agents) need a stable reference. |
+| **ADR-002: Environment and configuration loading** | Records the Zod-validated env approach, single `MONGODB_URI`, and startup-fail behaviour. |
+
+### Write before the relevant milestone
+
+| ADR | Milestone | Rationale |
+|-----|-----------|-----------|
+| ADR-003: Repository abstraction design | M1–M2 | Interface in domain, generic base in infrastructure, collection-specific implementations. |
+| ADR-004: Error taxonomy | M1–M2 | `AppError` hierarchy: validation, domain, persistence, configuration, import errors. |
+| ADR-005: Import pipeline design | M3 | How files are uploaded, parsed, normalised, validated, and committed. Extensibility for new formats. |
+| ADR-006: Calculation engine boundary design | M4 | Input/output contracts, pure-function design, separation from persistence and UI. |
+| ADR-007: Authentication and user model | When auth is added | Provider choice, session model, user document shape, migration from stub user. |
 
 ---
 
 ## 10. Validation Strategy
 
+### Per-milestone gate
+
 For each meaningful milestone:
 
-- run `npm run build`
-- run `npm run lint`
-- run `npm test`
-- run `npm run validate`
+1. `npm run build` — TypeScript compilation, Next.js build
+2. `npm run lint` — ESLint with strict project rules
+3. `npm test` — Jest unit and integration tests
+4. `npm run validate` — runs all three above in sequence
 
-For refactors and feature work, `npm run validate` is the final quality gate.
+No milestone is complete while `npm run validate` is failing.
 
-No milestone should be marked complete while validation is failing.
+### Domain-specific validation (from Milestone 4 onward)
+
+Per PRD Appendix 4, the calculation engine must pass:
+
+- [ ] **HS284 Example 3:** Section 104 pool formation and partial-disposal fraction logic reproduced exactly
+- [ ] **Same-day matching:** disposal and acquisition on the same day match first (M5)
+- [ ] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M5)
+- [ ] **FX handling:** per-transaction GBP conversion, not "compute USD gain then convert" (M5)
+- [ ] **Loss utilisation:** current-year before brought-forward; brought-forward only down to AEA (M4)
+- [ ] **2024-25 rate change:** correct rates before/after 30 Oct 2024 in same tax year (M4)
 
 ---
 
 ## 11. Risks
 
-- product scope may become tax-domain heavy before the data model is stable
-- import formats may prove messy and inconsistent
-- explainability requirements may push more domain modelling earlier than expected
-- unclear user workflow boundaries may create rework
-- premature over-modelling could slow delivery
-- under-modelling could create a messy codebase quickly
+- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations when approaching M3.
+- **Import format brittleness:** The XLSX format is hierarchical, sparse, and uses mixed date formats. E\*Trade may change the export layout without notice. Mitigate with defensive parsing, clear validation errors, and a mapping approach.
+- **Tax domain complexity escalation:** Same-day and 30-day matching interact with each other and with the pool in non-obvious ways. Mitigate by deferring matching rules to M5 (after pool mechanics are solid) and testing each rule independently.
+- **CGT rate tier simplification:** The app asks the user to declare their tier rather than computing it. This is a deliberate simplification but may confuse users who don't know their band. Mitigate with clear in-product guidance.
+- **Non-RSU data in imports:** The sample data includes Stock Options and ESPP events. These are permanently out of scope; the import pipeline must filter them out cleanly and inform the user what was excluded.
+- **Premature over-modelling vs under-modelling:** Mitigate by building thin vertical slices and refactoring confidently (no backwards-compatibility constraint in early milestones).
 
 ---
 
 ## 12. Assumptions
 
-- this is a self-service end-user product
-- the initial goal is architectural strength, not complete tax-domain coverage
-- MongoDB Atlas is fixed
-- Docker and Kubernetes are both relevant deployment targets
-- strict linting, validation, and testing are required
-- backwards compatibility is not a goal during early refactoring
+- This is a multi-user self-service end-user product.
+- The initial goal is architectural strength and one correct vertical slice, not complete tax-domain coverage.
+- MongoDB Atlas is the only supported persistence target (no local MongoDB).
+- Docker and Kubernetes are both relevant deployment targets.
+- Strict linting, validation, and testing are required from Milestone 1.
+- Backwards compatibility is not a goal during early milestones.
+- The user declares their CGT rate tier; the app does not compute income tax bands.
+- RSUs are the only equity compensation type in scope. Stock Options and ESPP are permanently out of scope; the import pipeline must filter them out.
 
 ---
 
@@ -397,13 +574,16 @@ No milestone should be marked complete while validation is failing.
 
 Before implementation starts, confirm:
 
-- [ ] PRD has been reviewed
-- [ ] project rules are in place
-- [ ] the smallest useful milestone is identified
-- [ ] open product questions are clearly listed
-- [ ] initial repo structure is agreed
-- [ ] validation strategy is agreed
-- [ ] Milestone 1 scope is approved
+- [x] PRD has been reviewed
+- [x] project rules are in place
+- [x] product interview complete; key decisions recorded in Section 3.2
+- [x] the smallest useful milestone is identified (Milestone 1)
+- [x] open product questions are clearly listed (Section 8)
+- [x] initial repo structure is agreed (Section 6)
+- [x] validation strategy is agreed (Section 10)
+- [x] Milestone 1 scope is documented with file list and exit criteria
+- [ ] ADR-001 and ADR-002 written before M1 implementation begins
+- [ ] Milestone 1 scope approved by stakeholder
 
 ---
 
@@ -411,7 +591,7 @@ Before implementation starts, confirm:
 
 Use this prompt when starting or revising the plan:
 
-> Read `docs/PRD.md` and `.cursor/rules/project.mdc`.  
-> Do not write code yet.  
-> Identify open questions, challenge weak assumptions, and update this implementation plan.  
+> Read `docs/PRD.md` and `.cursor/rules/project.mdc`.
+> Do not write code yet.
+> Identify open questions, challenge weak assumptions, and update this implementation plan.
 > Propose the smallest safe next milestone, the files likely to be created or changed, the validation strategy, and any ADRs that should be written before implementation.
