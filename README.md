@@ -47,8 +47,8 @@ MONGODB_URI='mongodb://127.0.0.1:27017/ci-build' npm run build
 
 ## Tests
 
-- **Unit** tests live under `src/test/unit/`.
-- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (and as part of `npm run validate`). They need a **reachable** MongoDB at `MONGODB_URI`. Jest loads `.env.local` and `.env` first (see `src/test/jest-setup.ts`); if `MONGODB_URI` is still unset, a localhost placeholder is applied so config validation can load — use a real Atlas URI in `.env.local` (or export `MONGODB_URI` in CI) so the Mongo integration test can connect and pass.
+- **Unit** tests live under `src/test/unit/` and run with `npm test` (included in `npm run validate`).
+- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (not part of `validate`). They need a **reachable** MongoDB at `MONGODB_URI`. Jest loads `.env.local` and `.env` first (see `src/test/jest-setup.ts`); if `MONGODB_URI` is still unset, a localhost placeholder is applied so config validation can load — use a real Atlas URI in `.env.local` (or export `MONGODB_URI` in CI) so the Mongo integration test can connect and pass.
 
 ## Seed script (stub user)
 

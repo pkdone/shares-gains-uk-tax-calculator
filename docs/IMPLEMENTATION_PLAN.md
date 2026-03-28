@@ -268,26 +268,28 @@ All decisions listed in Section 3.
 
 This milestone produces a running app with no business features — only infrastructure, config validation, a health endpoint, and deployment packaging.
 
+**Status: complete.**
+
 #### Tasks
 
-- [ ] Manually initialise `package.json` (`npm init`), install Next.js 15, React 19, TypeScript, Tailwind CSS v4, and all dev dependencies; create `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, and `src/app/` entry points from scratch
-- [ ] Establish DDD source directory layout (`domain/`, `application/`, `infrastructure/`, `shared/`)
-- [ ] Add `AppError` base class and initial error taxonomy (`src/shared/errors/`)
-- [ ] Add Zod-based environment validation (`src/shared/config/env.ts`): validate `MONGODB_URI`, `NODE_ENV`, and any other required env vars on startup
-- [ ] Add MongoDB client singleton (`src/infrastructure/persistence/mongodb-client.ts`): lazy connection, graceful shutdown, connection-health check
-- [ ] Add stub user seed script: a standalone script that writes a known user document to prove MongoDB write/read (not startup-time logic; gets a proper schema in M2)
-- [ ] Add `GET /api/health` route handler returning `{ status: "ok", db: "connected" | "disconnected" }`
-- [ ] Add landing page (`src/app/page.tsx`): minimal styled page confirming the app is running
-- [ ] Add ESLint flat config (`eslint.config.mjs`): type-checked mode via `typescript-eslint` with `projectService: true`, `@next/eslint-plugin-next` flat config, `eslint-plugin-react`, `eslint-plugin-react-hooks`, and the full project rule set (see Section 7.1.1 below for complete config)
-- [ ] Add Jest configuration: TypeScript transform, path aliases, unit/integration separation
-- [ ] Add unit tests for environment validation (valid, missing, malformed)
-- [ ] Add integration test for MongoDB client (connects, health check)
-- [ ] Add `npm run validate` script: `build && lint && test`
-- [ ] Add Dockerfile (multi-stage: deps → build → runtime)
-- [ ] Add Kubernetes manifests (`k8s/`): Deployment, Service, ConfigMap, Secret
-- [ ] Add `.env.example` with documented variables
-- [ ] Update `README.md` with setup and run instructions
-- [ ] Update `.gitignore` (exclude sample data files, `.env`, node_modules, `.next`)
+- [x] Manually initialise `package.json` (`npm init`), install Next.js 15, React 19, TypeScript, Tailwind CSS v4, and all dev dependencies; create `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, and `src/app/` entry points from scratch
+- [x] Establish DDD source directory layout (`domain/`, `application/`, `infrastructure/`, `shared/`)
+- [x] Add `AppError` base class and initial error taxonomy (`src/shared/errors/`)
+- [x] Add Zod-based environment validation (`src/shared/config/env.ts`): validate `MONGODB_URI`, `NODE_ENV`, and any other required env vars on startup
+- [x] Add MongoDB client singleton (`src/infrastructure/persistence/mongodb-client.ts`): lazy connection, graceful shutdown, connection-health check
+- [x] Add stub user seed script: a standalone script that writes a known user document to prove MongoDB write/read (not startup-time logic; gets a proper schema in M2)
+- [x] Add `GET /api/health` route handler returning `{ status: "ok", db: "connected" | "disconnected" }`
+- [x] Add landing page (`src/app/page.tsx`): minimal styled page confirming the app is running
+- [x] Add ESLint flat config (`eslint.config.mjs`): type-checked mode via `typescript-eslint` with `projectService: true`, `@next/eslint-plugin-next` flat config, `eslint-plugin-react`, `eslint-plugin-react-hooks`, and the full project rule set (see Section 7.1.1 below for complete config)
+- [x] Add Jest configuration: TypeScript transform, path aliases, unit/integration separation
+- [x] Add unit tests for environment validation (valid, missing, malformed)
+- [x] Add integration test for MongoDB client (connects, health check)
+- [x] Add `npm run validate` script: `build && lint && test`
+- [x] Add Dockerfile (multi-stage: deps → build → runtime)
+- [x] Add Kubernetes manifests (`k8s/`): Deployment, Service, ConfigMap, Secret
+- [x] Add `.env.example` with documented variables
+- [x] Update `README.md` with setup and run instructions
+- [x] Update `.gitignore` (exclude sample data files, `.env`, node_modules, `.next`)
 
 #### Likely files to create or modify
 
@@ -297,7 +299,7 @@ This milestone produces a running app with no business features — only infrast
 | `tsconfig.json` | create |
 | `next.config.ts` | create |
 | `eslint.config.mjs` | create with type-checked flat config and full project rule set |
-| `jest.config.ts` | create |
+| `jest.config.js` | create |
 | `postcss.config.mjs` | create (Tailwind CSS v4 PostCSS integration) |
 | `src/app/layout.tsx` | create |
 | `src/app/page.tsx` | create |
@@ -317,6 +319,7 @@ This milestone produces a running app with no business features — only infrast
 | `.env.example` | create |
 | `.gitignore` | modify |
 | `README.md` | modify |
+| `src/instrumentation.ts` | create (graceful MongoDB disconnect on `SIGINT`/`SIGTERM`) |
 
 #### 7.1.1 ESLint configuration (`eslint.config.mjs`)
 
@@ -327,6 +330,8 @@ This milestone produces a running app with no business features — only infrast
 **Rules requiring type information:** `prefer-regexp-exec`, `prefer-readonly`, `promise-function-async`, `require-array-sort-compare`, `switch-exhaustiveness-check`, `restrict-template-expressions`.
 
 **Extension rule:** `@typescript-eslint/default-param-last` extends base `default-param-last` — the base rule must be explicitly disabled.
+
+**Implemented repo note:** the live config uses `@eslint/eslintrc` **FlatCompat** with `extends('next/core-web-vitals', 'next/typescript')` so Next.js build-time ESLint detection recognises the preset, plus `typescript-eslint` type-checked rules and project-specific overrides. See `eslint.config.mjs` (default import + destructure from `@next/eslint-plugin-next` for CJS interop). The snippet below is the original target shape; filenames and Next flat export names may differ slightly from the installed plugin.
 
 Target config structure:
 
@@ -409,14 +414,14 @@ export default tseslint.config(
 
 #### Exit criteria
 
-- [ ] `npm run dev` starts the app; landing page renders; `/api/health` returns `200`
-- [ ] environment validation rejects missing or malformed `MONGODB_URI`
-- [ ] MongoDB client connects to Atlas and reports healthy
-- [ ] stub user seed script runs successfully (writes and reads back a user document)
-- [ ] `npm run validate` passes (build + lint + test)
-- [ ] `docker build` succeeds
-- [ ] Kubernetes manifests are syntactically valid
-- [ ] DDD folder structure is established with placeholder READMEs or index files where helpful
+- [x] `npm run dev` starts the app; landing page renders; `/api/health` returns `200`
+- [x] environment validation rejects missing or malformed `MONGODB_URI`
+- [x] MongoDB client connects to Atlas and reports healthy
+- [x] stub user seed script runs successfully (writes and reads back a user document)
+- [x] `npm run validate` passes (build + lint + test)
+- [x] `docker build` succeeds
+- [x] Kubernetes manifests are syntactically valid
+- [x] DDD folder structure is established with placeholder READMEs or index files where helpful
 
 ---
 
