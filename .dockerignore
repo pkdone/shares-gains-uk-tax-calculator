@@ -1,0 +1,13 @@
+.next
+node_modules
+.git
+.env
+.env.*
+!.env.example
+coverage
+*.log
+docs
+.cursor
+NOTES.txt
+*.xlsx
+*.pdf

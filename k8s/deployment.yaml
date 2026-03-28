@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shares-gains-uk-tax-calculator
+  labels:
+    app: shares-gains-uk-tax-calculator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shares-gains-uk-tax-calculator
+  template:
+    metadata:
+      labels:
+        app: shares-gains-uk-tax-calculator
+    spec:
+      containers:
+        - name: app
+          image: shares-gains-uk-tax-calculator:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: shares-gains-app-config
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: shares-gains-app-secrets
+                  key: MONGODB_URI
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20

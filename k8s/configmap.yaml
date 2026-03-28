@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shares-gains-app-config
+  labels:
+    app: shares-gains-uk-tax-calculator
+data:
+  NODE_ENV: "production"

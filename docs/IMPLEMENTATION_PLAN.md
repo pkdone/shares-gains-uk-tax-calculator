@@ -622,8 +622,9 @@ For each meaningful milestone:
 
 1. `npm run build` — TypeScript compilation, Next.js build
 2. `npm run lint` — ESLint with strict project rules
-3. `npm test` — Jest unit and integration tests
-4. `npm run validate` — runs all three above in sequence
+3. `npm test` — Jest unit tests only (`src/test/unit/`)
+4. `npm run test:integration` — Jest integration tests (`src/test/integration/`)
+5. `npm run validate` — build, lint, unit tests, then integration tests
 
 No milestone is complete while `npm run validate` is failing.
 

@@ -7,6 +7,7 @@
 dist/
 node_modules/
 .next/
+coverage/
 .vscode/settings.json
 *.log
 *.mongodb
