@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "test": "jest",
     "test:integration": "JEST_INTEGRATION=1 jest",
-    "validate": "npm run build && npm run lint && npm test",
+    "validate": "npm run build && npm run lint && npm test && npm run test:integration",
     "seed:user": "tsx scripts/seed-user.ts"
   },
   "dependencies": {
