@@ -2,7 +2,7 @@
 
 **Status:** Draft — post-interview refinement
 **Prepared by:** Paul Done
-**Last updated:** 2026-03-28
+**Last updated:** 2026-03-30
 
 ---
 
@@ -613,34 +613,93 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 
 **Goal:** implement the Section 104 pool calculation engine (GBP-only) with explainable outputs, independently testable from the UI.
 
+**Status:** Complete  
+**Completed:** 2026-03-30  
+**Validated:** `npm run validate` on 2026-03-30
+
 #### Stakeholder decisions (2026-03-28)
 
 - **Multi-ticker:** One Section 104 pool **per symbol** within a portfolio (see Section 8.1, #22). Events for different tickers do not share a pool.
 - **Brought-forward losses:** Engine and tests implement the **rules** (including brought-forward down to AEA); **no UI to capture** prior-year loss pools in M4 — use test fixtures and explicit inputs; user input **Milestone 6** (see Section 8.1, #24).
 - **Authentication:** Irrelevant to M4 scope; no provider lock-in (see Section 8.1, #23).
 
-#### Scope
+#### Stakeholder / planning decisions (2026-03-30)
 
-- Section 104 pool: formation, partial disposal (pool_cost × sold/held), roll-forward — **per symbol** (separate pool state per ticker within a portfolio)
-- Reproduce HS284 Example 3 as the primary acceptance test (see Section 2.1)
+- **Penny precision:** Pool cost and allowable cost on disposal tracked to **2 decimal places**; SA108-style **whole-pound** rounded gain/loss per disposal (`Math.round`).
+- **Single-pass multi-year:** `calculateGainsForSymbol` processes all events in one invocation; tax-year summaries run after disposals with **automatic loss carry-forward** between years.
+- **HS284 test depth:** HS284 Example 3 **plus** annual summary (AEA, CGT rate breakdown); both May 2023 and Feb 2024 disposals fall in tax year **2023-24** (UTC date-only).
+
+#### Tasks
+
+**ADR**
+
+- [x] **ADR-006:** Calculation engine boundary design (`docs/adrs/006-calculation-engine-boundary-design.md`)
+
+**Reference**
+
+- [x] Transcribe HS284 Example 3 figures into `docs/references/hs284-example-3-2024-notes.md` (PDF + penny-precision engine column)
+
+**Domain — schemas**
+
+- [x] Canonical Zod schemas + types: `src/domain/schemas/calculation.ts` (`CalcInput`, `CalcOutput`, `DisposalResult`, `PoolSnapshot`, `TaxYearSummary`, `RateTier`)
+
+**Domain — services**
+
+- [x] `src/domain/services/cgt-config.ts` — AEA by tax year (PRD Appendix 1), main CGT rates before/on-after **2024-10-30**, `getShareCgtRatePercent`
+- [x] `src/domain/services/section-104-pool.ts` — Section 104 pool (2dp), full disposal uses residual pool cost
+- [x] `src/domain/services/cgt-annual-summary.ts` — same-year net, BF capped to AEA rule, AEA applied **post-first** in **2024-25**, multi-year loss pool
+- [x] `src/domain/services/cgt-calculator.ts` — `calculateGainsForSymbol`: sort/tie-break events, pool + disposals + summaries; **no** DB/UI
+
+**Tests** (`src/test/unit/domain/services/`)
+
+- [x] `cgt-config.test.ts` — AEA lookup, rate boundary 29 Oct vs 30 Oct 2024
+- [x] `section-104-pool.test.ts` — HS284-style fraction, full disposal, over-disposal error
+- [x] `cgt-annual-summary.test.ts` — BF to AEA, loss year, **2024-25** split rates, multi-year carry-forward
+- [x] `cgt-calculator.test.ts` — HS284 Example 3 (penny precision + **2023-24** summary), unsorted events error, empty / no-disposal cases
+
+#### Likely files (delivered)
+
+| File | Action |
+|------|--------|
+| `docs/adrs/006-calculation-engine-boundary-design.md` | create |
+| `docs/references/hs284-example-3-2024-notes.md` | update (transcribed figures) |
+| `src/domain/schemas/calculation.ts` | create |
+| `src/domain/services/cgt-config.ts` | create |
+| `src/domain/services/section-104-pool.ts` | create |
+| `src/domain/services/cgt-annual-summary.ts` | create |
+| `src/domain/services/cgt-calculator.ts` | create |
+| `src/test/unit/domain/services/cgt-config.test.ts` | create |
+| `src/test/unit/domain/services/section-104-pool.test.ts` | create |
+| `src/test/unit/domain/services/cgt-annual-summary.test.ts` | create |
+| `src/test/unit/domain/services/cgt-calculator.test.ts` | create |
+
+#### Scope (summary)
+
+- Section 104 pool: formation, partial disposal (pool cost × sold/held, 2dp), roll-forward — **per symbol** (separate pool state per ticker within a portfolio)
+- Reproduce HS284 Example 3 as the primary acceptance test (see Section 2.1); **both** disposals in **2023-24**; final pool remainder **£1,674.66** (2dp after rounded allowable cost £1,674.67)
 - Calculation input/output contracts (domain schemas)
 - Per-disposal breakdown: matching source (pool only in this milestone), allowable cost, gain/loss
 - Pool roll-forward schedule: pool shares and pool cost after each event
-- Tax-year summary: total gains, total losses, net gains
+- Tax-year summary: gains, losses, BF, AEA, taxable gain, CGT due, rate breakdown
 - Annual exempt amount (AEA) application
 - Loss netting: current-year losses before brought-forward; brought-forward only down to AEA
-- CGT rate computation: user-selected tier (basic/higher/additional), including the 2024-25 mid-year rate change
+- CGT rate computation: user-selected tier (basic/higher/additional), including the **2024-25** tax-year split (pre/post **30 Oct 2024** on the **2024-25** label)
 - Calculation service in `src/domain/services/` — pure logic, no DB or UI dependencies
-- Unit tests for every calculation rule; HS284 Example 3 as an end-to-end calculation test
-- **Deferred to a later milestone:** same-day matching, 30-day matching, FX conversion
+- Unit tests for calculation rules; HS284 + annual summary + **2024-25** split-rate test
+- **Deferred to a later milestone:** same-day matching, 30-day matching, FX conversion; application-layer wiring from repositories to `calculateGainsForSymbol`
 
 #### Exit criteria
 
-- [ ] HS284 Example 3 pool arithmetic reproduced exactly
-- [ ] per-disposal breakdowns and pool roll-forward are correct and inspectable
-- [ ] AEA, loss netting, and rate-tier logic are covered by tests
-- [ ] calculation service is independently testable (no DB or UI coupling)
-- [ ] `npm run validate` passes
+- [x] HS284 Example 3 pool arithmetic reproduced exactly (penny precision); SA108 rounded gains match PDF whole pounds (£329, £300)
+- [x] per-disposal breakdowns and pool roll-forward are correct and inspectable
+- [x] AEA, loss netting, rate-tier logic, and **2024-25** split rates are covered by tests
+- [x] calculation service is independently testable (no DB or UI coupling)
+- [x] ADR-006 complete
+- [x] `npm run validate` passes
+
+#### Completion record
+
+Milestone 4 delivered 2026-03-30; see **Status** and **Validated** above. ADR-006 records contracts, penny precision, and M4/M5 boundary (pool-only; `import_usd` unchanged per ADR-005).
 
 ---
 
@@ -774,12 +833,12 @@ No milestone is complete while `npm run validate` is failing.
 
 Per PRD Appendix 4, the calculation engine must pass:
 
-- [ ] **HS284 Example 3:** Section 104 pool formation and partial-disposal fraction logic reproduced exactly
+- [x] **HS284 Example 3:** Section 104 pool formation and partial-disposal fraction logic reproduced exactly (penny-precision engine; see `docs/references/hs284-example-3-2024-notes.md`)
 - [ ] **Same-day matching:** disposal and acquisition on the same day match first (M5)
 - [ ] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M5)
 - [ ] **FX handling:** per-transaction GBP conversion, not "compute USD gain then convert" (M5)
-- [ ] **Loss utilisation:** current-year before brought-forward; brought-forward only down to AEA (M4)
-- [ ] **2024-25 rate change:** correct rates before/after 30 Oct 2024 in same tax year (M4)
+- [x] **Loss utilisation:** current-year before brought-forward; brought-forward only down to AEA (M4)
+- [x] **2024-25 rate change:** correct rates before/after 30 Oct 2024 in same tax year (M4 — tax year **2024-25** split)
 
 ---
 
@@ -824,6 +883,7 @@ Before implementation starts, confirm:
 - [x] Milestone 2 scope, tasks, exit criteria, and stakeholder decisions recorded (2026-03-28); PRD §8.1 aligned with Portfolio model
 - [x] Milestone 2 delivered: all Milestone 2 tasks and exit criteria in Section 7 checked; Status `Complete`; `npm run validate` recorded under Completion record
 - [x] Milestone 3 delivered: tasks, exit criteria, and stakeholder decisions in Section 7; ADR-005; Status `Complete`; `npm run validate` recorded under Completion record
+- [x] Milestone 4 delivered: tasks, exit criteria, ADR-006, HS284 notes update; Status `Complete`; `npm run validate` recorded under Completion record
 
 ---
 
