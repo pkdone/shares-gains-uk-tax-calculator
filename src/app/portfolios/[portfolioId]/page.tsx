@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ReactElement, ReactNode } from 'react';
 
 import { getLedgerForPortfolio } from '@/application/ledger/get-ledger-for-portfolio';
+import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import {
-  netDisposalProceedsGbp,
-  totalAcquisitionCostGbp,
+  netDisposalProceedsUsd,
+  pricePerShare,
   totalAcquisitionCostUsd,
 } from '@/domain/services/ledger-money';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
@@ -12,18 +14,32 @@ import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/m
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 import { env } from '@/shared/config/env';
 
-import { AcquisitionForm } from '@/app/portfolios/[portfolioId]/acquisition-form';
-import { DisposalForm } from '@/app/portfolios/[portfolioId]/disposal-form';
-import { EtradeImportSection } from '@/app/portfolios/[portfolioId]/etrade-import-section';
+import { LedgerEntryDelete } from '@/app/portfolios/[portfolioId]/ledger-entry-delete';
+import { PortfolioLedgerActions } from '@/app/portfolios/[portfolioId]/portfolio-ledger-actions';
 
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
+const priceUsd = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+});
+
 const portfolioRepository = new MongoPortfolioRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
+
+function acquisitionGrantCell(a: ShareAcquisition): ReactNode {
+  if (a.economicsKind === 'manual_usd') {
+    return <em className="italic">(manual)</em>;
+  }
+  if (a.grantNumber != null && a.grantNumber !== '') {
+    return a.grantNumber;
+  }
+  return '—';
+}
 
 type PortfolioDetailPageProps = {
   readonly params: Promise<{ portfolioId: string }>;
@@ -31,7 +47,7 @@ type PortfolioDetailPageProps = {
 
 export default async function PortfolioDetailPage({
   params,
-}: PortfolioDetailPageProps): Promise<React.ReactElement> {
+}: PortfolioDetailPageProps): Promise<ReactElement> {
   const { portfolioId } = await params;
 
   const portfolio = await portfolioRepository.findByIdForUser(portfolioId, env.STUB_USER_ID);
@@ -47,7 +63,7 @@ export default async function PortfolioDetailPage({
   );
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
+    <main className="mx-auto max-w-7xl px-6 py-12">
       <nav className="text-sm text-neutral-600">
         <Link href="/portfolios" className="text-[var(--color-accent)] hover:underline">
           Portfolios
@@ -57,11 +73,6 @@ export default async function PortfolioDetailPage({
       </nav>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">{portfolio.name}</h1>
-      <p className="mt-2 text-sm text-neutral-600">
-        Ledger uses UTC date-only fields, grouped by UK tax year (6 April–5 April). Manual entries are GBP;
-        E*Trade vest imports are USD — sterling for calculations uses Bank of England rates after{' '}
-        <code className="text-xs">npm run fetch:fx-rates</code>.
-      </p>
 
       <p className="mt-4">
         <Link
@@ -73,29 +84,10 @@ export default async function PortfolioDetailPage({
       </p>
 
       <div className="mt-10">
-        <EtradeImportSection portfolioId={portfolioId} />
+        <PortfolioLedgerActions portfolioId={portfolioId} />
       </div>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-2">
-        <section>
-          <h2 className="text-lg font-medium text-neutral-900">Add acquisition</h2>
-          <p className="mt-1 text-xs text-neutral-500">
-            Total cost for display = gross consideration + fees.
-          </p>
-          <div className="mt-4">
-            <AcquisitionForm portfolioId={portfolioId} />
-          </div>
-        </section>
-        <section>
-          <h2 className="text-lg font-medium text-neutral-900">Add disposal</h2>
-          <p className="mt-1 text-xs text-neutral-500">Net proceeds for display = gross proceeds − fees.</p>
-          <div className="mt-4">
-            <DisposalForm portfolioId={portfolioId} />
-          </div>
-        </section>
-      </div>
-
-      <section className="mt-14">
+      <section className="mt-8">
         <h2 className="text-lg font-medium text-neutral-900">Ledger</h2>
         {ledger.byTaxYear.length === 0 ? (
           <p className="mt-3 text-sm text-neutral-600">No events yet.</p>
@@ -113,72 +105,100 @@ export default async function PortfolioDetailPage({
                         <th className="px-3 py-2 font-medium">Type</th>
                         <th className="px-3 py-2 font-medium">Date</th>
                         <th className="px-3 py-2 font-medium">Symbol</th>
-                        <th className="px-3 py-2 font-medium">Qty</th>
-                        <th className="px-3 py-2 font-medium">Gross</th>
+                        <th className="px-3 py-2 font-medium">Grant #</th>
+                        <th className="px-3 py-2 font-medium">Vest period</th>
+                        <th className="px-3 py-2 font-medium">Vested</th>
+                        <th className="px-3 py-2 font-medium">For tax</th>
+                        <th className="px-3 py-2 font-medium">Qty (net)</th>
+                        <th className="px-3 py-2 font-medium">Price / share</th>
+                        <th className="px-3 py-2 font-medium">Consideration / proceeds</th>
                         <th className="px-3 py-2 font-medium">Fees</th>
                         <th className="px-3 py-2 font-medium">Total</th>
+                        <th className="px-3 py-2 font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100 bg-white">
                       {group.lines.map((line) =>
                         line.kind === 'ACQUISITION' ? (
                           <tr key={line.data.id}>
-                            <td className="px-3 py-2 text-neutral-800">
-                              {line.data.economicsKind === 'import_usd' ? 'Acquisition (USD)' : 'Acquisition'}
-                            </td>
+                            <td className="px-3 py-2 text-neutral-800">Acquisition (USD)</td>
                             <td className="px-3 py-2 tabular-nums text-neutral-800">{line.data.eventDate}</td>
                             <td className="px-3 py-2">{line.data.symbol}</td>
+                            <td className="px-3 py-2 text-neutral-600">{acquisitionGrantCell(line.data)}</td>
+                            <td className="px-3 py-2 text-neutral-600">
+                              {line.data.vestPeriod != null && line.data.vestPeriod !== ''
+                                ? line.data.vestPeriod
+                                : '—'}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums text-neutral-600">
+                              {line.data.economicsKind === 'import_usd' &&
+                              line.data.grossVestedQuantity !== undefined
+                                ? line.data.grossVestedQuantity
+                                : '—'}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums text-neutral-600">
+                              {line.data.economicsKind === 'import_usd' &&
+                              line.data.sharesTradedForTaxes !== undefined
+                                ? line.data.sharesTradedForTaxes
+                                : '—'}
+                            </td>
                             <td className="px-3 py-2 tabular-nums">{line.data.quantity}</td>
-                            {line.data.economicsKind === 'manual_gbp' ? (
-                              <>
-                                <td className="px-3 py-2 tabular-nums">
-                                  £{money.format(line.data.grossConsiderationGbp)}
-                                </td>
-                                <td className="px-3 py-2 tabular-nums">£{money.format(line.data.feesGbp)}</td>
-                                <td className="px-3 py-2 tabular-nums font-medium">
-                                  £
-                                  {money.format(
-                                    totalAcquisitionCostGbp(
-                                      line.data.grossConsiderationGbp,
-                                      line.data.feesGbp,
-                                    ),
-                                  )}
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="px-3 py-2 tabular-nums">
-                                  ${money.format(line.data.grossConsiderationUsd)}
-                                </td>
-                                <td className="px-3 py-2 tabular-nums">${money.format(line.data.feesUsd)}</td>
-                                <td className="px-3 py-2 tabular-nums font-medium">
-                                  ${money.format(
-                                    totalAcquisitionCostUsd(
-                                      line.data.grossConsiderationUsd,
-                                      line.data.feesUsd,
-                                    ),
-                                  )}{' '}
-                                  <span className="text-xs font-normal text-neutral-500">
-                                    (USD — converted at calculation)
-                                  </span>
-                                </td>
-                              </>
-                            )}
+                            <td className="px-3 py-2 tabular-nums text-neutral-700">
+                              $
+                              {priceUsd.format(
+                                pricePerShare(line.data.considerationUsd, line.data.quantity),
+                              )}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums">
+                              ${money.format(line.data.considerationUsd)}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums">${money.format(line.data.feesUsd)}</td>
+                            <td className="px-3 py-2 tabular-nums font-medium">
+                              $
+                              {money.format(
+                                totalAcquisitionCostUsd(
+                                  line.data.considerationUsd,
+                                  line.data.feesUsd,
+                                ),
+                              )}
+                            </td>
+                            <LedgerEntryDelete
+                              portfolioId={portfolioId}
+                              kind="ACQUISITION"
+                              entryId={line.data.id}
+                            />
                           </tr>
                         ) : (
                           <tr key={line.data.id}>
                             <td className="px-3 py-2 text-neutral-800">Disposal</td>
                             <td className="px-3 py-2 tabular-nums text-neutral-800">{line.data.eventDate}</td>
                             <td className="px-3 py-2">{line.data.symbol}</td>
+                            <td className="px-3 py-2 text-neutral-600">
+                              <em className="italic">(manual)</em>
+                            </td>
+                            <td className="px-3 py-2 text-neutral-500">—</td>
+                            <td className="px-3 py-2 text-neutral-500">—</td>
+                            <td className="px-3 py-2 text-neutral-500">—</td>
                             <td className="px-3 py-2 tabular-nums">{line.data.quantity}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(line.data.grossProceedsGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(line.data.feesGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums font-medium">
-                              £
-                              {money.format(
-                                netDisposalProceedsGbp(line.data.grossProceedsGbp, line.data.feesGbp),
+                            <td className="px-3 py-2 tabular-nums text-neutral-700">
+                              $
+                              {priceUsd.format(
+                                pricePerShare(line.data.grossProceedsUsd, line.data.quantity),
                               )}
                             </td>
+                            <td className="px-3 py-2 tabular-nums">${money.format(line.data.grossProceedsUsd)}</td>
+                            <td className="px-3 py-2 tabular-nums">${money.format(line.data.feesUsd)}</td>
+                            <td className="px-3 py-2 tabular-nums font-medium">
+                              $
+                              {money.format(
+                                netDisposalProceedsUsd(line.data.grossProceedsUsd, line.data.feesUsd),
+                              )}
+                            </td>
+                            <LedgerEntryDelete
+                              portfolioId={portfolioId}
+                              kind="DISPOSAL"
+                              entryId={line.data.id}
+                            />
                           </tr>
                         ),
                       )}

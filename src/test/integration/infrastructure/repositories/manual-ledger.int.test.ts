@@ -35,12 +35,12 @@ describe('manual ledger repositories', () => {
     const acquisition = await acquisitionRepo.insert({
       portfolioId: portfolio.id,
       userId,
-      economicsKind: 'manual_gbp',
+      economicsKind: 'manual_usd',
       symbol: 'TEST',
       eventDate: '2024-06-01',
       quantity: 10,
-      grossConsiderationGbp: 100,
-      feesGbp: 2,
+      considerationUsd: 100,
+      feesUsd: 2,
     });
 
     const disposal = await disposalRepo.insert({
@@ -49,8 +49,8 @@ describe('manual ledger repositories', () => {
       symbol: 'TEST',
       eventDate: '2025-01-10',
       quantity: 5,
-      grossProceedsGbp: 80,
-      feesGbp: 1,
+      grossProceedsUsd: 80,
+      feesUsd: 1,
     });
 
     const acquisitions = await acquisitionRepo.listByPortfolioForUser(portfolio.id, userId);
@@ -58,6 +58,18 @@ describe('manual ledger repositories', () => {
 
     expect(acquisitions.some((a) => a.id === acquisition.id)).toBe(true);
     expect(disposals.some((d) => d.id === disposal.id)).toBe(true);
+
+    expect(
+      await acquisitionRepo.deleteByIdForPortfolioUser(portfolio.id, userId, acquisition.id),
+    ).toBe(true);
+    expect(await disposalRepo.deleteByIdForPortfolioUser(portfolio.id, userId, disposal.id)).toBe(
+      true,
+    );
+
+    const acquisitionsAfter = await acquisitionRepo.listByPortfolioForUser(portfolio.id, userId);
+    const disposalsAfter = await disposalRepo.listByPortfolioForUser(portfolio.id, userId);
+    expect(acquisitionsAfter.some((a) => a.id === acquisition.id)).toBe(false);
+    expect(disposalsAfter.some((d) => d.id === disposal.id)).toBe(false);
 
     const client = await getMongoClient();
     const db = client.db();
@@ -95,13 +107,13 @@ describe('manual ledger repositories', () => {
         symbol: 'MDB',
         eventDate: '2024-03-01',
         quantity: 5,
-        grossConsiderationUsd: 500,
+        considerationUsd: 500,
         feesUsd: 0,
       },
     ]);
 
     const list = await acquisitionRepo.listByPortfolioForUser(portfolio.id, userId);
-    expect(list.some((a) => a.economicsKind === 'import_usd' && a.grossConsiderationUsd === 500)).toBe(true);
+    expect(list.some((a) => a.economicsKind === 'import_usd' && a.considerationUsd === 500)).toBe(true);
 
     const client = await getMongoClient();
     const db = client.db();

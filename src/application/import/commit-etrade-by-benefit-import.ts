@@ -1,8 +1,5 @@
 import type { PortfolioRepository } from '@/domain/repositories/portfolio-repository';
-import type {
-  CreateShareAcquisition,
-  ShareAcquisitionRepository,
-} from '@/domain/repositories/share-acquisition-repository';
+import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareAcquisitionImportUsd } from '@/domain/schemas/share-acquisition';
 import { DomainError } from '@/shared/errors/app-error';
 
@@ -24,12 +21,10 @@ export async function commitEtradeByBenefitImport(
     throw new DomainError('Portfolio not found');
   }
 
-  const rows: CreateShareAcquisition[] = input.drafts.map((d) => ({
-    ...d,
-    portfolioId: input.portfolioId,
-    userId: input.userId,
-  }));
-
-  await acquisitionRepository.insertMany(rows);
-  return { count: rows.length };
+  const { inserted, updated } = await acquisitionRepository.upsertImportUsdBatch(
+    input.portfolioId,
+    input.userId,
+    input.drafts,
+  );
+  return { count: inserted + updated };
 }

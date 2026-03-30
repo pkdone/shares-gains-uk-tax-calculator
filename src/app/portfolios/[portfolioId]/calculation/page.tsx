@@ -77,7 +77,6 @@ export default async function PortfolioCalculationPage({
   const tierParsed = rateTierSchema.safeParse(sp.rateTier ?? 'additional');
   const rateTier = tierParsed.success ? tierParsed.data : 'additional';
 
-  const allDisposals = await disposalRepository.listByPortfolioForUser(portfolioId, env.STUB_USER_ID);
   const reportingOverview = await getPortfolioReportingOverview({
     portfolioRepository,
     acquisitionRepository,
@@ -89,10 +88,6 @@ export default async function PortfolioCalculationPage({
     broughtForwardLosses,
     registeredForSelfAssessment,
     symbols,
-    disposals: allDisposals.map((d) => ({
-      eventDate: d.eventDate,
-      grossProceedsGbp: d.grossProceedsGbp,
-    })),
   });
 
   let calcError: string | null = null;

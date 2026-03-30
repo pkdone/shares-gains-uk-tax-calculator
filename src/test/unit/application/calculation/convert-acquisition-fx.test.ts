@@ -11,28 +11,28 @@ function mockFxRepo(latest: { date: string; usdPerGbp: number } | null): FxRateR
 }
 
 describe('buildCalcAcquisitionFromShareAcquisition', () => {
-  it('sums manual GBP gross and fees', async () => {
+  it('converts manual USD using XUDLUSS', async () => {
     const acquisition: ShareAcquisition = {
       id: 'a1',
       portfolioId: 'p1',
       userId: 'u1',
-      economicsKind: 'manual_gbp',
+      economicsKind: 'manual_usd',
       symbol: 'X',
       eventDate: '2024-01-01',
       quantity: 10,
-      grossConsiderationGbp: 100,
-      feesGbp: 5,
+      considerationUsd: 100,
+      feesUsd: 5,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     const r = await buildCalcAcquisitionFromShareAcquisition({
       acquisition,
-      fxRateRepository: mockFxRepo(null),
+      fxRateRepository: mockFxRepo({ date: '2024-01-01', usdPerGbp: 1.25 }),
     });
 
     expect(r.fx).toBeUndefined();
-    expect(r.data.totalCostGbp).toBe(105);
+    expect(r.data.totalCostGbp).toBe(84);
   });
 
   it('converts import USD using XUDLUSS', async () => {
@@ -44,7 +44,7 @@ describe('buildCalcAcquisitionFromShareAcquisition', () => {
       symbol: 'X',
       eventDate: '2024-01-02',
       quantity: 1,
-      grossConsiderationUsd: 126.25,
+      considerationUsd: 126.25,
       feesUsd: 0,
       createdAt: new Date(),
       updatedAt: new Date(),

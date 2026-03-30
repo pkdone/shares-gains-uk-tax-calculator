@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import {
   shareAcquisitionImportUsdSchema,
-  shareAcquisitionManualGbpSchema,
+  shareAcquisitionManualUsdSchema,
 } from '@/domain/schemas/share-acquisition';
 
 const tenancySchema = z.object({
@@ -13,7 +13,7 @@ const tenancySchema = z.object({
   updatedAt: z.date(),
 });
 
-const acquisitionManualDocumentSchema = shareAcquisitionManualGbpSchema.merge(tenancySchema);
+const acquisitionManualDocumentSchema = shareAcquisitionManualUsdSchema.merge(tenancySchema);
 const acquisitionUsdDocumentSchema = shareAcquisitionImportUsdSchema.merge(tenancySchema);
 
 /**
@@ -38,7 +38,7 @@ type AcquisitionDocumentZod = z.infer<typeof acquisitionDocumentSchema>;
 
 /** BSON document: `portfolioId` is ObjectId in MongoDB; Zod validators use string ids for JSON Schema. */
 export type AcquisitionDocument =
-  | (Omit<Extract<AcquisitionDocumentZod, { economicsKind: 'manual_gbp' }>, 'portfolioId'> & {
+  | (Omit<Extract<AcquisitionDocumentZod, { economicsKind: 'manual_usd' }>, 'portfolioId'> & {
       portfolioId: ObjectId;
     })
   | (Omit<Extract<AcquisitionDocumentZod, { economicsKind: 'import_usd' }>, 'portfolioId'> & {

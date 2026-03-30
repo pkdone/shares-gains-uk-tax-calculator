@@ -5,12 +5,14 @@ import { redirect } from 'next/navigation';
 
 import { addAcquisition } from '@/application/ledger/add-acquisition';
 import { addDisposal } from '@/application/ledger/add-disposal';
+import { deleteLedgerEntry } from '@/application/ledger/delete-ledger-entry';
 import { createPortfolio } from '@/application/portfolio/create-portfolio';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 import {
   createPortfolioFormSchema,
+  deleteLedgerEntryFormSchema,
   formDataString,
   parseAcquisitionForm,
   parseDisposalForm,
@@ -115,6 +117,43 @@ export async function addDisposalAction(
       return { error: err.message };
     }
     return { error: err instanceof Error ? err.message : 'Failed to add disposal' };
+  }
+
+  revalidatePath(`/portfolios/${portfolioId}`);
+  return undefined;
+}
+
+export async function deleteLedgerEntryAction(
+  _prevState: FormActionState | undefined,
+  formData: FormData,
+): Promise<FormActionState | undefined> {
+  const parsed = deleteLedgerEntryFormSchema.safeParse({
+    portfolioId: formData.get('portfolioId'),
+    kind: formData.get('kind'),
+    entryId: formData.get('entryId'),
+  });
+
+  if (!parsed.success) {
+    const first =
+      parsed.error.flatten().formErrors[0] ??
+      Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
+    return { error: first ?? 'Invalid request' };
+  }
+
+  const { portfolioId, kind, entryId } = parsed.data;
+
+  try {
+    await deleteLedgerEntry(portfolioRepo, acquisitionRepo, disposalRepo, {
+      portfolioId,
+      userId: env.STUB_USER_ID,
+      kind,
+      entryId,
+    });
+  } catch (err) {
+    if (err instanceof DomainError) {
+      return { error: err.message };
+    }
+    return { error: err instanceof Error ? err.message : 'Failed to delete entry' };
   }
 
   revalidatePath(`/portfolios/${portfolioId}`);

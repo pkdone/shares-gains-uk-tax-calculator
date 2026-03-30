@@ -20,8 +20,8 @@ function mapDoc(doc: DisposalDoc): ShareDisposal {
     symbol: doc.symbol,
     eventDate: doc.eventDate,
     quantity: doc.quantity,
-    grossProceedsGbp: doc.grossProceedsGbp,
-    feesGbp: doc.feesGbp,
+    grossProceedsUsd: doc.grossProceedsUsd,
+    feesUsd: doc.feesUsd,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -45,8 +45,8 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
         symbol: input.symbol,
         eventDate: input.eventDate,
         quantity: input.quantity,
-        grossProceedsGbp: input.grossProceedsGbp,
-        feesGbp: input.feesGbp,
+        grossProceedsUsd: input.grossProceedsUsd,
+        feesUsd: input.feesUsd,
         createdAt: now,
         updatedAt: now,
       };
@@ -78,6 +78,29 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
       return docs.map(mapDoc);
     } catch (err) {
       throw new PersistenceError('Failed to list disposals', { cause: err });
+    }
+  }
+
+  async deleteByIdForPortfolioUser(
+    portfolioId: string,
+    userId: string,
+    id: string,
+  ): Promise<boolean> {
+    if (!ObjectId.isValid(portfolioId) || !ObjectId.isValid(id)) {
+      return false;
+    }
+
+    try {
+      const client = await getMongoClient();
+      const coll = client.db().collection<DisposalDoc>(COLLECTION_DISPOSALS);
+      const res = await coll.deleteOne({
+        _id: new ObjectId(id),
+        portfolioId: new ObjectId(portfolioId),
+        userId,
+      });
+      return res.deletedCount === 1;
+    } catch (err) {
+      throw new PersistenceError('Failed to delete disposal', { cause: err });
     }
   }
 }

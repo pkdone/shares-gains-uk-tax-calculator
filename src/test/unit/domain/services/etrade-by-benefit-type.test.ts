@@ -62,7 +62,9 @@ describe('parseEtradeByBenefitTypeGrid', () => {
     expect(row.symbol).toBe('MDB');
     expect(row.eventDate).toBe('2024-01-15');
     expect(row.quantity).toBe(70);
-    expect(row.grossConsiderationUsd).toBeCloseTo(3500, 5);
+    expect(row.grossVestedQuantity).toBe(100);
+    expect(row.sharesTradedForTaxes).toBe(30);
+    expect(row.considerationUsd).toBeCloseTo(3500, 5);
     expect(row.feesUsd).toBe(0);
   });
 
@@ -182,7 +184,7 @@ describe('parseEtradeByBenefitTypeGrid', () => {
     expect(issues.filter((i) => i.kind === 'error').length).toBe(0);
     expect(drafts).toHaveLength(1);
     expect(drafts[0]?.quantity).toBe(70);
-    expect(drafts[0]?.grossConsiderationUsd).toBeCloseTo(3500, 5);
+    expect(drafts[0]?.considerationUsd).toBeCloseTo(3500, 5);
   });
 
   it('infers gross vested from Sellable Qty + Withheld Qty when Tax Vested Qty is blank', () => {
@@ -210,7 +212,7 @@ describe('parseEtradeByBenefitTypeGrid', () => {
     expect(drafts).toHaveLength(1);
     expect(drafts[0]?.symbol).toBe('MDB');
     expect(drafts[0]?.quantity).toBe(70);
-    expect(drafts[0]?.grossConsiderationUsd).toBeCloseTo(3500, 5);
+    expect(drafts[0]?.considerationUsd).toBeCloseTo(3500, 5);
   });
 
   it('forward-fills Grant Number and Vest Period on Tax rows when Excel merged cells leave L/S blank', () => {
@@ -317,7 +319,7 @@ describe('parseEtradeByBenefitTypeGrid', () => {
     expect(drafts[0]?.symbol).toBe('MDB');
     expect(drafts[0]?.eventDate).toBe('2024-01-15');
     expect(drafts[0]?.quantity).toBe(70);
-    expect(drafts[0]?.grossConsiderationUsd).toBeCloseTo(3500, 5);
+    expect(drafts[0]?.considerationUsd).toBeCloseTo(3500, 5);
   });
 
   it('indexes Vest Schedule when Grant Date uses long month text (vest lookup for Tax rows)', () => {
@@ -358,8 +360,8 @@ describe('parseEtradeByBenefitTypeGrid', () => {
 
   it('findVestScheduleEntryFuzzy picks closest date within max days', () => {
     const map = new Map([
-      ['MDB|2018-09-28', { vestedQty: 100, marketOrGain: 5000 }],
-      ['MDB|2019-06-01', { vestedQty: 50, marketOrGain: 1000 }],
+      ['MDB|2018-09-28', { vestedQty: 100, marketOrGain: 5000, sharesTradedForTaxes: null }],
+      ['MDB|2019-06-01', { vestedQty: 50, marketOrGain: 1000, sharesTradedForTaxes: null }],
     ]);
     expect(findVestScheduleEntryFuzzy(map, 'MDB', '2018-10-01', 14)?.vestedQty).toBe(100);
     expect(findVestScheduleEntryFuzzy(map, 'MDB', '2018-10-01', 2)).toBeNull();
@@ -430,7 +432,7 @@ describe('parseEtradeByBenefitTypeGrid', () => {
     const { drafts, issues } = parseEtradeByBenefitTypeGrid(grid);
     const errors = issues.filter((i) => i.kind === 'error');
     expect(errors).toHaveLength(0);
-    expect(drafts).toHaveLength(2);
+    expect(drafts).toHaveLength(1);
 
     const d = drafts[0];
     expect(d).toBeDefined();
@@ -439,9 +441,13 @@ describe('parseEtradeByBenefitTypeGrid', () => {
     }
     expect(d.symbol).toBe('MDB');
     expect(d.eventDate).toBe('2018-10-01');
-    expect(d.quantity).toBe(117);
+    expect(d.quantity).toBe(59);
+    expect(d.grossVestedQuantity).toBe(117);
+    expect(d.sharesTradedForTaxes).toBe(58);
+    expect(d.grantNumber).toBe('RU-0710');
+    expect(d.vestPeriod).toBe('1');
     const perShare = 9226.62 / 117;
-    expect(d.grossConsiderationUsd).toBeCloseTo(perShare * 117, 2);
+    expect(d.considerationUsd).toBeCloseTo(perShare * 59, 2);
   });
 
   it('filters non-RSU benefit types', () => {

@@ -6,9 +6,9 @@ export const shareDisposalBaseSchema = z.object({
   symbol: z.string().trim().min(1).max(32),
   eventDate: dateOnlyStringSchema,
   quantity: z.number().positive().finite(),
-  /** Gross proceeds before fees (GBP). */
-  grossProceedsGbp: z.number().nonnegative().finite(),
-  feesGbp: z.number().nonnegative().finite(),
+  /** Gross proceeds before fees (USD); converted to sterling at event date for CGT. */
+  grossProceedsUsd: z.number().nonnegative().finite(),
+  feesUsd: z.number().nonnegative().finite(),
 });
 
 export type ShareDisposalBase = z.infer<typeof shareDisposalBaseSchema>;

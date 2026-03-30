@@ -1,3 +1,4 @@
+import { buildCalcDisposalFromShareDisposal } from '@/application/calculation/convert-disposal-fx';
 import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import type { PortfolioRepository } from '@/domain/repositories/portfolio-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
@@ -30,6 +31,7 @@ export type PortfolioReportingOverview = {
 /**
  * Portfolio-wide proceeds by tax year plus per-year reporting threshold assessments.
  * Taxable-gain signals sum per-symbol engine outputs (approximate; see ADR-010).
+ * Disposal proceeds are converted from USD to sterling at each disposal date for threshold totals.
  */
 export async function getPortfolioReportingOverview(params: {
   readonly portfolioRepository: PortfolioRepository;
@@ -42,7 +44,6 @@ export async function getPortfolioReportingOverview(params: {
   readonly broughtForwardLosses: number;
   readonly registeredForSelfAssessment: boolean;
   readonly symbols: readonly string[];
-  readonly disposals: readonly { readonly eventDate: string; readonly grossProceedsGbp: number }[];
 }): Promise<PortfolioReportingOverview> {
   const {
     portfolioRepository,
@@ -55,14 +56,30 @@ export async function getPortfolioReportingOverview(params: {
     broughtForwardLosses,
     registeredForSelfAssessment,
     symbols,
-    disposals,
   } = params;
 
   if ((await portfolioRepository.findByIdForUser(portfolioId, userId)) === null) {
     return { proceedsByTaxYear: {}, assessments: [], dataQualityWarnings: ['Portfolio not found.'] };
   }
 
-  const proceedsByTaxYear = aggregateDisposalProceedsByTaxYear(disposals);
+  const disposalRows = await disposalRepository.listByPortfolioForUser(portfolioId, userId);
+  const disposalsGbp: { readonly eventDate: string; readonly grossProceedsGbp: number }[] = [];
+  for (const d of disposalRows) {
+    try {
+      const { data } = await buildCalcDisposalFromShareDisposal({
+        disposal: d,
+        fxRateRepository,
+      });
+      disposalsGbp.push({
+        eventDate: d.eventDate,
+        grossProceedsGbp: data.grossProceedsGbp,
+      });
+    } catch {
+      /* omit disposals that fail FX (e.g. missing rate); thresholds stay conservative */
+    }
+  }
+
+  const proceedsByTaxYear = aggregateDisposalProceedsByTaxYear(disposalsGbp);
   const dataQualityWarnings: string[] = [];
 
   if (symbols.length === 0) {

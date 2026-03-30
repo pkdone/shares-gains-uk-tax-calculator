@@ -41,6 +41,9 @@ async function main(): Promise<void> {
     logInfo(`    - ${COLLECTION_USERS}: unique on { userId: 1 }`);
     logInfo(`    - ${COLLECTION_PORTFOLIOS}: unique on { userId: 1, name: 1 }`);
     logInfo(`    - ${COLLECTION_ACQUISITIONS}: { portfolioId: 1, userId: 1 }`);
+    logInfo(
+      `    - ${COLLECTION_ACQUISITIONS}: unique partial { portfolioId: 1, userId: 1, symbol: 1, grantNumber: 1, vestPeriod: 1 } (import_usd with grant/vest)`,
+    );
     logInfo(`    - ${COLLECTION_DISPOSALS}: { portfolioId: 1, userId: 1 }`);
     logInfo(`    - ${COLLECTION_FX_RATES}: unique on { date: 1 }`);
     logInfo(`    - ${COLLECTION_PORTFOLIO_CALCULATION_PREFS}: unique on { portfolioId: 1, userId: 1 }`);

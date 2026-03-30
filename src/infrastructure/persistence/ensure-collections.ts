@@ -53,6 +53,18 @@ export async function initMongoDatabase(db: Db): Promise<void> {
     .createIndex({ userId: 1, name: 1 }, { unique: true });
 
   await db.collection(COLLECTION_ACQUISITIONS).createIndex({ portfolioId: 1, userId: 1 });
+  await db.collection(COLLECTION_ACQUISITIONS).createIndex(
+    { portfolioId: 1, userId: 1, symbol: 1, grantNumber: 1, vestPeriod: 1 },
+    {
+      unique: true,
+      name: 'acquisitions_import_usd_symbol_grant_vest',
+      partialFilterExpression: {
+        economicsKind: 'import_usd',
+        grantNumber: { $exists: true, $type: 'string' },
+        vestPeriod: { $exists: true, $type: 'string' },
+      },
+    },
+  );
   await db.collection(COLLECTION_DISPOSALS).createIndex({ portfolioId: 1, userId: 1 });
   await db.collection(COLLECTION_FX_RATES).createIndex({ date: 1 }, { unique: true });
 

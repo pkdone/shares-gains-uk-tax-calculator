@@ -12,41 +12,32 @@ export async function buildCalcAcquisitionFromShareAcquisition(params: {
 }): Promise<{ readonly data: CalcAcquisition; readonly fx?: FxAppliedToAcquisition }> {
   const { acquisition, fxRateRepository } = params;
 
-  if (acquisition.economicsKind === 'manual_gbp') {
-    const totalCostGbp = roundMoney2dp(
-      acquisition.grossConsiderationGbp + acquisition.feesGbp,
-    );
-    return {
-      data: {
-        eventDate: acquisition.eventDate,
-        quantity: acquisition.quantity,
-        totalCostGbp,
-      },
-    };
-  }
-
   const rateRow = await fxRateRepository.findLatestOnOrBefore(acquisition.eventDate);
   const resolution = resolveUsdPerGbpFromLookup({
     eventDate: acquisition.eventDate,
     rate: rateRow,
   });
 
-  const grossGbp = roundMoney2dp(acquisition.grossConsiderationUsd / resolution.usdPerGbp);
+  const grossGbp = roundMoney2dp(acquisition.considerationUsd / resolution.usdPerGbp);
   const feesGbp = roundMoney2dp(acquisition.feesUsd / resolution.usdPerGbp);
   const totalCostGbp = roundMoney2dp(grossGbp + feesGbp);
 
-  return {
-    data: {
-      eventDate: acquisition.eventDate,
-      quantity: acquisition.quantity,
-      totalCostGbp,
-    },
-    fx: {
+  const data: CalcAcquisition = {
+    eventDate: acquisition.eventDate,
+    quantity: acquisition.quantity,
+    totalCostGbp,
+  };
+
+  if (acquisition.economicsKind === 'import_usd') {
+    const fx: FxAppliedToAcquisition = {
       acquisitionId: acquisition.id,
       eventDate: acquisition.eventDate,
       usdPerGbp: resolution.usdPerGbp,
       rateDateUsed: resolution.rateDateUsed,
       usedFallback: resolution.usedFallback,
-    },
-  };
+    };
+    return { data, fx };
+  }
+
+  return { data };
 }

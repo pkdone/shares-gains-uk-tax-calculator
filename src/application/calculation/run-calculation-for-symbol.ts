@@ -8,6 +8,7 @@ import { DomainError } from '@/shared/errors/app-error';
 
 import type { SuccessfulPortfolioCalculation } from '@/application/calculation/calculation-types';
 import { buildCalcAcquisitionFromShareAcquisition } from '@/application/calculation/convert-acquisition-fx';
+import { buildCalcDisposalFromShareDisposal } from '@/application/calculation/convert-disposal-fx';
 
 function compareCalcEvents(a: CalcEvent, b: CalcEvent): number {
   const dateCmp = a.data.eventDate.localeCompare(b.data.eventDate);
@@ -77,15 +78,11 @@ export async function runCalculationForSymbol(params: {
       continue;
     }
 
-    events.push({
-      kind: 'disposal',
-      data: {
-        eventDate: disposal.eventDate,
-        quantity: disposal.quantity,
-        grossProceedsGbp: disposal.grossProceedsGbp,
-        feesGbp: disposal.feesGbp,
-      },
+    const built = await buildCalcDisposalFromShareDisposal({
+      disposal,
+      fxRateRepository,
     });
+    events.push({ kind: 'disposal', data: built.data });
   }
 
   events.sort(compareCalcEvents);

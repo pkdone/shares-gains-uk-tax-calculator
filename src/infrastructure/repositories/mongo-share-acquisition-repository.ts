@@ -3,14 +3,29 @@ import { ObjectId, type WithId } from 'mongodb';
 import type {
   CreateShareAcquisition,
   ShareAcquisitionRepository,
+  UpsertImportUsdBatchResult,
 } from '@/domain/repositories/share-acquisition-repository';
-import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
+import type { ShareAcquisition, ShareAcquisitionImportUsd } from '@/domain/schemas/share-acquisition';
 import { getMongoClient } from '@/infrastructure/persistence/mongodb-client';
 import type { AcquisitionDocument } from '@/infrastructure/persistence/schemas/acquisition-record';
 import { COLLECTION_ACQUISITIONS } from '@/infrastructure/persistence/schema-registry';
 import { PersistenceError } from '@/shared/errors/app-error';
 
 type AcquisitionDoc = WithId<AcquisitionDocument>;
+
+function mapOptionalGrantVest(doc: AcquisitionDoc): {
+  grantNumber?: string | null;
+  vestPeriod?: string | null;
+} {
+  const out: { grantNumber?: string | null; vestPeriod?: string | null } = {};
+  if ('grantNumber' in doc) {
+    out.grantNumber = doc.grantNumber;
+  }
+  if ('vestPeriod' in doc) {
+    out.vestPeriod = doc.vestPeriod;
+  }
+  return out;
+}
 
 function mapDoc(doc: AcquisitionDoc): ShareAcquisition {
   const base = {
@@ -22,22 +37,38 @@ function mapDoc(doc: AcquisitionDoc): ShareAcquisition {
     quantity: doc.quantity,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    ...mapOptionalGrantVest(doc),
   };
 
-  if (doc.economicsKind === 'manual_gbp') {
+  if (doc.economicsKind === 'manual_usd') {
     return {
       ...base,
-      economicsKind: 'manual_gbp',
-      grossConsiderationGbp: doc.grossConsiderationGbp,
-      feesGbp: doc.feesGbp,
+      economicsKind: 'manual_usd',
+      considerationUsd: doc.considerationUsd,
+      feesUsd: doc.feesUsd,
     };
   }
 
   return {
     ...base,
     economicsKind: 'import_usd',
-    grossConsiderationUsd: doc.grossConsiderationUsd,
+    considerationUsd: doc.considerationUsd,
     feesUsd: doc.feesUsd,
+    ...(doc.grossVestedQuantity !== undefined && doc.sharesTradedForTaxes !== undefined
+      ? {
+          grossVestedQuantity: doc.grossVestedQuantity,
+          sharesTradedForTaxes: doc.sharesTradedForTaxes,
+        }
+      : {}),
+  };
+}
+
+function optionalGrantVestFields(
+  input: CreateShareAcquisition,
+): { grantNumber?: string | null; vestPeriod?: string | null } {
+  return {
+    ...(input.grantNumber === undefined ? {} : { grantNumber: input.grantNumber }),
+    ...(input.vestPeriod === undefined ? {} : { vestPeriod: input.vestPeriod }),
   };
 }
 
@@ -52,21 +83,24 @@ function toInsertDoc(input: CreateShareAcquisition, _id: ObjectId, now: Date): A
     quantity: input.quantity,
     createdAt: now,
     updatedAt: now,
+    ...optionalGrantVestFields(input),
   };
 
-  if (input.economicsKind === 'manual_gbp') {
+  if (input.economicsKind === 'manual_usd') {
     return {
       ...base,
-      economicsKind: 'manual_gbp',
-      grossConsiderationGbp: input.grossConsiderationGbp,
-      feesGbp: input.feesGbp,
+      economicsKind: 'manual_usd',
+      considerationUsd: input.considerationUsd,
+      feesUsd: input.feesUsd,
     };
   }
 
   return {
     ...base,
     economicsKind: 'import_usd',
-    grossConsiderationUsd: input.grossConsiderationUsd,
+    ...(input.grossVestedQuantity === undefined ? {} : { grossVestedQuantity: input.grossVestedQuantity }),
+    ...(input.sharesTradedForTaxes === undefined ? {} : { sharesTradedForTaxes: input.sharesTradedForTaxes }),
+    considerationUsd: input.considerationUsd,
     feesUsd: input.feesUsd,
   };
 }
@@ -121,6 +155,92 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
     }
   }
 
+  async upsertImportUsdBatch(
+    portfolioId: string,
+    userId: string,
+    drafts: readonly ShareAcquisitionImportUsd[],
+  ): Promise<UpsertImportUsdBatchResult> {
+    if (!ObjectId.isValid(portfolioId)) {
+      throw new PersistenceError('Invalid portfolio id');
+    }
+
+    if (drafts.length === 0) {
+      return { inserted: 0, updated: 0 };
+    }
+
+    const portfolioOid = new ObjectId(portfolioId);
+    let inserted = 0;
+    let updated = 0;
+
+    try {
+      const client = await getMongoClient();
+      const coll = client.db().collection<AcquisitionDoc>(COLLECTION_ACQUISITIONS);
+
+      for (const d of drafts) {
+        const hasUpsertKey =
+          d.grantNumber !== undefined &&
+          d.grantNumber !== null &&
+          d.grantNumber.length > 0 &&
+          d.vestPeriod !== undefined &&
+          d.vestPeriod !== null &&
+          d.vestPeriod.length > 0;
+
+        const now = new Date();
+
+        if (hasUpsertKey) {
+          const filter = {
+            portfolioId: portfolioOid,
+            userId,
+            economicsKind: 'import_usd' as const,
+            symbol: d.symbol,
+            grantNumber: d.grantNumber,
+            vestPeriod: d.vestPeriod,
+          };
+          const res = await coll.updateOne(
+            filter,
+            {
+              $set: {
+                eventDate: d.eventDate,
+                quantity: d.quantity,
+                grossVestedQuantity: d.grossVestedQuantity,
+                sharesTradedForTaxes: d.sharesTradedForTaxes,
+                considerationUsd: d.considerationUsd,
+                feesUsd: d.feesUsd,
+                updatedAt: now,
+              },
+              $setOnInsert: {
+                createdAt: now,
+              },
+            },
+            { upsert: true },
+          );
+          if (res.upsertedCount === 1) {
+            inserted += 1;
+          } else if (res.matchedCount >= 1) {
+            updated += 1;
+          }
+        } else {
+          const _id = new ObjectId();
+          const doc = toInsertDoc(
+            {
+              ...d,
+              portfolioId,
+              userId,
+            },
+            _id,
+            now,
+          );
+          await coll.insertOne(doc);
+          inserted += 1;
+        }
+      }
+
+      return { inserted, updated };
+    } catch (err) {
+      throw new PersistenceError('Failed to upsert import acquisitions', { cause: err });
+    }
+  }
+
   async listByPortfolioForUser(
     portfolioId: string,
     userId: string,
@@ -142,6 +262,29 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
       return docs.map(mapDoc);
     } catch (err) {
       throw new PersistenceError('Failed to list acquisitions', { cause: err });
+    }
+  }
+
+  async deleteByIdForPortfolioUser(
+    portfolioId: string,
+    userId: string,
+    id: string,
+  ): Promise<boolean> {
+    if (!ObjectId.isValid(portfolioId) || !ObjectId.isValid(id)) {
+      return false;
+    }
+
+    try {
+      const client = await getMongoClient();
+      const coll = client.db().collection<AcquisitionDoc>(COLLECTION_ACQUISITIONS);
+      const res = await coll.deleteOne({
+        _id: new ObjectId(id),
+        portfolioId: new ObjectId(portfolioId),
+        userId,
+      });
+      return res.deletedCount === 1;
+    } catch (err) {
+      throw new PersistenceError('Failed to delete acquisition', { cause: err });
     }
   }
 }

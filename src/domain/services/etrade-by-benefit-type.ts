@@ -660,6 +660,8 @@ function shouldExcludeVestScheduleRowForBenefitType(raw: string): boolean {
 export type VestScheduleLookupEntry = {
   readonly vestedQty: number;
   readonly marketOrGain: number | null;
+  /** From Vest Schedule row; Tax rows often omit this column. */
+  readonly sharesTradedForTaxes: number | null;
 };
 
 /** Resolved from Vest Schedule via Grant Number + Vest Period (expanded E*Trade layouts). */
@@ -706,6 +708,32 @@ export function grantPeriodLookupKey(
     return null;
   }
   return `${gn}|${vp}`;
+}
+
+/**
+ * Normalised grant number and vest period for storage and import upsert keys (expanded E*Trade rows).
+ * Returns `null` when the sheet has no grant/period columns or either side is blank after carry-forward.
+ */
+export function resolvedGrantAndVestForStorage(
+  col: EtradeColumnIndices,
+  g: (i: number) => string,
+  carryGrant: string,
+  carryPeriod: string,
+): { readonly grantNumber: string; readonly vestPeriod: string } | null {
+  const key = grantPeriodLookupKey(col, g, carryGrant, carryPeriod);
+  if (key === null) {
+    return null;
+  }
+  const gnCell = col.grantNumberCol >= 0 ? g(col.grantNumberCol).trim() : '';
+  const vpCell = col.vestPeriodCol >= 0 ? g(col.vestPeriodCol).trim() : '';
+  const gnRaw = gnCell.length > 0 ? gnCell : carryGrant;
+  const vpRaw = vpCell.length > 0 ? vpCell : carryPeriod;
+  const grantNumber = normaliseGrantNumberForKey(gnRaw);
+  const vestPeriod = normaliseVestPeriodForKey(vpRaw);
+  if (grantNumber.length === 0 || vestPeriod.length === 0) {
+    return null;
+  }
+  return { grantNumber, vestPeriod };
 }
 
 function isoDateToUtcMidnightMs(iso: string): number {
@@ -826,8 +854,15 @@ export function buildVestScheduleLookups(
 
     const mv = parseNumberCell(g(col.taxableGain));
     const marketOrGain = mv !== null && mv >= 0 ? mv : null;
+    const tradedCell = parseNumberCell(g(col.sharesTradedForTaxes));
+    const sharesTradedForTaxes =
+      tradedCell !== null && tradedCell >= 0 ? tradedCell : null;
     const symKey = symbol;
-    const entry: VestScheduleLookupEntry = { vestedQty: grossVq, marketOrGain };
+    const entry: VestScheduleLookupEntry = {
+      vestedQty: grossVq,
+      marketOrGain,
+      sharesTradedForTaxes,
+    };
     for (const vestIso of dateKeys) {
       map.set(`${symKey}|${vestIso}`, entry);
     }
@@ -835,7 +870,12 @@ export function buildVestScheduleLookups(
     if (gpKey !== null) {
       const vIso = latestIsoDate(dateKeys);
       if (vIso !== null && !grantPeriodMap.has(gpKey)) {
-        grantPeriodMap.set(gpKey, { vestedQty: grossVq, marketOrGain, vestIso: vIso });
+        grantPeriodMap.set(gpKey, {
+          vestedQty: grossVq,
+          marketOrGain,
+          sharesTradedForTaxes,
+          vestIso: vIso,
+        });
       }
     }
   }
@@ -904,7 +944,10 @@ export function buildVestScheduleQueuesByGrant(
 
     const mv = parseNumberCell(g(col.taxableGain));
     const marketOrGain = mv !== null && mv >= 0 ? mv : null;
-    queue.push({ vestedQty: grossVq, marketOrGain });
+    const tradedCell = parseNumberCell(g(col.sharesTradedForTaxes));
+    const sharesTradedForTaxes =
+      tradedCell !== null && tradedCell >= 0 ? tradedCell : null;
+    queue.push({ vestedQty: grossVq, marketOrGain, sharesTradedForTaxes });
   }
 
   queues.push(queue);
@@ -970,7 +1013,11 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
   /** From the most recent Vest Schedule row (expanded exports often leave Tax Withholding rows sparse). */
   let lastVestScheduleVestedQty: number | null = null;
   let lastVestScheduleMarketOrGain: number | null = null;
+  /** Sell-to-cover / withheld shares; Tax rows often omit this column (see `sharesTradedForTaxes` on vest row). */
+  let lastVestScheduleSharesTradedForTaxes: number | null = null;
   const drafts: ShareAcquisitionImportUsd[] = [];
+  /** Collapses duplicate Tax Withholding lines per vest (e.g. NI + PAYE) and sparse rows without grant/vest. */
+  const seenDraftKeys = new Set<string>();
   let excludedNonRsu = 0;
   let vestDateParseFailCount = 0;
   let vestedQtyParseFailCount = 0;
@@ -1011,6 +1058,7 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
       lastVestEventIso = null;
       lastVestScheduleVestedQty = null;
       lastVestScheduleMarketOrGain = null;
+      lastVestScheduleSharesTradedForTaxes = null;
       continue;
     }
 
@@ -1039,6 +1087,9 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
       if (mv !== null && mv >= 0) {
         lastVestScheduleMarketOrGain = mv;
       }
+      const stVest = parseNumberCell(g(col.sharesTradedForTaxes));
+      lastVestScheduleSharesTradedForTaxes =
+        stVest !== null && stVest >= 0 ? stVest : null;
       continue;
     }
 
@@ -1104,7 +1155,6 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
       vestResolved?.vestedQty ??
       gpVest?.vestedQty ??
       null;
-    const traded = parseNumberCell(g(col.sharesTradedForTaxes)) ?? 0;
     const taxableGainCell = parseNumberCell(g(col.taxableGain));
     let taxableGain =
       taxableGainCell ??
@@ -1113,6 +1163,7 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
       gpVest?.marketOrGain ??
       null;
 
+    let ordinalVestEntry: VestScheduleLookupEntry | null = null;
     if (vestedQty === null || vestedQty <= 0) {
       const q = vestQueuesByGrant[grantsSeen];
       if (q !== undefined && q.length > 0) {
@@ -1123,6 +1174,7 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
           nextOrdinalK += 1;
         }
         const ordinalEntry = k < q.length ? q[k] : null;
+        ordinalVestEntry = ordinalEntry;
         if (ordinalEntry !== null) {
           vestedQty = ordinalEntry.vestedQty;
           if (taxableGain === null && ordinalEntry.marketOrGain !== null) {
@@ -1130,6 +1182,21 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
           }
         }
       }
+    }
+
+    const tradedCell = parseNumberCell(g(col.sharesTradedForTaxes));
+    let traded: number;
+    if (tradedCell !== null && tradedCell >= 0) {
+      traded = tradedCell;
+    } else {
+      const t =
+        lastVestScheduleSharesTradedForTaxes ??
+        vestExact?.sharesTradedForTaxes ??
+        vestResolved?.sharesTradedForTaxes ??
+        gpVest?.sharesTradedForTaxes ??
+        ordinalVestEntry?.sharesTradedForTaxes ??
+        null;
+      traded = t !== null && t >= 0 ? t : 0;
     }
 
     if (vestedQty === null || vestedQty <= 0) {
@@ -1167,13 +1234,25 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
     const perShareUsd = taxableGain / vestedQty;
     const grossUsd = perShareUsd * netQty;
 
+    const gv = resolvedGrantAndVestForStorage(col, g, lastGrantNumber, lastVestPeriod);
+    const dedupeKey =
+      gv === null
+        ? `sparse|${symbol}|${eventDate}|${String(netQty)}|${grossUsd.toFixed(6)}`
+        : `full|${symbol}|${eventDate}|${gv.grantNumber}|${gv.vestPeriod}`;
+    if (seenDraftKeys.has(dedupeKey)) {
+      continue;
+    }
+
     const draft: ShareAcquisitionImportUsd = {
       economicsKind: 'import_usd',
       symbol,
       eventDate,
       quantity: netQty,
-      grossConsiderationUsd: grossUsd,
+      grossVestedQuantity: vestedQty,
+      sharesTradedForTaxes: traded,
+      considerationUsd: grossUsd,
       feesUsd: 0,
+      ...(gv === null ? {} : { grantNumber: gv.grantNumber, vestPeriod: gv.vestPeriod }),
     };
 
     const validated = shareAcquisitionImportUsdSchema.safeParse(draft);
@@ -1186,6 +1265,7 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
       continue;
     }
 
+    seenDraftKeys.add(dedupeKey);
     drafts.push(validated.data);
   }
 
