@@ -11,13 +11,11 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
 
 ## Setup
 
-1. Copy environment template and set your Atlas URI (database name must appear in the URI path):
+1. Copy the environment template to `.env.local`, then edit `.env.local` and set variables appropriately (at minimum `MONGODB_URI` and `STUB_USER_ID`; database name must appear in the URI path):
 
    ```bash
    cp .env.example .env.local
    ```
-
-   Edit `.env.local` and replace `MONGODB_URI` with your cluster connection string.
 
 2. Install dependencies:
 
@@ -37,11 +35,18 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
    npm run seed:users
    ```
 
+5. **Load Bank of England USD/GBP spot rates** (after `db:init`; required for sterling conversion of imported USD vest rows at calculation time):
+
+   ```bash
+   npm run fetch:fx-rates
+   ```
+
 ## Database provisioning
 
 | Command | Purpose |
 |--------|---------|
 | `npm run db:init` | Idempotent setup: managed collections, validators, indexes. **Run before** first app use or `seed:users` on a new database. |
+| `npm run fetch:fx-rates` | Downloads BoE XUDLUSS series and upserts into the `fx_rates` collection. **Run after** `db:init`; safe to re-run to refresh rates. |
 | `npm run db:teardown` | Drops managed collections (development reset). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
 
 **Teardown example** (destructive; use only on a database you intend to wipe):
@@ -54,7 +59,9 @@ After teardown, the app will not start until you run **`npm run db:init`** again
 
 The application **`getMongoClient()`** does not create collections at runtime; it checks that provisioned collections exist and fails with a clear error if you skipped `db:init`.
 
-**Suggested order for a new environment:** `db:init` → `seed:users` → `npm run dev`.
+**Suggested order for a new environment:** `db:init` → `seed:users` → `fetch:fx-rates` → `npm run dev`.
+
+For Docker/Kubernetes, run **`db:init`** and **`fetch:fx-rates`** against the target database (e.g. init container or CI job) before serving traffic, in addition to configuring `MONGODB_URI` at runtime.
 
 ## Development
 
@@ -91,7 +98,7 @@ Build (uses a dummy `MONGODB_URI` only for the Next.js compile step; override at
 docker build -f docker/Dockerfile -t shares-gains-uk-tax-calculator:latest .
 ```
 
-Run with your Atlas URI (run **`db:init`** against that database once before traffic, e.g. from a CI job or an init container):
+Run with your Atlas URI (run **`db:init`** and **`fetch:fx-rates`** against that database before traffic, e.g. from a CI job or an init container):
 
 ```bash
 docker run --rm -p 3000:3000 -e MONGODB_URI='mongodb+srv://...' shares-gains-uk-tax-calculator:latest
@@ -105,7 +112,7 @@ Example manifests are in `k8s/`. Replace the placeholder secret with your connec
 kubectl apply -f k8s/
 ```
 
-Ensure the target Atlas database has been provisioned with **`npm run db:init`** (or equivalent automation) for that environment.
+Ensure the target Atlas database has been provisioned with **`npm run db:init`** and **`npm run fetch:fx-rates`** (or equivalent automation) for that environment.
 
 ## Documentation
 

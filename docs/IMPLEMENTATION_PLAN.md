@@ -94,7 +94,7 @@ The following real-world export files inform the import pipeline design. They ar
 
 - [x] **Multiple tickers per portfolio:** **Explicit support** — Section 104 pooling applies **per symbol** (separate pool state per ticker) within a portfolio, consistent with UK CGT line-of-stock treatment at this level of modelling.
 - [x] **Authentication provider:** **No vendor preference** recorded; choose when auth is implemented and document in ADR-007.
-- [x] **Brought-forward losses:** **Milestone 4** implements the **calculation rules** with **test inputs** (including zero / explicit brought-forward in tests). **User-facing entry** of brought-forward amounts is **Milestone 6** (see Milestone 4 stakeholder decisions and Section 8.1).
+- [x] **Brought-forward losses:** **Milestone 4** implements the **calculation rules** with **test inputs** (including zero / explicit brought-forward in tests). **User-facing entry** of brought-forward amounts is **Milestone 7** (see Milestone 4 stakeholder decisions and Section 8.1).
 
 ---
 
@@ -620,7 +620,7 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 #### Stakeholder decisions (2026-03-28)
 
 - **Multi-ticker:** One Section 104 pool **per symbol** within a portfolio (see Section 8.1, #22). Events for different tickers do not share a pool.
-- **Brought-forward losses:** Engine and tests implement the **rules** (including brought-forward down to AEA); **no UI to capture** prior-year loss pools in M4 — use test fixtures and explicit inputs; user input **Milestone 6** (see Section 8.1, #24).
+- **Brought-forward losses:** Engine and tests implement the **rules** (including brought-forward down to AEA); **no UI to capture** prior-year loss pools in M4 — use test fixtures and explicit inputs; full user input **Milestone 7** (see Section 8.1, #24); M5 calculation page may expose a numeric field only.
 - **Authentication:** Irrelevant to M4 scope; no provider lock-in (see Section 8.1, #23).
 
 #### Stakeholder / planning decisions (2026-03-30)
@@ -703,33 +703,58 @@ Milestone 4 delivered 2026-03-30; see **Status** and **Validated** above. ADR-00
 
 ---
 
-### Milestone 5 — FX conversion and share matching rules
+### Milestone 5 — FX rates and calculation wiring
 
-**Goal:** add USD→GBP conversion using Bank of England rates, and implement same-day and 30-day matching rules.
+**Goal:** load Bank of England XUDLUSS USD/GBP spot rates, convert `import_usd` acquisitions to sterling at calculation time, wire repositories to the existing pool-only engine, and expose results on a dedicated portfolio calculation page.
+
+**Status:** Complete  
+**Completed:** 2026-03-30  
+**Validated:** `npm run validate` on 2026-03-30
 
 #### Scope
 
-- BoE FX rate download script (`scripts/fetch-boe-fx-rates.ts`): fetch XUDLUSS series, store in MongoDB, handle missing dates (fall back to most recent prior published rate)
-- FX rate repository + domain service: look up rate by date, apply fallback, flag when fallback is used
-- Per-transaction GBP conversion: acquisition costs and disposal proceeds converted at transaction-date rate
-- Same-day matching rule: disposals matched to same-day acquisitions first
-- 30-day (bed and breakfasting) rule: remaining disposals matched to acquisitions within 30 days after disposal
-- Updated calculation engine: matching priority order (same-day → 30-day → Section 104 pool)
-- Visible applied FX rate per transaction in outputs
-- Updated per-disposal breakdown: matching source now shows "same day", "30-day", or "pool"
-- Unit tests for FX lookup, fallback logic, and all matching rules
-- Integration test for FX rate repository
+- `fx_rates` MongoDB collection; `npm run fetch:fx-rates` script; FX rate repository and domain lookup (fallback to most recent prior published rate; flag when used)
+- Application-layer `runCalculationForSymbol`: build `CalcInput` from acquisitions/disposals + FX for `import_usd`
+- Route `/portfolios/[portfolioId]/calculation` with symbol, rate tier, brought-forward losses query form; tables for FX applied, pool roll-forward, disposals, tax year summaries
+- Unit and integration tests for FX lookup, BoE response parsing, conversion wiring, FX repository
+- **ADR-008:** FX rate infrastructure and conversion design
+
+**Deferred to Milestone 6:** same-day and 30-day matching rules and engine changes.
 
 #### Exit criteria
 
-- [ ] FX download script works and populates rates in MongoDB
+- [x] `npm run fetch:fx-rates` populates `fx_rates` from BoE XUDLUSS
+- [x] `import_usd` acquisitions convert to GBP using event-date rate (with documented fallback)
+- [x] calculation page shows results per symbol; missing FX coverage fails clearly
+- [x] ADR-008 complete
+- [x] `npm run validate` passes
+
+#### Completion record
+
+Milestone 5 delivered 2026-03-30. README documents `fetch:fx-rates` and `.env.local` setup. Pool-only matching unchanged; see Milestone 6 for same-day/30-day rules.
+
+---
+
+### Milestone 6 — Same-day and 30-day share matching
+
+**Goal:** implement HMRC identification order — same-day matching, then 30-day (bed and breakfasting), then Section 104 pool — and extend `CalcOutput` / per-disposal breakdown accordingly.
+
+#### Scope
+
+- Same-day matching: disposals matched to same-day acquisitions first (aggregating same-day acquisitions and disposals per CG51560)
+- 30-day rule: remaining disposal quantity matched to acquisitions within 30 days **after** the disposal date
+- Updated `calculateGainsForSymbol` (or successor) with matching priority; `matchingSource` extended beyond pool-only
+- Unit tests for each rule and combined scenarios; PRD Appendix 4 items for same-day and 30-day
+
+#### Exit criteria
+
 - [ ] calculation engine applies correct matching order
-- [ ] all PRD Appendix 4 validation points pass (same-day, 30-day directionality, FX per-transaction)
+- [ ] PRD Appendix 4 validation points for same-day and 30-day pass
 - [ ] `npm run validate` passes
 
 ---
 
-### Milestone 6 — User trust and operational hardening
+### Milestone 7 — User trust and operational hardening
 
 **Goal:** make the system credible for real user-facing use.
 
@@ -783,14 +808,14 @@ Milestone 4 delivered 2026-03-30; see **Status** and **Validated** above. ADR-00
 | 18 | Ledger tax-year grouping (M2) | **UTC date-only** calendar dates; UK tax year **6 April–5 April** for grouping. |
 | 19 | Symbol field (M2) | Single **free-text ticker** per event; ISIN deferred unless M3+ requires it. |
 | 20 | PRD workspace theme vs Portfolio | **Portfolio** is the top-level organising entity; PRD §8.1 updated to match (2026-03-28). |
-| 21 | M4 vs `import_usd` acquisitions | M4 pool engine is **GBP-only**. **`import_usd`** rows are **excluded** from M4 calculation inputs until M5 provides sterling equivalents; ledger shows USD (see ADR-005). |
+| 21 | M4 vs `import_usd` acquisitions | M4 pool engine is **GBP-only**. **`import_usd`** rows are converted to sterling in the **application layer** (M5) via BoE XUDLUSS before calling the engine; ledger may still list USD for traceability (see ADR-005, ADR-008). |
 | 22 | Multiple tickers in one portfolio | **Supported explicitly:** Section 104 pooling and disposal matching apply **per symbol** (per-line-of-stock) within a portfolio — not a single blended pool across tickers. UX may stay minimal in early milestones; correctness is per symbol (stakeholder decision, 2026-03-28). |
 | 23 | Authentication provider | **No preference recorded** — choose at implementation time when auth is added; capture provider, sessions, and migration from stub user in **ADR-007** (stakeholder decision, 2026-03-28). |
-| 24 | Brought-forward losses — user input vs engine | **Milestone 4:** implement loss netting rules in the **calculation engine** and unit tests using **explicit test inputs** (including zero / hardcoded brought-forward where needed). **User-facing input** of brought-forward loss pools is **deferred to Milestone 6** (stakeholder decision, 2026-03-28). |
+| 24 | Brought-forward losses — user input vs engine | **Milestone 4:** implement loss netting rules in the **calculation engine** and unit tests using **explicit test inputs** (including zero / hardcoded brought-forward where needed). **User-facing input** of brought-forward loss pools is **deferred to Milestone 7** (stakeholder decision, 2026-03-28). |
 
 ### 8.2 Still open
 
-Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. **Sell-side import research** (Gains & Losses / confirmations) is deferred to **pre–Milestone 5** (see Milestone 3, Data source gap). No other open product questions are tracked here as of 2026-03-28; revisit when scoping Milestone 6 (e.g. exact UX for brought-forward entry).
+Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. **Sell-side import research** (Gains & Losses / confirmations) remains a **pre–Milestone 6** checkpoint (disposal import / USD disposals) — see Milestone 3, Data source gap. No other open product questions are tracked here as of 2026-03-30; revisit when scoping Milestone 7 (e.g. exact UX for brought-forward entry).
 
 ---
 
@@ -811,6 +836,7 @@ Workspace and Milestone 2 data-modelling choices above are resolved in Section 3
 | ADR-004: Error taxonomy | M2 | `AppError` hierarchy: validation, domain, persistence, configuration, import errors. Deferred from M1 (simple enough without formal ADR until M2). |
 | ADR-005: Import pipeline design | M3 | How files are uploaded, parsed, normalised, validated, and committed. Extensibility for new formats. |
 | ADR-006: Calculation engine boundary design | M4 | Input/output contracts, pure-function design, separation from persistence and UI. |
+| ADR-008: FX rate infrastructure and conversion | M5 | BoE XUDLUSS storage, lookup, fallback, application-layer GBP conversion for `import_usd`. |
 | ADR-007: Authentication and user model | When auth is added | Provider choice, session model, user document shape, migration from stub user. |
 
 ---
@@ -834,9 +860,9 @@ No milestone is complete while `npm run validate` is failing.
 Per PRD Appendix 4, the calculation engine must pass:
 
 - [x] **HS284 Example 3:** Section 104 pool formation and partial-disposal fraction logic reproduced exactly (penny-precision engine; see `docs/references/hs284-example-3-2024-notes.md`)
-- [ ] **Same-day matching:** disposal and acquisition on the same day match first (M5)
-- [ ] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M5)
-- [ ] **FX handling:** per-transaction GBP conversion, not "compute USD gain then convert" (M5)
+- [ ] **Same-day matching:** disposal and acquisition on the same day match first (M6)
+- [ ] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M6)
+- [x] **FX handling:** per-transaction GBP conversion, not "compute USD gain then convert" (M5)
 - [x] **Loss utilisation:** current-year before brought-forward; brought-forward only down to AEA (M4)
 - [x] **2024-25 rate change:** correct rates before/after 30 Oct 2024 in same tax year (M4 — tax year **2024-25** split)
 
@@ -844,9 +870,9 @@ Per PRD Appendix 4, the calculation engine must pass:
 
 ## 11. Risks
 
-- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations **before Milestone 5** (pre-M5 checkpoint).
+- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations **before Milestone 6** (same-day/30-day and disposal import scope).
 - **Import format brittleness:** The XLSX format is hierarchical, sparse, and uses mixed date formats. E\*Trade may change the export layout without notice. Mitigate with defensive parsing, clear validation errors, and a mapping approach.
-- **Tax domain complexity escalation:** Same-day and 30-day matching interact with each other and with the pool in non-obvious ways. Mitigate by deferring matching rules to M5 (after pool mechanics are solid) and testing each rule independently.
+- **Tax domain complexity escalation:** Same-day and 30-day matching interact with each other and with the pool in non-obvious ways. Mitigate by deferring matching rules to M6 (after pool mechanics and FX wiring are solid) and testing each rule independently.
 - **CGT rate tier simplification:** The app asks the user to declare their tier rather than computing it. This is a deliberate simplification but may confuse users who don't know their band. Mitigate with clear in-product guidance.
 - **Non-RSU data in imports:** The sample data includes Stock Options and ESPP events. These are permanently out of scope; the import pipeline must filter them out cleanly and inform the user what was excluded.
 - **Premature over-modelling vs under-modelling:** Mitigate by building thin vertical slices and refactoring confidently (no backwards-compatibility constraint in early milestones).
@@ -884,6 +910,7 @@ Before implementation starts, confirm:
 - [x] Milestone 2 delivered: all Milestone 2 tasks and exit criteria in Section 7 checked; Status `Complete`; `npm run validate` recorded under Completion record
 - [x] Milestone 3 delivered: tasks, exit criteria, and stakeholder decisions in Section 7; ADR-005; Status `Complete`; `npm run validate` recorded under Completion record
 - [x] Milestone 4 delivered: tasks, exit criteria, ADR-006, HS284 notes update; Status `Complete`; `npm run validate` recorded under Completion record
+- [x] Milestone 5 delivered: FX rates, calculation wiring, calculation page, ADR-008; Section 7 tasks and exit criteria; `npm run validate` recorded
 
 ---
 

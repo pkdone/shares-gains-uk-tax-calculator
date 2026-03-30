@@ -59,7 +59,17 @@ export default async function PortfolioDetailPage({
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">{portfolio.name}</h1>
       <p className="mt-2 text-sm text-neutral-600">
         Ledger uses UTC date-only fields, grouped by UK tax year (6 April–5 April). Manual entries are GBP;
-        E*Trade vest imports are USD until FX (Milestone 5).
+        E*Trade vest imports are USD — sterling for calculations uses Bank of England rates after{' '}
+        <code className="text-xs">npm run fetch:fx-rates</code>.
+      </p>
+
+      <p className="mt-4">
+        <Link
+          href={`/portfolios/${portfolioId}/calculation`}
+          className="text-sm font-medium text-[var(--color-accent)] hover:underline"
+        >
+          Open capital gains calculation
+        </Link>
       </p>
 
       <div className="mt-10">
@@ -148,7 +158,9 @@ export default async function PortfolioDetailPage({
                                       line.data.feesUsd,
                                     ),
                                   )}{' '}
-                                  <span className="text-xs font-normal text-neutral-500">(FX pending)</span>
+                                  <span className="text-xs font-normal text-neutral-500">
+                                    (USD — converted at calculation)
+                                  </span>
                                 </td>
                               </>
                             )}

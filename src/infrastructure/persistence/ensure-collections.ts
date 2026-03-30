@@ -3,6 +3,7 @@ import type { Db } from 'mongodb';
 import {
   COLLECTION_ACQUISITIONS,
   COLLECTION_DISPOSALS,
+  COLLECTION_FX_RATES,
   COLLECTION_PORTFOLIOS,
   COLLECTION_USERS,
   getJsonSchemaForCollection,
@@ -14,6 +15,7 @@ export const MANAGED_COLLECTION_NAMES = [
   COLLECTION_PORTFOLIOS,
   COLLECTION_ACQUISITIONS,
   COLLECTION_DISPOSALS,
+  COLLECTION_FX_RATES,
 ] as const;
 
 export type ManagedCollectionName = (typeof MANAGED_COLLECTION_NAMES)[number];
@@ -50,4 +52,5 @@ export async function initMongoDatabase(db: Db): Promise<void> {
 
   await db.collection(COLLECTION_ACQUISITIONS).createIndex({ portfolioId: 1, userId: 1 });
   await db.collection(COLLECTION_DISPOSALS).createIndex({ portfolioId: 1, userId: 1 });
+  await db.collection(COLLECTION_FX_RATES).createIndex({ date: 1 }, { unique: true });
 }

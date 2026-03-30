@@ -15,7 +15,8 @@
     "validate": "npm run build && npm run lint && npm test && npm run test:integration",
     "seed:users": "tsx scripts/seed-users.ts",
     "db:init": "tsx scripts/db-init.ts",
-    "db:teardown": "tsx scripts/db-teardown.ts"
+    "db:teardown": "tsx scripts/db-teardown.ts",
+    "fetch:fx-rates": "tsx scripts/fetch-boe-fx-rates.ts"
   },
   "dependencies": {
     "mongodb": "^6.15.0",
