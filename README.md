@@ -45,7 +45,7 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
 
 | Command | Purpose |
 |--------|---------|
-| `npm run db:init` | Idempotent setup: managed collections, validators, indexes. **Run before** first app use or `seed:users` on a new database. |
+| `npm run db:init` | Idempotent setup: managed collections (including `portfolio_calculation_prefs`), validators, indexes. **Run before** first app use or `seed:users` on a new database. |
 | `npm run fetch:fx-rates` | Downloads BoE XUDLUSS series and upserts into the `fx_rates` collection. **Run after** `db:init`; safe to re-run to refresh rates. |
 | `npm run db:teardown` | Drops managed collections (development reset). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
 
@@ -113,6 +113,12 @@ kubectl apply -f k8s/
 ```
 
 Ensure the target Atlas database has been provisioned with **`npm run db:init`** and **`npm run fetch:fx-rates`** (or equivalent automation) for that environment.
+
+## Security and operations
+
+- **Secrets:** supply `MONGODB_URI` only via environment or Kubernetes secrets — never commit real URIs. The app logs through `src/shared/app-logger.ts`; do not add `console.log` of connection strings or user financial payloads.
+- **Data:** portfolio and transaction data live in MongoDB Atlas; treat backups and access control as part of your deployment policy.
+- **Container:** the production image runs as a non-root user (`nextjs`, UID 1001). Kubernetes manifests include resource requests/limits and a restrictive container `securityContext`.
 
 ## Documentation
 

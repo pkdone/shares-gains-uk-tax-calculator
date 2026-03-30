@@ -3,17 +3,23 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { listPortfolioSymbols } from '@/application/calculation/list-portfolio-symbols';
+import { resolveBroughtForwardFromQueryAndPrefs } from '@/application/calculation/resolve-brought-forward';
 import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
-import type { MatchingSource } from '@/domain/schemas/calculation';
+import { getPortfolioReportingOverview } from '@/application/portfolio/get-portfolio-reporting-overview';
 import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
+import { MongoPortfolioCalculationPrefsRepository } from '@/infrastructure/repositories/mongo-portfolio-calculation-prefs-repository';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 import { env } from '@/shared/config/env';
 import { DomainError } from '@/shared/errors/app-error';
 
-import { CalculationQueryForm } from '@/app/portfolios/[portfolioId]/calculation/calculation-query-form';
+import {
+  CalculationResultSections,
+  rateTierToLabel,
+} from '@/app/portfolios/[portfolioId]/calculation/calculation-result-sections';
+import { CalculationControls } from '@/app/portfolios/[portfolioId]/calculation/calculation-controls';
 import { ScrollToCalculationResults } from '@/app/portfolios/[portfolioId]/calculation/scroll-to-calculation-results';
 
 const money = new Intl.NumberFormat('en-GB', {
@@ -21,21 +27,11 @@ const money = new Intl.NumberFormat('en-GB', {
   maximumFractionDigits: 2,
 });
 
-function formatMatchingSourceLabel(source: MatchingSource): string {
-  switch (source) {
-    case 'same-day':
-      return 'Same day';
-    case 'thirty-day':
-      return '30-day';
-    case 'section-104-pool':
-      return 'Section 104 pool';
-  }
-}
-
 const portfolioRepository = new MongoPortfolioRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
 const fxRateRepository = new MongoFxRateRepository();
+const prefsRepository = new MongoPortfolioCalculationPrefsRepository();
 
 type CalculationPageProps = {
   readonly params: Promise<{ portfolioId: string }>;
@@ -65,16 +61,39 @@ export default async function PortfolioCalculationPage({
     userId: env.STUB_USER_ID,
   });
 
+  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, env.STUB_USER_ID);
+  const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
+  const bfParsed = Number.parseFloat(sp.bf ?? '0');
+  const broughtForwardLosses = resolveBroughtForwardFromQueryAndPrefs({
+    hasBfQuery,
+    queryBfParsed: bfParsed,
+    storedBroughtForwardLossesGbp: prefs?.broughtForwardLossesGbp,
+  });
+  const registeredForSelfAssessment = prefs?.registeredForSelfAssessment ?? false;
+
   const symbolFromQuery = typeof sp.symbol === 'string' && sp.symbol.trim().length > 0 ? sp.symbol.trim() : '';
   const symbol = symbolFromQuery.length > 0 ? symbolFromQuery : (symbols[0] ?? '');
 
   const tierParsed = rateTierSchema.safeParse(sp.rateTier ?? 'additional');
   const rateTier = tierParsed.success ? tierParsed.data : 'additional';
 
-  const bfRaw = sp.bf ?? '0';
-  const broughtForwardLosses = Number.isFinite(Number.parseFloat(bfRaw))
-    ? Math.max(0, Number.parseFloat(bfRaw))
-    : 0;
+  const allDisposals = await disposalRepository.listByPortfolioForUser(portfolioId, env.STUB_USER_ID);
+  const reportingOverview = await getPortfolioReportingOverview({
+    portfolioRepository,
+    acquisitionRepository,
+    disposalRepository,
+    fxRateRepository,
+    portfolioId,
+    userId: env.STUB_USER_ID,
+    rateTier,
+    broughtForwardLosses,
+    registeredForSelfAssessment,
+    symbols,
+    disposals: allDisposals.map((d) => ({
+      eventDate: d.eventDate,
+      grossProceedsGbp: d.grossProceedsGbp,
+    })),
+  });
 
   let calcError: string | null = null;
   let result: Awaited<ReturnType<typeof runCalculationForSymbol>> | null = null;
@@ -99,9 +118,19 @@ export default async function PortfolioCalculationPage({
     }
   }
 
+  const exportQuery = new URLSearchParams();
+  if (symbol.length > 0) {
+    exportQuery.set('symbol', symbol);
+  }
+
+  exportQuery.set('rateTier', rateTier);
+  exportQuery.set('bf', String(broughtForwardLosses));
+
+  const exportSuffix = exportQuery.toString();
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
-      <nav className="text-sm text-neutral-600">
+      <nav className="text-sm text-neutral-600 no-print">
         <Link href="/portfolios" className="text-[var(--color-accent)] hover:underline">
           Portfolios
         </Link>
@@ -126,17 +155,92 @@ export default async function PortfolioCalculationPage({
         This application does not provide professional tax advice and could be wrong.
       </p>
 
+      <section className="mt-8 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm no-print">
+        <h2 className="font-semibold text-neutral-900">Do I need to report?</h2>
+        <p className="mt-1 text-xs text-neutral-600">
+          Portfolio-wide disposal proceeds (all symbols) vs HMRC-style reporting thresholds. Taxable-gain signals
+          sum each symbol’s calculator output (approximate — each line of stock uses the annual exempt amount
+          separately). Confirm with HMRC or an adviser.
+        </p>
+        {reportingOverview.assessments.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-600">No tax years with data yet.</p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {reportingOverview.assessments.map((a) => (
+              <li
+                key={a.taxYear}
+                className={`rounded-md border px-3 py-2 ${a.likelyNeedsReporting ? 'border-amber-300 bg-amber-50' : 'border-neutral-200 bg-neutral-50'}`}
+              >
+                <p className="font-medium text-neutral-900">{a.taxYear}</p>
+                <p className="mt-1 text-xs text-neutral-700">
+                  Total disposal proceeds (portfolio): £{money.format(a.totalDisposalProceedsGbp)} · Threshold:{' '}
+                  £{money.format(a.proceedsThresholdGbp)} ({a.proceedsThresholdDescription})
+                </p>
+                <p className="mt-1 text-xs text-neutral-700">
+                  Sum of taxable gains (per-symbol engine): £{money.format(a.portfolioSumTaxableGainGbp)}
+                </p>
+                <p className="mt-1 text-sm font-medium text-neutral-900">
+                  {a.likelyNeedsReporting
+                    ? 'You may need to report — see reasons below and check HMRC guidance.'
+                    : 'No automatic trigger from these rules alone — still verify your full tax position.'}
+                </p>
+                {a.reasons.length > 0 ? (
+                  <ul className="mt-2 list-disc pl-5 text-xs text-neutral-700">
+                    {a.reasons.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {reportingOverview.dataQualityWarnings.length > 0 ? (
+        <section className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm no-print">
+          <h2 className="font-semibold text-amber-950">Data quality</h2>
+          <ul className="mt-2 list-disc pl-5 text-amber-950">
+            {reportingOverview.dataQualityWarnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="mt-8 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm no-print">
+        <h2 className="font-semibold text-neutral-900">RSU timing (plain English)</h2>
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-neutral-800">
+          <li>
+            <strong>Same-day vest and sell:</strong> the disposal is matched first against shares acquired on the
+            same day (HMRC same-day rule), before the Section 104 pool.
+          </li>
+          <li>
+            <strong>Sell, then vest within 30 days:</strong> the disposal can match shares acquired in the 30
+            days <em>after</em> the disposal (bed and breakfast / 30-day rule), which can differ from selling
+            pool shares.
+          </li>
+          <li>
+            <strong>Vest, then sell within 30 days:</strong> the 30-day rule matches <em>acquisitions after</em>{' '}
+            a disposal. A vest before your sale does not automatically fall into that 30-day bucket for that
+            sale.
+          </li>
+        </ul>
+      </section>
+
       {symbols.length === 0 ? (
         <p className="mt-8 text-sm text-neutral-600">Add acquisitions or disposals to run a calculation.</p>
       ) : (
         <>
-          <div className="mt-8">
-            <CalculationQueryForm
+          <div className="mt-8 no-print">
+            <CalculationControls
+              key={`${symbol}|${rateTier}|${broughtForwardLosses}|${registeredForSelfAssessment}`}
               portfolioId={portfolioId}
               symbols={symbols}
               currentSymbol={symbol}
               currentRateTier={rateTier}
               currentBf={broughtForwardLosses}
+              registeredForSelfAssessment={registeredForSelfAssessment}
             />
           </div>
 
@@ -145,185 +249,30 @@ export default async function PortfolioCalculationPage({
           </Suspense>
 
           {calcError ? (
-            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 no-print">
               {calcError}
             </div>
           ) : null}
 
           {result !== null && calcError === null ? (
-            <div id="calculation-results" className="mt-10 scroll-mt-6 space-y-10">
-              <section>
-                <h2 className="text-lg font-medium text-neutral-900">FX applied (import USD acquisitions)</h2>
-                {Object.keys(result.fxByAcquisitionId).length === 0 ? (
-                  <p className="mt-2 text-sm text-neutral-600">None — only manual GBP acquisitions for this symbol.</p>
-                ) : (
-                  <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-                    <table className="min-w-full text-left text-sm">
-                      <thead className="bg-neutral-50 text-neutral-700">
-                        <tr>
-                          <th className="px-3 py-2 font-medium">Event date</th>
-                          <th className="px-3 py-2 font-medium">XUDLUSS (USD per £1)</th>
-                          <th className="px-3 py-2 font-medium">Rate date used</th>
-                          <th className="px-3 py-2 font-medium">Fallback</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100 bg-white">
-                        {Object.values(result.fxByAcquisitionId).map((row) => (
-                          <tr key={row.acquisitionId}>
-                            <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                            <td className="px-3 py-2 tabular-nums">{row.usdPerGbp.toFixed(4)}</td>
-                            <td className="px-3 py-2 tabular-nums">{row.rateDateUsed}</td>
-                            <td className="px-3 py-2">{row.usedFallback ? 'Yes' : 'No'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </section>
-
-              <section>
-                <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
-                <ul className="mt-2 list-disc pl-5 text-sm text-neutral-700">
-                  {result.warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-medium text-neutral-900">Pool roll-forward</h2>
-                <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="bg-neutral-50 text-neutral-700">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">Step</th>
-                        <th className="px-3 py-2 font-medium">Date</th>
-                        <th className="px-3 py-2 font-medium">Shares</th>
-                        <th className="px-3 py-2 font-medium">Pool cost (£)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 bg-white">
-                      {result.output.poolSnapshots.map((row) => (
-                        <tr key={`${row.description}|${row.eventDate}|${row.shares}|${row.costGbp}`}>
-                          <td className="px-3 py-2 text-neutral-800">{row.description}</td>
-                          <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                          <td className="px-3 py-2 tabular-nums">{row.shares}</td>
-                          <td className="px-3 py-2 tabular-nums">£{money.format(row.costGbp)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-medium text-neutral-900">Disposals</h2>
-                <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="bg-neutral-50 text-neutral-700">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">Date</th>
-                        <th className="px-3 py-2 font-medium">Tax year</th>
-                        <th className="px-3 py-2 font-medium">Qty</th>
-                        <th className="px-3 py-2 font-medium">Proceeds (£)</th>
-                        <th className="px-3 py-2 font-medium">Fees (£)</th>
-                        <th className="px-3 py-2 font-medium">Matching breakdown</th>
-                        <th className="px-3 py-2 font-medium">Allowable cost (£)</th>
-                        <th className="px-3 py-2 font-medium">Gain/loss (£)</th>
-                        <th className="px-3 py-2 font-medium">Rounded (£)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 bg-white">
-                      {result.output.disposalResults.map((row) => (
-                        <tr key={`${row.eventDate}-${row.quantity}-${row.grossProceedsGbp}`}>
-                          <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                          <td className="px-3 py-2">{row.taxYear}</td>
-                          <td className="px-3 py-2 tabular-nums">{row.quantity}</td>
-                          <td className="px-3 py-2 tabular-nums">£{money.format(row.grossProceedsGbp)}</td>
-                          <td className="px-3 py-2 tabular-nums">£{money.format(row.disposalFeesGbp)}</td>
-                          <td className="px-3 py-2 text-neutral-800">
-                            <ul className="list-inside list-disc space-y-1 text-xs">
-                              {row.matchingBreakdown.map((t) => (
-                                <li key={`${t.source}-${t.quantity}-${t.allowableCostGbp}`}>
-                                  {formatMatchingSourceLabel(t.source)}: {t.quantity} sh @ £
-                                  {money.format(t.allowableCostGbp)} allowable
-                                </li>
-                              ))}
-                            </ul>
-                          </td>
-                          <td className="px-3 py-2 tabular-nums">£{money.format(row.allowableCostGbp)}</td>
-                          <td className="px-3 py-2 tabular-nums">£{money.format(row.gainOrLossGbp)}</td>
-                          <td className="px-3 py-2 tabular-nums">{row.roundedGainOrLossGbp}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {result.output.disposalResults.length === 0 ? (
-                  <p className="mt-2 text-sm text-neutral-600">No disposals for this symbol.</p>
-                ) : null}
-              </section>
-
-              <section>
-                <h2 className="text-lg font-medium text-neutral-900">Tax year summaries</h2>
-                <div className="mt-3 space-y-6">
-                  {result.output.taxYearSummaries.map((y) => (
-                    <div
-                      key={y.taxYear}
-                      className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm"
-                    >
-                      <h3 className="font-semibold text-neutral-900">{y.taxYear}</h3>
-                      <dl className="mt-2 grid gap-1 sm:grid-cols-2">
-                        <div>
-                          <dt className="text-neutral-500">Total gains</dt>
-                          <dd className="tabular-nums">£{money.format(y.totalGainsGbp)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-neutral-500">Total losses</dt>
-                          <dd className="tabular-nums">£{money.format(y.totalLossesGbp)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-neutral-500">Net after losses</dt>
-                          <dd className="tabular-nums">£{money.format(y.netGainsAfterLossesGbp)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-neutral-500">AEA</dt>
-                          <dd className="tabular-nums">£{money.format(y.aeaGbp)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-neutral-500">Taxable gain</dt>
-                          <dd className="tabular-nums">£{money.format(y.taxableGainGbp)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-neutral-500">CGT due</dt>
-                          <dd className="tabular-nums">£{money.format(y.cgtDueGbp)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-neutral-500">Losses carried forward</dt>
-                          <dd className="tabular-nums">£{money.format(y.lossesCarriedForwardGbp)}</dd>
-                        </div>
-                      </dl>
-                      {y.rateBreakdown.length > 0 ? (
-                        <div className="mt-3">
-                          <p className="text-xs font-medium text-neutral-500">Rate breakdown</p>
-                          <ul className="mt-1 space-y-1 text-xs">
-                            {y.rateBreakdown.map((r) => (
-                              <li key={`${y.taxYear}-${r.ratePct}-${r.gainsGbp}-${r.taxGbp}`}>
-                                {r.ratePct}% on £{money.format(r.gainsGbp)} → tax £{money.format(r.taxGbp)}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-                {result.output.taxYearSummaries.length === 0 ? (
-                  <p className="mt-2 text-sm text-neutral-600">No tax year summaries (no disposals).</p>
-                ) : null}
-              </section>
-            </div>
+            <>
+              <div className="mt-6 flex flex-wrap gap-4 text-sm no-print">
+                <Link
+                  className="text-[var(--color-accent)] underline"
+                  href={`/portfolios/${portfolioId}/computation-pack?${exportSuffix}`}
+                >
+                  Open computation pack (print)
+                </Link>
+                <a
+                  className="text-[var(--color-accent)] underline"
+                  href={`/portfolios/${portfolioId}/disposals-export?${exportSuffix}`}
+                  download
+                >
+                  Download disposals CSV
+                </a>
+              </div>
+              <CalculationResultSections result={result} rateTierLabel={rateTierToLabel(rateTier)} />
+            </>
           ) : null}
         </>
       )}

@@ -16,6 +16,7 @@
     "seed:users": "tsx scripts/seed-users.ts",
     "db:init": "tsx scripts/db-init.ts",
     "db:teardown": "tsx scripts/db-teardown.ts",
+    "db:refresh": "ALLOW_DB_TEARDOWN=1 npm run db:teardown && npm run db:init && npm run seed:users && npm run fetch:fx-rates",
     "fetch:fx-rates": "tsx scripts/fetch-boe-fx-rates.ts"
   },
   "dependencies": {

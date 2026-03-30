@@ -805,27 +805,101 @@ Milestone 6 delivered 2026-03-30; see **Status** and **Validated** above. Sell-s
 
 **Goal:** make the system credible for real user-facing use.
 
-#### Scope
+**Status:** Complete  
+**Completed:** 2026-03-30  
+**Validated:** `npm run validate` on 2026-03-30
+
+#### Stakeholder / planning decisions (2026-03-30)
+
+- **Computation pack:** **Print-optimised HTML** only in M7; users use browser Print / Save as PDF; no server-side PDF library.
+- **Brought-forward losses:** **Persisted in MongoDB** per portfolio (`portfolio_calculation_prefs`); calculation uses stored value by default; query param may override for deep links (see ADR-010).
+- **Reporting thresholds:** Portfolio-wide **sum of disposal proceeds** per UK tax year for 4×AEA / £50k rules; **Self Assessment** registration is a **user-declared** checkbox for the 2023–24+ £50,000 proceeds rule. **Chargeable gains** “likely report” signals use **per-symbol** summaries summed with an explicit disclaimer (each symbol applies AEA in the engine separately; not a substitute for professional combined advice).
+- **Sell-side import research** (Gains & Losses / confirmations) remains a **pre–M7 checkpoint**; disposal CSV import is **not** required to close M7 trust/exports/BF work.
+
+#### Scope (summary)
 
 - "Do I need to report?" section per tax year (PRD Appendix 1 thresholds)
-- Reporting threshold logic: 4×AEA proceeds (pre-2023-24), £50,000 (2023-24 onward)
+- Reporting threshold logic: 4×AEA proceeds (pre-2023-24), £50,000 (2023-24 onward) with SA flag where relevant
 - RSU timing explanations (same-day vest+sell, 30-day scenarios) — in-product plain-English guidance
 - 2024-25 rate change flag and explanation
-- Computation pack export: print view or PDF with transaction ledger, FX rates, per-disposal computations, pool roll-forward
+- Computation pack: **print view** with transaction ledger, FX rates, per-disposal computations, pool roll-forward
 - CSV export of computed disposals with matching source
-- Data quality warnings: missing vest prices, incomplete portfolios, unresolved items
-- Assumption labelling: "additional-rate assumption" (or selected tier) visible on all outputs
+- Data quality warnings: missing FX, incomplete portfolios, unresolved items
+- Assumption labelling: selected CGT rate tier visible on outputs
 - "Not professional tax advice" disclaimer
 - Refined Docker and Kubernetes assets
 - Security review: env var handling, no secrets in logs, sensitive data treatment
 - Updated README and operational docs
 
+#### Tasks
+
+**ADR**
+
+- [x] **ADR-010:** Exports, computation pack, reporting thresholds (`docs/adrs/010-exports-computation-pack-and-reporting-thresholds.md`)
+
+**Domain**
+
+- [x] `src/domain/services/reporting-thresholds.ts` — proceeds thresholds (4×AEA vs £50k), `assessReportingNeed` with SA flag; unit tests
+- [x] `src/domain/schemas/portfolio-calculation-prefs.ts` — canonical Zod for brought-forward persistence
+
+**Persistence**
+
+- [x] `portfolio_calculation_prefs` collection; `npm run db:init`; persistence schema derived from domain
+- [x] `PortfolioCalculationPrefsRepository` (domain) + Mongo implementation
+
+**Application**
+
+- [x] Load/save prefs; `runCalculationForSymbol` uses persisted BF unless query override (`resolve-brought-forward.ts`)
+- [x] `getPortfolioReportingOverview` — aggregate proceeds by tax year; combine per-symbol calc summaries for UI
+
+**Interfaces**
+
+- [x] Calculation page: BF persisted; optional `bf` query override
+- [x] Portfolio or calculation area: "Do I need to report?", SA checkbox, RSU guidance blocks, 2024–25 rate-change copy, disclaimers, data-quality warnings
+- [x] Print computation pack route (`/portfolios/[id]/computation-pack`) with `@media print` / `.no-print`
+- [x] CSV route for disposals export (`/portfolios/[id]/disposals-export`)
+- [x] Layout/footer: tax disclaimer; rate tier visible (`calculation-result-sections`, root layout footer)
+
+**Ops**
+
+- [x] Docker/K8s README alignment; security notes (README + Deployment `securityContext` / resources)
+
+#### Likely files (Milestone 7)
+
+| File | Action |
+|------|--------|
+| `docs/adrs/010-exports-computation-pack-and-reporting-thresholds.md` | create |
+| `docs/IMPLEMENTATION_PLAN.md` | update (this milestone) |
+| `src/domain/services/reporting-thresholds.ts` | create |
+| `src/test/unit/domain/services/reporting-thresholds.test.ts` | create |
+| `src/domain/schemas/portfolio-calculation-prefs.ts` | create |
+| `src/domain/repositories/portfolio-calculation-prefs-repository.ts` | create |
+| `src/infrastructure/persistence/schemas/portfolio-calculation-prefs-record.ts` | create |
+| `src/infrastructure/repositories/mongo-portfolio-calculation-prefs-repository.ts` | create |
+| `src/infrastructure/persistence/schema-registry.ts` | modify |
+| `src/infrastructure/persistence/ensure-collections.ts` | modify |
+| `scripts/db-init.ts` | modify (log new collection) |
+| `src/application/portfolio/*` | create (reporting overview, prefs) |
+| `src/app/portfolios/[portfolioId]/calculation/*` | modify |
+| `src/app/portfolios/[portfolioId]/computation-pack/*` | create |
+| `src/app/portfolios/[portfolioId]/disposals-export/route.ts` | create |
+| `src/application/calculation/resolve-brought-forward.ts` | create |
+| `src/app/portfolios/[portfolioId]/calculation/actions.ts` | create |
+| `src/app/portfolios/[portfolioId]/calculation/calculation-result-sections.tsx` | create |
+
 #### Exit criteria
 
-- [ ] outputs are useful for Self Assessment record keeping
-- [ ] deployment assets are production-credible
-- [ ] material assumptions are surfaced in UI and exports
-- [ ] `npm run validate` passes
+- [x] outputs are useful for Self Assessment record keeping
+- [x] deployment assets are production-credible
+- [x] material assumptions are surfaced in UI and exports
+- [x] brought-forward losses persisted and used by default in calculation
+- [x] reporting threshold UI and print/CSV exports implemented
+- [x] ADR-010 complete
+- [x] `npm run validate` passes
+
+#### Completion record
+
+Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-010 records print-only computation pack, CSV export, reporting thresholds, and BF/SA persistence. Run **`npm run db:init`** on each target database to add **`portfolio_calculation_prefs`**.
 
 ---
 
@@ -862,7 +936,8 @@ Milestone 6 delivered 2026-03-30; see **Status** and **Validated** above. Sell-s
 
 ### 8.2 Still open
 
-Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. **Sell-side import research** (Gains & Losses / confirmations) is a **pre–Milestone 7** checkpoint (disposal import / USD disposals) — see Milestone 3, Data source gap; it does not block same-day/30-day matching (Milestone 6). No other open product questions are tracked here as of 2026-03-30; revisit when scoping Milestone 7 (e.g. exact UX for brought-forward entry).
+- **Sell-side import research** (Gains & Losses / confirmations) remains a **pre–Milestone 7** checkpoint for **disposal import** scope; it does not block Milestone 7 trust/exports/BF delivery (see Milestone 7 stakeholder decisions).
+- **Portfolio-wide CGT vs per-symbol engine:** Milestone 7 “Do I need to report?” uses **aggregated proceeds** across symbols plus **per-symbol** taxable summaries with an explicit disclaimer until a combined multi-symbol annual model exists (see ADR-010).
 
 ---
 
@@ -885,6 +960,7 @@ Workspace and Milestone 2 data-modelling choices above are resolved in Section 3
 | ADR-006: Calculation engine boundary design | M4 | Input/output contracts, pure-function design, separation from persistence and UI. |
 | ADR-008: FX rate infrastructure and conversion | M5 | BoE XUDLUSS storage, lookup, fallback, application-layer GBP conversion for `import_usd`. |
 | ADR-009: Share matching algorithm | M6 | HMRC order (same-day, 30-day, Section 104), CG51560 aggregation, `matchingBreakdown` schema. |
+| ADR-010: Exports, computation pack, reporting thresholds | M7 | Print-only pack, CSV shape, proceeds aggregation, SA checkbox, BF persistence. |
 | ADR-007: Authentication and user model | When auth is added | Provider choice, session model, user document shape, migration from stub user. |
 
 ---
@@ -960,6 +1036,7 @@ Before implementation starts, confirm:
 - [x] Milestone 4 delivered: tasks, exit criteria, ADR-006, HS284 notes update; Status `Complete`; `npm run validate` recorded under Completion record
 - [x] Milestone 5 delivered: FX rates, calculation wiring, calculation page, ADR-008; Section 7 tasks and exit criteria; `npm run validate` recorded
 - [x] Milestone 6 delivered: same-day/30-day/Section 104 matching, ADR-009, calculation page breakdown, Section 7 tasks and exit criteria; `npm run validate` recorded
+- [x] Milestone 7 delivered: tasks, exit criteria, ADR-010, Section 7 Status `Complete`; `npm run validate` recorded
 
 ---
 

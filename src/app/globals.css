@@ -12,3 +12,9 @@ body {
   background-color: var(--color-surface);
   color: var(--color-ink);
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
