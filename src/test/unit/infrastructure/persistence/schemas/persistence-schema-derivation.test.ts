@@ -17,6 +17,7 @@ describe('persistence Zod schemas derive from domain', () => {
 
   it('acquisition document accepts base acquisition fields plus tenancy', () => {
     const base = shareAcquisitionBaseSchema.parse({
+      economicsKind: 'manual_gbp',
       symbol: 'ABC',
       eventDate: '2024-06-01',
       quantity: 1,

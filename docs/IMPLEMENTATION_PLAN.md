@@ -90,6 +90,12 @@ The following real-world export files inform the import pipeline design. They ar
 - [x] **ADR-003 and ADR-004: deferred to M2.** M1 implementations (AppError, MongoDB client) are simple enough without formal ADRs. Write them when M2 demands structured patterns.
 - [x] **`@typescript-eslint/promise-function-async`: strict (`"error"`).** Per the project rule: "The ESLint configuration is the source of truth." Tune with rule options later if specific patterns need exemption.
 
+### 3.4 Stakeholder refinements (2026-03-28)
+
+- [x] **Multiple tickers per portfolio:** **Explicit support** — Section 104 pooling applies **per symbol** (separate pool state per ticker) within a portfolio, consistent with UK CGT line-of-stock treatment at this level of modelling.
+- [x] **Authentication provider:** **No vendor preference** recorded; choose when auth is implemented and document in ADR-007.
+- [x] **Brought-forward losses:** **Milestone 4** implements the **calculation rules** with **test inputs** (including zero / explicit brought-forward in tests). **User-facing entry** of brought-forward amounts is **Milestone 6** (see Milestone 4 stakeholder decisions and Section 8.1).
+
 ---
 
 ## 4. Delivery Strategy
@@ -523,27 +529,83 @@ Milestone 2 delivered 2026-03-28; see **Status** and **Validated** above.
 
 **Goal:** import RSU vesting data from the E\*Trade "ByBenefitType" XLSX export and normalise it into share acquisition events.
 
-#### Scope
+**Status:** Complete  
+**Completed:** 2026-03-28  
+**Validated:** `npm run validate` on 2026-03-28
 
-- XLSX file parsing (using a library such as `xlsx` or `exceljs`)
-- Parser for the E\*Trade "ByBenefitType" hierarchical format: extract Grant → Vest Schedule → Tax Withholding records
-- Normalisation service: transform parsed rows into acquisition events (net shares = Vested Qty − Shares Traded for Taxes; market value derived from Tax Withholding "Taxable Gain" / Vested Qty)
-- Validation: missing fields, inconsistent quantities, unknown record types, date format normalisation
-- Import review UI: show parsed events before committing to the portfolio
-- Error surface: clear messages for unparseable rows, missing market values, etc.
-- Unit tests for parser, normaliser, and validator
-- **Deferred:** sell transaction import (requires a data source with execution prices, which the current PDF does not provide)
+#### Stakeholder / planning decisions (2026-03-28)
+
+- **USD at import:** Canonical acquisition economics support **`import_usd`** (vest proceeds in USD from the export). **GBP conversion and Bank of England rates remain Milestone 5.** Manual **`manual_gbp`** entries (Milestone 2) are unchanged.
+- **Milestone 4 boundary:** The Section 104 engine (M4) is **GBP-only**. Acquisitions with **`import_usd`** economics are **not** inputs to M4 calculations until M5 provides sterling equivalents; the ledger shows USD amounts and an FX-pending stance (see ADR-005).
+- **PRD slice:** Milestone 3 delivers a **fixed parser** for one hierarchical XLSX layout, not the PRD’s long-term **column-mapping** importer or multi-format uploads. Mapping UI is explicitly **out of scope** for M3.
+- **Sell-side data spike:** Investigation of E\*Trade "Gains & Losses" / trade confirmations for **disposal** import is deferred to **pre–Milestone 5** (see **Data source gap** below). M3 does not block on that investigation.
+
+#### Scope (summary)
+
+- XLSX read in infrastructure; **pure** domain parser/normaliser over a grid of strings (Grant → Vest Schedule → Tax Withholding).
+- Net shares = Vested Qty − Shares Traded for Taxes; gross USD from Tax Withholding **Taxable Gain** and Vested Qty per agreed decision #15.
+- Filter out non-RSU benefit types (Options, ESPP) with user-visible counts.
+- Review UI → bulk commit to MongoDB. **Deferred:** sell transaction import.
 
 #### Data source gap: sell transactions
 
-The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. Before Milestone 3 ships, investigate whether the E\*Trade "Gains & Losses" report or individual trade confirmations provide execution prices in a parseable format (CSV or XLSX). If not, disposals continue to be entered manually (as established in Milestone 2) until a suitable data source is identified.
+The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. **Before Milestone 5** (or as a pre-M5 checkpoint), investigate whether the E\*Trade "Gains & Losses" report or individual trade confirmations provide execution prices in a parseable format (CSV or XLSX). Until then, disposals continue to be entered **manually** (Milestone 2). Real export column names may differ slightly from the fixture headers; adjust the parser when validating against a live export.
+
+#### Tasks
+
+**ADR**
+
+- [x] **ADR-005:** Import pipeline design (`docs/adrs/005-import-pipeline-design.md`)
+
+**Domain**
+
+- [x] Extend **share acquisition** canonical schema: **`manual_gbp`** vs **`import_usd`** discriminated union; no duplicated field constraints outside `src/domain/schemas`
+- [x] Parser + normaliser + validation helpers (unit-tested); committed **test fixture** XLSX or grid-based tests (sample files in Section 2.2 remain uncommitted)
+
+**Infrastructure**
+
+- [x] XLSX bytes → sheet grid (`xlsx` or equivalent); no XLSX dependency inside `src/domain`
+- [x] Repository: bulk insert for import commit; persistence Zod + `$jsonSchema` updated via **`npm run db:init`**
+
+**Application**
+
+- [x] Preview + commit use cases (parse → normalise → review → persist)
+
+**Interfaces**
+
+- [x] Portfolio page (or sub-route): upload → preview table → commit / cancel; surface validation errors
+
+**Tests**
+
+- [x] Unit: parser, normaliser, date helpers, schema derivation
+- [x] Integration: repository accepts `import_usd` documents (existing manual ledger test updated)
+
+#### Likely files to create or modify
+
+| File | Action |
+|------|--------|
+| `docs/adrs/005-import-pipeline-design.md` | create |
+| `src/domain/schemas/share-acquisition.ts` | modify — economics discriminated union |
+| `src/infrastructure/persistence/schemas/acquisition-record.ts` | modify |
+| `src/infrastructure/import/read-xlsx-sheet.ts` | create |
+| `src/domain/services/etrade-by-benefit-type-parser.ts` (or under `domain/import/`) | create |
+| `src/application/import/*.ts` | create — preview / commit |
+| `src/app/portfolios/[portfolioId]/*` | modify — import UI, ledger display |
+| `src/test/unit/...` | create — parser / normaliser tests |
+| `src/test/fixtures/import/*.xlsx` | create — minimal ByBenefitType-style file |
+| `src/test/integration/...` | modify — acquisition shape |
 
 #### Exit criteria
 
-- [ ] XLSX upload → parsed vesting events displayed for review → committed as acquisitions in portfolio
-- [ ] validation errors surfaced clearly
-- [ ] normalised data matches manual spot checks against the sample XLSX
-- [ ] `npm run validate` passes
+- [x] XLSX upload → parsed vesting events displayed for review → committed as acquisitions in portfolio
+- [x] validation errors surfaced clearly
+- [x] normalised output matches **committed fixture** expectations (and supports local spot-check against the real sample XLSX where available)
+- [x] ADR-005 complete; domain extended for **USD import** without breaking **manual GBP** entry
+- [x] `npm run validate` passes
+
+#### Completion record
+
+Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-005 records the M3/M4 boundary for **`import_usd`** acquisitions.
 
 ---
 
@@ -551,9 +613,15 @@ The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. B
 
 **Goal:** implement the Section 104 pool calculation engine (GBP-only) with explainable outputs, independently testable from the UI.
 
+#### Stakeholder decisions (2026-03-28)
+
+- **Multi-ticker:** One Section 104 pool **per symbol** within a portfolio (see Section 8.1, #22). Events for different tickers do not share a pool.
+- **Brought-forward losses:** Engine and tests implement the **rules** (including brought-forward down to AEA); **no UI to capture** prior-year loss pools in M4 — use test fixtures and explicit inputs; user input **Milestone 6** (see Section 8.1, #24).
+- **Authentication:** Irrelevant to M4 scope; no provider lock-in (see Section 8.1, #23).
+
 #### Scope
 
-- Section 104 pool: formation, partial disposal (pool_cost × sold/held), roll-forward
+- Section 104 pool: formation, partial disposal (pool_cost × sold/held), roll-forward — **per symbol** (separate pool state per ticker within a portfolio)
 - Reproduce HS284 Example 3 as the primary acceptance test (see Section 2.1)
 - Calculation input/output contracts (domain schemas)
 - Per-disposal breakdown: matching source (pool only in this milestone), allowable cost, gain/loss
@@ -656,14 +724,14 @@ The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. B
 | 18 | Ledger tax-year grouping (M2) | **UTC date-only** calendar dates; UK tax year **6 April–5 April** for grouping. |
 | 19 | Symbol field (M2) | Single **free-text ticker** per event; ISIN deferred unless M3+ requires it. |
 | 20 | PRD workspace theme vs Portfolio | **Portfolio** is the top-level organising entity; PRD §8.1 updated to match (2026-03-28). |
+| 21 | M4 vs `import_usd` acquisitions | M4 pool engine is **GBP-only**. **`import_usd`** rows are **excluded** from M4 calculation inputs until M5 provides sterling equivalents; ledger shows USD (see ADR-005). |
+| 22 | Multiple tickers in one portfolio | **Supported explicitly:** Section 104 pooling and disposal matching apply **per symbol** (per-line-of-stock) within a portfolio — not a single blended pool across tickers. UX may stay minimal in early milestones; correctness is per symbol (stakeholder decision, 2026-03-28). |
+| 23 | Authentication provider | **No preference recorded** — choose at implementation time when auth is added; capture provider, sessions, and migration from stub user in **ADR-007** (stakeholder decision, 2026-03-28). |
+| 24 | Brought-forward losses — user input vs engine | **Milestone 4:** implement loss netting rules in the **calculation engine** and unit tests using **explicit test inputs** (including zero / hardcoded brought-forward where needed). **User-facing input** of brought-forward loss pools is **deferred to Milestone 6** (stakeholder decision, 2026-03-28). |
 
 ### 8.2 Still open
 
-Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. Remaining product questions:
-
-- **Multiple symbols:** The sample data is all MDB. If the user holds RSUs in multiple companies, is that a realistic scenario to support? (Milestone 2 allows multiple tickers in one portfolio; full product stance TBD.)
-- **Authentication provider:** When auth is eventually added, is there a preferred provider (NextAuth, Clerk, Auth0, etc.)?
-- **Brought-forward losses:** How should the user input their available loss pool from prior years? A simple number input per tax year on the portfolio?
+Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. **Sell-side import research** (Gains & Losses / confirmations) is deferred to **pre–Milestone 5** (see Milestone 3, Data source gap). No other open product questions are tracked here as of 2026-03-28; revisit when scoping Milestone 6 (e.g. exact UX for brought-forward entry).
 
 ---
 
@@ -717,7 +785,7 @@ Per PRD Appendix 4, the calculation engine must pass:
 
 ## 11. Risks
 
-- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations when approaching M3.
+- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations **before Milestone 5** (pre-M5 checkpoint).
 - **Import format brittleness:** The XLSX format is hierarchical, sparse, and uses mixed date formats. E\*Trade may change the export layout without notice. Mitigate with defensive parsing, clear validation errors, and a mapping approach.
 - **Tax domain complexity escalation:** Same-day and 30-day matching interact with each other and with the pool in non-obvious ways. Mitigate by deferring matching rules to M5 (after pool mechanics are solid) and testing each rule independently.
 - **CGT rate tier simplification:** The app asks the user to declare their tier rather than computing it. This is a deliberate simplification but may confuse users who don't know their band. Mitigate with clear in-product guidance.
@@ -755,6 +823,7 @@ Before implementation starts, confirm:
 - [x] Milestone 1 scope approved by stakeholder (planning refinement 2026-03-28)
 - [x] Milestone 2 scope, tasks, exit criteria, and stakeholder decisions recorded (2026-03-28); PRD §8.1 aligned with Portfolio model
 - [x] Milestone 2 delivered: all Milestone 2 tasks and exit criteria in Section 7 checked; Status `Complete`; `npm run validate` recorded under Completion record
+- [x] Milestone 3 delivered: tasks, exit criteria, and stakeholder decisions in Section 7; ADR-005; Status `Complete`; `npm run validate` recorded under Completion record
 
 ---
 

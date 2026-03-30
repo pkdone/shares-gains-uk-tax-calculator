@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { portfolioNameSchema } from '@/domain/schemas/portfolio';
-import { shareAcquisitionBaseSchema } from '@/domain/schemas/share-acquisition';
+import { shareAcquisitionManualGbpSchema } from '@/domain/schemas/share-acquisition';
 import { shareDisposalBaseSchema } from '@/domain/schemas/share-disposal';
 
 /** Server action / form payload: create portfolio (name only; user from config). */
@@ -31,8 +31,12 @@ function coerceNumber(formData: FormData, key: string): unknown {
 
 export function parseAcquisitionForm(
   formData: FormData,
-): z.SafeParseReturnType<z.infer<typeof shareAcquisitionBaseSchema>, z.infer<typeof shareAcquisitionBaseSchema>> {
-  return shareAcquisitionBaseSchema.safeParse({
+): z.SafeParseReturnType<
+  z.infer<typeof shareAcquisitionManualGbpSchema>,
+  z.infer<typeof shareAcquisitionManualGbpSchema>
+> {
+  return shareAcquisitionManualGbpSchema.safeParse({
+    economicsKind: 'manual_gbp',
     symbol: formData.get('symbol'),
     eventDate: formData.get('eventDate'),
     quantity: coerceNumber(formData, 'quantity'),

@@ -6,6 +6,11 @@ type WebpackServerConfig = {
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '4mb',
+    },
+  },
   /** Driver must not be bundled (CSFLE / Node built-ins). */
   serverExternalPackages: ['mongodb'],
   webpack: (config: WebpackServerConfig, { isServer }: { isServer: boolean }) => {

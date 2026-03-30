@@ -35,6 +35,7 @@ describe('manual ledger repositories', () => {
     const acquisition = await acquisitionRepo.insert({
       portfolioId: portfolio.id,
       userId,
+      economicsKind: 'manual_gbp',
       symbol: 'TEST',
       eventDate: '2024-06-01',
       quantity: 10,
@@ -78,5 +79,34 @@ describe('manual ledger repositories', () => {
     const client = await getMongoClient();
     const db = client.db();
     await db.collection(COLLECTION_PORTFOLIOS).deleteOne({ _id: new ObjectId(first.id) });
+  });
+
+  it('bulk-inserts import_usd acquisitions', async () => {
+    const portfolioRepo = new MongoPortfolioRepository();
+    const acquisitionRepo = new MongoShareAcquisitionRepository();
+
+    const portfolio = await portfolioRepo.create({ userId, name: `import-usd-${Date.now()}` });
+
+    await acquisitionRepo.insertMany([
+      {
+        portfolioId: portfolio.id,
+        userId,
+        economicsKind: 'import_usd',
+        symbol: 'MDB',
+        eventDate: '2024-03-01',
+        quantity: 5,
+        grossConsiderationUsd: 500,
+        feesUsd: 0,
+      },
+    ]);
+
+    const list = await acquisitionRepo.listByPortfolioForUser(portfolio.id, userId);
+    expect(list.some((a) => a.economicsKind === 'import_usd' && a.grossConsiderationUsd === 500)).toBe(true);
+
+    const client = await getMongoClient();
+    const db = client.db();
+    const pid = new ObjectId(portfolio.id);
+    await db.collection(COLLECTION_ACQUISITIONS).deleteMany({ portfolioId: pid });
+    await db.collection(COLLECTION_PORTFOLIOS).deleteOne({ _id: pid });
   });
 });

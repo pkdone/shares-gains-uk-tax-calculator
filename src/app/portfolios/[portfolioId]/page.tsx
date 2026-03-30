@@ -2,7 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { getLedgerForPortfolio } from '@/application/ledger/get-ledger-for-portfolio';
-import { totalAcquisitionCostGbp, netDisposalProceedsGbp } from '@/domain/services/ledger-money';
+import {
+  netDisposalProceedsGbp,
+  totalAcquisitionCostGbp,
+  totalAcquisitionCostUsd,
+} from '@/domain/services/ledger-money';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
@@ -10,6 +14,7 @@ import { env } from '@/shared/config/env';
 
 import { AcquisitionForm } from '@/app/portfolios/[portfolioId]/acquisition-form';
 import { DisposalForm } from '@/app/portfolios/[portfolioId]/disposal-form';
+import { EtradeImportSection } from '@/app/portfolios/[portfolioId]/etrade-import-section';
 
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
@@ -53,8 +58,13 @@ export default async function PortfolioDetailPage({
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">{portfolio.name}</h1>
       <p className="mt-2 text-sm text-neutral-600">
-        Ledger uses UTC date-only fields, grouped by UK tax year (6 April–5 April). GBP only.
+        Ledger uses UTC date-only fields, grouped by UK tax year (6 April–5 April). Manual entries are GBP;
+        E*Trade vest imports are USD until FX (Milestone 5).
       </p>
+
+      <div className="mt-10">
+        <EtradeImportSection portfolioId={portfolioId} />
+      </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
         <section>
@@ -96,28 +106,52 @@ export default async function PortfolioDetailPage({
                         <th className="px-3 py-2 font-medium">Qty</th>
                         <th className="px-3 py-2 font-medium">Gross</th>
                         <th className="px-3 py-2 font-medium">Fees</th>
-                        <th className="px-3 py-2 font-medium">Net / total</th>
+                        <th className="px-3 py-2 font-medium">Total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100 bg-white">
                       {group.lines.map((line) =>
                         line.kind === 'ACQUISITION' ? (
                           <tr key={line.data.id}>
-                            <td className="px-3 py-2 text-neutral-800">Acquisition</td>
+                            <td className="px-3 py-2 text-neutral-800">
+                              {line.data.economicsKind === 'import_usd' ? 'Acquisition (USD)' : 'Acquisition'}
+                            </td>
                             <td className="px-3 py-2 tabular-nums text-neutral-800">{line.data.eventDate}</td>
                             <td className="px-3 py-2">{line.data.symbol}</td>
                             <td className="px-3 py-2 tabular-nums">{line.data.quantity}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(line.data.grossConsiderationGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(line.data.feesGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums font-medium">
-                              £
-                              {money.format(
-                                totalAcquisitionCostGbp(
-                                  line.data.grossConsiderationGbp,
-                                  line.data.feesGbp,
-                                ),
-                              )}
-                            </td>
+                            {line.data.economicsKind === 'manual_gbp' ? (
+                              <>
+                                <td className="px-3 py-2 tabular-nums">
+                                  £{money.format(line.data.grossConsiderationGbp)}
+                                </td>
+                                <td className="px-3 py-2 tabular-nums">£{money.format(line.data.feesGbp)}</td>
+                                <td className="px-3 py-2 tabular-nums font-medium">
+                                  £
+                                  {money.format(
+                                    totalAcquisitionCostGbp(
+                                      line.data.grossConsiderationGbp,
+                                      line.data.feesGbp,
+                                    ),
+                                  )}
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="px-3 py-2 tabular-nums">
+                                  ${money.format(line.data.grossConsiderationUsd)}
+                                </td>
+                                <td className="px-3 py-2 tabular-nums">${money.format(line.data.feesUsd)}</td>
+                                <td className="px-3 py-2 tabular-nums font-medium">
+                                  ${money.format(
+                                    totalAcquisitionCostUsd(
+                                      line.data.grossConsiderationUsd,
+                                      line.data.feesUsd,
+                                    ),
+                                  )}{' '}
+                                  <span className="text-xs font-normal text-neutral-500">(FX pending)</span>
+                                </td>
+                              </>
+                            )}
                           </tr>
                         ) : (
                           <tr key={line.data.id}>

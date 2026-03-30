@@ -1,8 +1,11 @@
-import { acquisitionDocumentSchema } from '@/infrastructure/persistence/schemas/acquisition-record';
+import { acquisitionDocumentSchemaForMongoValidator } from '@/infrastructure/persistence/schemas/acquisition-record';
 import { disposalDocumentSchema } from '@/infrastructure/persistence/schemas/disposal-record';
 import { portfolioDocumentSchema } from '@/infrastructure/persistence/schemas/portfolio-record';
 import { userDocumentSchema } from '@/infrastructure/persistence/schemas/user-record';
-import type { JsonSchemaNode } from '@/infrastructure/persistence/json-schema-for-mongodb';
+import {
+  injectBsonObjectIdsIntoEachAnyOfBranch,
+  type JsonSchemaNode,
+} from '@/infrastructure/persistence/json-schema-for-mongodb';
 import { zodSchemaToMongoJsonSchema } from '@/infrastructure/persistence/zod-to-mongo-json-schema';
 
 export const COLLECTION_USERS = 'users';
@@ -30,11 +33,10 @@ export function getJsonSchemaForCollection(collectionName: string): JsonSchemaNo
         zodSchemaToMongoJsonSchema(portfolioDocumentSchema, { objectIdFields: ['_id'] }),
       );
     case COLLECTION_ACQUISITIONS:
-      return getOrBuild(collectionName, () =>
-        zodSchemaToMongoJsonSchema(acquisitionDocumentSchema.omit({ portfolioId: true }), {
-          objectIdFields: ['_id', 'portfolioId'],
-        }),
-      );
+      return getOrBuild(collectionName, () => {
+        const unionSchema = zodSchemaToMongoJsonSchema(acquisitionDocumentSchemaForMongoValidator);
+        return injectBsonObjectIdsIntoEachAnyOfBranch(unionSchema, ['_id', 'portfolioId']);
+      });
     case COLLECTION_DISPOSALS:
       return getOrBuild(collectionName, () =>
         zodSchemaToMongoJsonSchema(disposalDocumentSchema.omit({ portfolioId: true }), {

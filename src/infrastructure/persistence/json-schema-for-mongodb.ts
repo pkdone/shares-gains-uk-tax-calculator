@@ -145,3 +145,38 @@ export function withObjectIdFields(
   out.required = [...required];
   return out;
 }
+
+/**
+ * Injects BSON `objectId` fields into **each** branch of a top-level `anyOf` (from Zod `union`).
+ * A sibling `allOf` with `_id` / `portfolioId` fails MongoDB validation when each branch has
+ * `additionalProperties: false` without those keys.
+ */
+export function injectBsonObjectIdsIntoEachAnyOfBranch(
+  schema: JsonSchemaNode,
+  objectIdFieldNames: readonly string[],
+): JsonSchemaNode {
+  const out = structuredClone(schema);
+  const branches = out.anyOf;
+  if (!Array.isArray(branches)) {
+    return withObjectIdFields(out, objectIdFieldNames);
+  }
+
+  for (const branch of branches) {
+    if (branch === null || typeof branch !== 'object') {
+      continue;
+    }
+    const b = branch as JsonSchemaNode;
+    const props = (b.properties ?? {}) as JsonSchemaNode;
+    const required = new Set<string>([...((b.required as string[] | undefined) ?? [])]);
+
+    for (const name of objectIdFieldNames) {
+      props[name] = { bsonType: 'objectId' };
+      required.add(name);
+    }
+
+    b.properties = props;
+    b.required = [...required];
+  }
+
+  return out;
+}
