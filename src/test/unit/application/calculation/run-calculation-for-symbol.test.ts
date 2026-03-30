@@ -70,7 +70,7 @@ describe('runCalculationForSymbol', () => {
     upsertMany: jest.fn(),
   };
 
-  it('returns pool-only calculation output for a symbol', async () => {
+  it('returns calculation output for a symbol', async () => {
     const result = await runCalculationForSymbol({
       portfolioRepository,
       acquisitionRepository,

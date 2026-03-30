@@ -49,9 +49,17 @@ export const calcInputSchema = z.object({
 
 export type CalcInput = z.infer<typeof calcInputSchema>;
 
-export const matchingSourceSchema = z.literal('section-104-pool');
+export const matchingSourceSchema = z.enum(['same-day', 'thirty-day', 'section-104-pool']);
 
 export type MatchingSource = z.infer<typeof matchingSourceSchema>;
+
+export const matchingTrancheSchema = z.object({
+  source: matchingSourceSchema,
+  quantity: z.number().positive().finite(),
+  allowableCostGbp: z.number().finite(),
+});
+
+export type MatchingTranche = z.infer<typeof matchingTrancheSchema>;
 
 export const disposalResultSchema = z.object({
   eventDate: dateOnlyStringSchema,
@@ -59,7 +67,7 @@ export const disposalResultSchema = z.object({
   quantity: z.number().positive().finite(),
   grossProceedsGbp: z.number().nonnegative().finite(),
   disposalFeesGbp: z.number().nonnegative().finite(),
-  matchingSource: matchingSourceSchema,
+  matchingBreakdown: z.array(matchingTrancheSchema).min(1),
   allowableCostGbp: z.number().finite(),
   gainOrLossGbp: z.number().finite(),
   /** Whole pounds (SA108-style rounding). */

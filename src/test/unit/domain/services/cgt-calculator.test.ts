@@ -48,6 +48,9 @@ describe('calculateGainsForSymbol', () => {
     expect(result.disposalResults).toHaveLength(2);
 
     const d1 = result.disposalResults[0];
+    expect(d1?.matchingBreakdown).toEqual([
+      { source: 'section-104-pool', quantity: 700, allowableCostGbp: 2930.67 },
+    ]);
     expect(d1?.allowableCostGbp).toBe(2930.67);
     expect(d1?.gainOrLossGbp).toBe(329.33);
     expect(d1?.roundedGainOrLossGbp).toBe(329);
@@ -56,6 +59,9 @@ describe('calculateGainsForSymbol', () => {
     expect(d1?.taxYear).toBe('2023-24');
 
     const d2 = result.disposalResults[1];
+    expect(d2?.matchingBreakdown).toEqual([
+      { source: 'section-104-pool', quantity: 400, allowableCostGbp: 1674.67 },
+    ]);
     expect(d2?.allowableCostGbp).toBe(1674.67);
     expect(d2?.gainOrLossGbp).toBe(300.33);
     expect(d2?.roundedGainOrLossGbp).toBe(300);
@@ -132,5 +138,54 @@ describe('calculateGainsForSymbol', () => {
 
     expect(result.poolSnapshots).toHaveLength(0);
     expect(result.taxYearSummaries).toHaveLength(0);
+  });
+
+  it('uses same-day matching when acquisition and disposal share a date', () => {
+    const result = calculateGainsForSymbol({
+      symbol: 'X',
+      rateTier: 'higher',
+      broughtForwardLosses: 0,
+      events: [
+        {
+          kind: 'acquisition',
+          data: { eventDate: '2020-06-01', quantity: 100, totalCostGbp: 1000 },
+        },
+        {
+          kind: 'disposal',
+          data: { eventDate: '2020-06-01', quantity: 50, grossProceedsGbp: 600, feesGbp: 0 },
+        },
+      ],
+    });
+
+    expect(result.disposalResults).toHaveLength(1);
+    expect(result.disposalResults[0]?.matchingBreakdown[0]?.source).toBe('same-day');
+    expect(result.disposalResults[0]?.gainOrLossGbp).toBe(100);
+  });
+
+  it('uses 30-day then pool when disposal precedes a forward acquisition', () => {
+    const result = calculateGainsForSymbol({
+      symbol: 'X',
+      rateTier: 'higher',
+      broughtForwardLosses: 0,
+      events: [
+        {
+          kind: 'acquisition',
+          data: { eventDate: '2020-01-01', quantity: 100, totalCostGbp: 1000 },
+        },
+        {
+          kind: 'disposal',
+          data: { eventDate: '2020-01-05', quantity: 100, grossProceedsGbp: 1200, feesGbp: 0 },
+        },
+        {
+          kind: 'acquisition',
+          data: { eventDate: '2020-01-10', quantity: 50, totalCostGbp: 600 },
+        },
+      ],
+    });
+
+    const br = result.disposalResults[0]?.matchingBreakdown ?? [];
+    expect(br.some((t) => t.source === 'thirty-day')).toBe(true);
+    expect(br.some((t) => t.source === 'section-104-pool')).toBe(true);
+    expect(result.disposalResults[0]?.gainOrLossGbp).toBe(100);
   });
 });

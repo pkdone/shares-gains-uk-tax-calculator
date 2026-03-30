@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 
 import { listPortfolioSymbols } from '@/application/calculation/list-portfolio-symbols';
 import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
+import type { MatchingSource } from '@/domain/schemas/calculation';
 import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
@@ -19,6 +20,17 @@ const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+
+function formatMatchingSourceLabel(source: MatchingSource): string {
+  switch (source) {
+    case 'same-day':
+      return 'Same day';
+    case 'thirty-day':
+      return '30-day';
+    case 'section-104-pool':
+      return 'Section 104 pool';
+  }
+}
 
 const portfolioRepository = new MongoPortfolioRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
@@ -106,8 +118,9 @@ export default async function PortfolioCalculationPage({
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">Capital gains calculation</h1>
       <p className="mt-2 text-sm text-neutral-600">
-        Section 104 pool only (same-day and 30-day matching in Milestone 6). USD vest imports use Bank of
-        England XUDLUSS rates loaded by <code className="text-xs">npm run fetch:fx-rates</code>.
+        Matching uses HMRC order: same-day, then 30-day (bed and breakfast), then Section 104 pool. USD vest
+        imports use Bank of England XUDLUSS rates loaded by{' '}
+        <code className="text-xs">npm run fetch:fx-rates</code>.
       </p>
       <p className="mt-2 text-xs text-amber-800">
         This application does not provide professional tax advice and could be wrong.
@@ -215,7 +228,7 @@ export default async function PortfolioCalculationPage({
                         <th className="px-3 py-2 font-medium">Qty</th>
                         <th className="px-3 py-2 font-medium">Proceeds (£)</th>
                         <th className="px-3 py-2 font-medium">Fees (£)</th>
-                        <th className="px-3 py-2 font-medium">Matching</th>
+                        <th className="px-3 py-2 font-medium">Matching breakdown</th>
                         <th className="px-3 py-2 font-medium">Allowable cost (£)</th>
                         <th className="px-3 py-2 font-medium">Gain/loss (£)</th>
                         <th className="px-3 py-2 font-medium">Rounded (£)</th>
@@ -229,7 +242,16 @@ export default async function PortfolioCalculationPage({
                           <td className="px-3 py-2 tabular-nums">{row.quantity}</td>
                           <td className="px-3 py-2 tabular-nums">£{money.format(row.grossProceedsGbp)}</td>
                           <td className="px-3 py-2 tabular-nums">£{money.format(row.disposalFeesGbp)}</td>
-                          <td className="px-3 py-2">{row.matchingSource}</td>
+                          <td className="px-3 py-2 text-neutral-800">
+                            <ul className="list-inside list-disc space-y-1 text-xs">
+                              {row.matchingBreakdown.map((t) => (
+                                <li key={`${t.source}-${t.quantity}-${t.allowableCostGbp}`}>
+                                  {formatMatchingSourceLabel(t.source)}: {t.quantity} sh @ £
+                                  {money.format(t.allowableCostGbp)} allowable
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
                           <td className="px-3 py-2 tabular-nums">£{money.format(row.allowableCostGbp)}</td>
                           <td className="px-3 py-2 tabular-nums">£{money.format(row.gainOrLossGbp)}</td>
                           <td className="px-3 py-2 tabular-nums">{row.roundedGainOrLossGbp}</td>

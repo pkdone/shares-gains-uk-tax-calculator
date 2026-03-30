@@ -1,19 +1,8 @@
-import type { CalcEvent, CalcInput, CalcOutput, DisposalResult, PoolSnapshot } from '@/domain/schemas/calculation';
+import type { CalcEvent, CalcInput, CalcOutput } from '@/domain/schemas/calculation';
 import { calcInputSchema } from '@/domain/schemas/calculation';
 import { computeAnnualSummaries } from '@/domain/services/cgt-annual-summary';
-import {
-  addAcquisition,
-  createEmptyPool,
-  disposeFromPool,
-  roundMoney2dp,
-  type Section104Pool,
-} from '@/domain/services/section-104-pool';
-import { ukTaxYearLabelFromDateOnly } from '@/domain/services/uk-tax-year';
+import { computeMatchingOutput } from '@/domain/services/share-matching';
 import { DomainError } from '@/shared/errors/app-error';
-
-function roundGainOrLossToSa108WholePounds(value: number): number {
-  return Math.round(value);
-}
 
 function compareEvents(a: CalcEvent, b: CalcEvent): number {
   const dateCmp = a.data.eventDate.localeCompare(b.data.eventDate);
@@ -48,59 +37,22 @@ function assertSortedEvents(events: readonly CalcEvent[]): CalcEvent[] {
 }
 
 /**
- * Section 104 pool + annual CGT summaries for one symbol (GBP-only, pool-only matching).
+ * Same-day, 30-day, and Section 104 pool matching + annual CGT summaries for one symbol (GBP-only).
  */
 export function calculateGainsForSymbol(input: CalcInput): CalcOutput {
   const parsed = calcInputSchema.parse(input);
   const events = assertSortedEvents(parsed.events);
 
-  const poolSnapshots: PoolSnapshot[] = [];
-  const disposalResults: DisposalResult[] = [];
-
-  let pool: Section104Pool = createEmptyPool();
-
-  for (const event of events) {
-    if (event.kind === 'acquisition') {
-      const { quantity, totalCostGbp, eventDate } = event.data;
-      pool = addAcquisition(pool, quantity, totalCostGbp);
-      poolSnapshots.push({
-        description: 'Acquisition added to Section 104 pool',
-        eventDate,
-        shares: pool.shares,
-        costGbp: pool.costGbp,
-      });
-      continue;
-    }
-
-    const { quantity, grossProceedsGbp, feesGbp, eventDate } = event.data;
-    const { allowableCostGbp, poolAfter } = disposeFromPool(pool, quantity);
-    pool = poolAfter;
-
-    const gainOrLossGbp = roundMoney2dp(grossProceedsGbp - allowableCostGbp - feesGbp);
-    const roundedGainOrLossGbp = roundGainOrLossToSa108WholePounds(gainOrLossGbp);
-
-    const disposal: DisposalResult = {
-      eventDate,
-      taxYear: ukTaxYearLabelFromDateOnly(eventDate),
-      quantity,
-      grossProceedsGbp,
-      disposalFeesGbp: feesGbp,
-      matchingSource: 'section-104-pool',
-      allowableCostGbp,
-      gainOrLossGbp,
-      roundedGainOrLossGbp,
-      poolSharesAfter: pool.shares,
-      poolCostGbpAfter: pool.costGbp,
+  if (events.length === 0) {
+    return {
+      symbol: parsed.symbol,
+      poolSnapshots: [],
+      disposalResults: [],
+      taxYearSummaries: [],
     };
-    disposalResults.push(disposal);
-
-    poolSnapshots.push({
-      description: 'Disposal matched against Section 104 pool',
-      eventDate,
-      shares: pool.shares,
-      costGbp: pool.costGbp,
-    });
   }
+
+  const { poolSnapshots, disposalResults } = computeMatchingOutput(events);
 
   const taxYearSummaries = computeAnnualSummaries({
     disposalResults,

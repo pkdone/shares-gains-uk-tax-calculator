@@ -97,13 +97,9 @@ export async function runCalculationForSymbol(params: {
     broughtForwardLosses: input.broughtForwardLosses,
   });
 
-  const warnings: string[] = [
-    'Matching uses the Section 104 pool only. Same-day and 30-day matching rules are planned for Milestone 6.',
-  ];
-
   return {
     output,
     fxByAcquisitionId,
-    warnings,
+    warnings: [],
   };
 }

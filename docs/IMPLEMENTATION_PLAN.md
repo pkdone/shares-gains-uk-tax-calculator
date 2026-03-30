@@ -739,18 +739,65 @@ Milestone 5 delivered 2026-03-30. README documents `fetch:fx-rates` and `.env.lo
 
 **Goal:** implement HMRC identification order — same-day matching, then 30-day (bed and breakfasting), then Section 104 pool — and extend `CalcOutput` / per-disposal breakdown accordingly.
 
+**Status:** Complete  
+**Completed:** 2026-03-30  
+**Validated:** `npm run validate` on 2026-03-30
+
 #### Scope
 
 - Same-day matching: disposals matched to same-day acquisitions first (aggregating same-day acquisitions and disposals per CG51560)
-- 30-day rule: remaining disposal quantity matched to acquisitions within 30 days **after** the disposal date
-- Updated `calculateGainsForSymbol` (or successor) with matching priority; `matchingSource` extended beyond pool-only
+- 30-day rule: remaining disposal quantity matched to acquisitions within 30 days **after** the disposal date (FIFO by acquisition date)
+- `calculateGainsForSymbol` uses `computeMatchingOutput` (`src/domain/services/share-matching.ts`); `DisposalResult` carries **`matchingBreakdown`** (tranches: `same-day` | `thirty-day` | `section-104-pool`)
+- Calculation page: per-disposal matching breakdown; ADR-009
 - Unit tests for each rule and combined scenarios; PRD Appendix 4 items for same-day and 30-day
+
+#### Tasks
+
+**ADR**
+
+- [x] **ADR-009:** Share matching algorithm design (`docs/adrs/009-share-matching-algorithm-design.md`)
+
+**Domain**
+
+- [x] Extend `src/domain/schemas/calculation.ts`: `matchingSourceSchema` enum; `matchingTrancheSchema`; `DisposalResult.matchingBreakdown`
+- [x] `src/domain/services/share-matching.ts` — aggregation, phase 1 (same-day + 30-day), phase 2 (Section 104 pool)
+- [x] `src/domain/services/cgt-calculator.ts` — delegate to `computeMatchingOutput`
+
+**Application / interfaces**
+
+- [x] `run-calculation-for-symbol.ts` — remove Milestone 6 placeholder warning (`warnings: []`)
+- [x] Calculation page — matching breakdown column; copy updated for full HMRC order
+
+**Tests**
+
+- [x] `share-matching.test.ts`; extended `cgt-calculator.test.ts` (HS284 + same-day + 30-day + combined)
+
+#### Likely files (delivered)
+
+| File | Action |
+|------|--------|
+| `docs/adrs/009-share-matching-algorithm-design.md` | create |
+| `src/domain/schemas/calculation.ts` | modify |
+| `src/domain/services/share-matching.ts` | create |
+| `src/domain/services/cgt-calculator.ts` | modify |
+| `src/application/calculation/run-calculation-for-symbol.ts` | modify |
+| `src/app/portfolios/[portfolioId]/calculation/page.tsx` | modify |
+| `src/test/unit/domain/services/share-matching.test.ts` | create |
+| `src/test/unit/domain/services/cgt-calculator.test.ts` | modify |
+| `src/test/unit/domain/services/cgt-annual-summary.test.ts` | modify |
 
 #### Exit criteria
 
-- [ ] calculation engine applies correct matching order
-- [ ] PRD Appendix 4 validation points for same-day and 30-day pass
-- [ ] `npm run validate` passes
+- [x] calculation engine applies correct matching order (same-day → 30-day → Section 104 pool)
+- [x] PRD Appendix 4 validation points for same-day and 30-day pass (unit tests)
+- [x] HS284 Example 3 regression (pool-only path with `matchingBreakdown`)
+- [x] per-disposal matching breakdown visible on calculation page
+- [x] ADR-009 complete
+- [x] `npm run validate` passes
+
+#### Completion record
+
+Milestone 6 delivered 2026-03-30; see **Status** and **Validated** above. Sell-side broker import research rescheduled to **pre–Milestone 7** (Section 8.2).
 
 ---
 
@@ -815,7 +862,7 @@ Milestone 5 delivered 2026-03-30. README documents `fetch:fx-rates` and `.env.lo
 
 ### 8.2 Still open
 
-Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. **Sell-side import research** (Gains & Losses / confirmations) remains a **pre–Milestone 6** checkpoint (disposal import / USD disposals) — see Milestone 3, Data source gap. No other open product questions are tracked here as of 2026-03-30; revisit when scoping Milestone 7 (e.g. exact UX for brought-forward entry).
+Workspace and Milestone 2 data-modelling choices above are resolved in Section 3.2, Milestone 2 (Section 7), and PRD §8.1. **Sell-side import research** (Gains & Losses / confirmations) is a **pre–Milestone 7** checkpoint (disposal import / USD disposals) — see Milestone 3, Data source gap; it does not block same-day/30-day matching (Milestone 6). No other open product questions are tracked here as of 2026-03-30; revisit when scoping Milestone 7 (e.g. exact UX for brought-forward entry).
 
 ---
 
@@ -837,6 +884,7 @@ Workspace and Milestone 2 data-modelling choices above are resolved in Section 3
 | ADR-005: Import pipeline design | M3 | How files are uploaded, parsed, normalised, validated, and committed. Extensibility for new formats. |
 | ADR-006: Calculation engine boundary design | M4 | Input/output contracts, pure-function design, separation from persistence and UI. |
 | ADR-008: FX rate infrastructure and conversion | M5 | BoE XUDLUSS storage, lookup, fallback, application-layer GBP conversion for `import_usd`. |
+| ADR-009: Share matching algorithm | M6 | HMRC order (same-day, 30-day, Section 104), CG51560 aggregation, `matchingBreakdown` schema. |
 | ADR-007: Authentication and user model | When auth is added | Provider choice, session model, user document shape, migration from stub user. |
 
 ---
@@ -860,8 +908,8 @@ No milestone is complete while `npm run validate` is failing.
 Per PRD Appendix 4, the calculation engine must pass:
 
 - [x] **HS284 Example 3:** Section 104 pool formation and partial-disposal fraction logic reproduced exactly (penny-precision engine; see `docs/references/hs284-example-3-2024-notes.md`)
-- [ ] **Same-day matching:** disposal and acquisition on the same day match first (M6)
-- [ ] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M6)
+- [x] **Same-day matching:** disposal and acquisition on the same day match first (M6)
+- [x] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M6)
 - [x] **FX handling:** per-transaction GBP conversion, not "compute USD gain then convert" (M5)
 - [x] **Loss utilisation:** current-year before brought-forward; brought-forward only down to AEA (M4)
 - [x] **2024-25 rate change:** correct rates before/after 30 Oct 2024 in same tax year (M4 — tax year **2024-25** split)
@@ -870,7 +918,7 @@ Per PRD Appendix 4, the calculation engine must pass:
 
 ## 11. Risks
 
-- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations **before Milestone 6** (same-day/30-day and disposal import scope).
+- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations **before Milestone 7** (disposal import scope).
 - **Import format brittleness:** The XLSX format is hierarchical, sparse, and uses mixed date formats. E\*Trade may change the export layout without notice. Mitigate with defensive parsing, clear validation errors, and a mapping approach.
 - **Tax domain complexity escalation:** Same-day and 30-day matching interact with each other and with the pool in non-obvious ways. Mitigate by deferring matching rules to M6 (after pool mechanics and FX wiring are solid) and testing each rule independently.
 - **CGT rate tier simplification:** The app asks the user to declare their tier rather than computing it. This is a deliberate simplification but may confuse users who don't know their band. Mitigate with clear in-product guidance.
@@ -911,6 +959,7 @@ Before implementation starts, confirm:
 - [x] Milestone 3 delivered: tasks, exit criteria, and stakeholder decisions in Section 7; ADR-005; Status `Complete`; `npm run validate` recorded under Completion record
 - [x] Milestone 4 delivered: tasks, exit criteria, ADR-006, HS284 notes update; Status `Complete`; `npm run validate` recorded under Completion record
 - [x] Milestone 5 delivered: FX rates, calculation wiring, calculation page, ADR-008; Section 7 tasks and exit criteria; `npm run validate` recorded
+- [x] Milestone 6 delivered: same-day/30-day/Section 104 matching, ADR-009, calculation page breakdown, Section 7 tasks and exit criteria; `npm run validate` recorded
 
 ---
 

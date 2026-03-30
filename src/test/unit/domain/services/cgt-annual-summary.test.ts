@@ -13,7 +13,9 @@ function disposalStub(params: {
     quantity: 1,
     grossProceedsGbp: 0,
     disposalFeesGbp: 0,
-    matchingSource: 'section-104-pool',
+    matchingBreakdown: [
+      { source: 'section-104-pool', quantity: 1, allowableCostGbp: 0 },
+    ],
     allowableCostGbp: 0,
     gainOrLossGbp,
     roundedGainOrLossGbp: Math.round(gainOrLossGbp),
