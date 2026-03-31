@@ -2,12 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { listPortfolioSymbols } from '@/application/calculation/list-portfolio-symbols';
 import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
-import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
+import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
-import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
+import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
@@ -16,18 +15,18 @@ import { DomainError } from '@/shared/errors/app-error';
 import {
   CalculationResultSections,
   rateTierToLabel,
-} from '@/app/portfolios/[portfolioId]/calculation/calculation-result-sections';
-import { CalculationControls } from '@/app/portfolios/[portfolioId]/calculation/calculation-controls';
-import { FxAppliedDialog } from '@/app/portfolios/[portfolioId]/calculation/fx-applied-dialog';
-import { ScrollToCalculationResults } from '@/app/portfolios/[portfolioId]/calculation/scroll-to-calculation-results';
+} from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
+import { CalculationControls } from '@/app/holdings/[holdingId]/calculation/calculation-controls';
+import { FxAppliedDialog } from '@/app/holdings/[holdingId]/calculation/fx-applied-dialog';
+import { ScrollToCalculationResults } from '@/app/holdings/[holdingId]/calculation/scroll-to-calculation-results';
 
-const portfolioRepository = new MongoPortfolioRepository();
+const holdingRepository = new MongoHoldingRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
 const fxRateRepository = new MongoFxRateRepository();
 
 type CalculationPageProps = {
-  readonly params: Promise<{ portfolioId: string }>;
+  readonly params: Promise<{ holdingId: string }>;
   readonly searchParams: Promise<{
     readonly symbol?: string;
     readonly rateTier?: string;
@@ -35,26 +34,25 @@ type CalculationPageProps = {
   }>;
 };
 
-export default async function PortfolioCalculationPage({
+export default async function HoldingCalculationPage({
   params,
   searchParams,
 }: CalculationPageProps): Promise<React.ReactElement> {
-  const { portfolioId } = await params;
+  const { holdingId } = await params;
   const sp = await searchParams;
 
   const userId = await requireVerifiedUserId();
 
-  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, userId);
-  if (portfolio === null) {
+  const holding = await holdingRepository.findByIdForUser(holdingId, userId);
+  if (holding === null) {
     notFound();
   }
 
-  const symbols = await listPortfolioSymbols({
-    acquisitionRepository,
-    disposalRepository,
-    portfolioId,
-    userId,
-  });
+  const [acquisitions, disposals] = await Promise.all([
+    acquisitionRepository.listByHoldingForUser(holdingId, userId),
+    disposalRepository.listByHoldingForUser(holdingId, userId),
+  ]);
+  const hasLedgerData = acquisitions.length > 0 || disposals.length > 0;
 
   const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
   const bfParsed = Number.parseFloat(sp.bf ?? '0');
@@ -64,25 +62,25 @@ export default async function PortfolioCalculationPage({
   });
 
   const symbolFromQuery = typeof sp.symbol === 'string' && sp.symbol.trim().length > 0 ? sp.symbol.trim() : '';
-  const symbol = symbolFromQuery.length > 0 ? symbolFromQuery : (symbols[0] ?? '');
+  const symbol =
+    symbolFromQuery.length > 0 ? symbolFromQuery.toUpperCase() : holding.symbol;
 
   const tierParsed = rateTierSchema.safeParse(sp.rateTier ?? 'additional');
   const rateTier = tierParsed.success ? tierParsed.data : 'additional';
 
   let calcError: string | null = null;
-  let result: Awaited<ReturnType<typeof runCalculationForSymbol>> | null = null;
+  let result: Awaited<ReturnType<typeof runCalculationForHoldingSymbol>> | null = null;
 
-  if (symbol.length > 0) {
+  if (hasLedgerData && symbol === holding.symbol) {
     try {
-      result = await runCalculationForSymbol({
-        portfolioRepository,
+      result = await runCalculationForHoldingSymbol({
+        holdingRepository,
         acquisitionRepository,
         disposalRepository,
         fxRateRepository,
         input: {
-          portfolioId,
+          holdingId,
           userId,
-          symbol,
           rateTier,
           broughtForwardLosses,
         },
@@ -90,13 +88,12 @@ export default async function PortfolioCalculationPage({
     } catch (err) {
       calcError = err instanceof DomainError ? err.message : 'Calculation failed';
     }
+  } else if (hasLedgerData && symbol !== holding.symbol) {
+    calcError = 'Symbol does not match this holding.';
   }
 
   const exportQuery = new URLSearchParams();
-  if (symbol.length > 0) {
-    exportQuery.set('symbol', symbol);
-  }
-
+  exportQuery.set('symbol', holding.symbol);
   exportQuery.set('rateTier', rateTier);
   exportQuery.set('bf', String(broughtForwardLosses));
 
@@ -105,15 +102,15 @@ export default async function PortfolioCalculationPage({
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <nav className="text-sm text-neutral-600 no-print">
-        <Link href="/portfolios" className="text-[var(--color-accent)] hover:underline">
-          Portfolios
+        <Link href="/holdings" className="text-[var(--color-accent)] hover:underline">
+          Holdings
         </Link>
         <span className="mx-2 text-neutral-400">/</span>
         <Link
-          href={`/portfolios/${portfolioId}`}
+          href={`/holdings/${holdingId}`}
           className="text-[var(--color-accent)] hover:underline"
         >
-          {portfolio.name}
+          {holding.symbol}
         </Link>
         <span className="mx-2 text-neutral-400">/</span>
         <span className="text-neutral-900">Calculation</span>
@@ -144,16 +141,13 @@ export default async function PortfolioCalculationPage({
         </ul>
       </section>
 
-      {symbols.length === 0 ? (
-        <p className="mt-8 text-sm text-neutral-600">Add acquisitions or disposals to run a calculation.</p>
-      ) : (
+      {hasLedgerData ? (
         <>
           <div className="mt-8 no-print">
             <CalculationControls
               key={`${symbol}|${rateTier}|${broughtForwardLosses}`}
-              portfolioId={portfolioId}
-              symbols={symbols}
-              currentSymbol={symbol}
+              holdingId={holdingId}
+              holdingSymbol={holding.symbol}
               currentRateTier={rateTier}
               currentBf={broughtForwardLosses}
             />
@@ -174,13 +168,13 @@ export default async function PortfolioCalculationPage({
               <div className="mt-6 flex flex-wrap gap-4 text-sm no-print">
                 <Link
                   className="text-[var(--color-accent)] underline"
-                  href={`/portfolios/${portfolioId}/computation-pack?${exportSuffix}`}
+                  href={`/holdings/${holdingId}/computation-pack?${exportSuffix}`}
                 >
                   Open computation pack (print)
                 </Link>
                 <a
                   className="text-[var(--color-accent)] underline"
-                  href={`/portfolios/${portfolioId}/disposals-export?${exportSuffix}`}
+                  href={`/holdings/${holdingId}/disposals-export?${exportSuffix}`}
                   download
                 >
                   Download disposals CSV
@@ -191,6 +185,8 @@ export default async function PortfolioCalculationPage({
             </>
           ) : null}
         </>
+      ) : (
+        <p className="mt-8 text-sm text-neutral-600">Add acquisitions or disposals to run a calculation.</p>
       )}
     </main>
   );

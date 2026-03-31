@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 
-import { addDisposalAction, type FormActionState } from '@/app/portfolios/actions';
+import { addDisposalAction, type FormActionState } from '@/app/holdings/actions';
 
 const priceUsd = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
@@ -11,11 +11,12 @@ const priceUsd = new Intl.NumberFormat('en-US', {
 });
 
 type DisposalFormProps = {
-  readonly portfolioId: string;
+  readonly holdingId: string;
+  readonly holdingSymbol: string;
   readonly onAfterSuccess?: () => void;
 };
 
-export function DisposalForm({ portfolioId, onAfterSuccess }: DisposalFormProps): React.ReactElement {
+export function DisposalForm({ holdingId, holdingSymbol, onAfterSuccess }: DisposalFormProps): React.ReactElement {
   const router = useRouter();
   const [state, action, pending] = useActionState<FormActionState | undefined, FormData>(
     addDisposalAction,
@@ -26,7 +27,7 @@ export function DisposalForm({ portfolioId, onAfterSuccess }: DisposalFormProps)
   const [quantityStr, setQuantityStr] = useState('');
   const [priceStr, setPriceStr] = useState('');
 
-  const grossDisplay = useMemo((): string => {
+  const proceedsDisplay = useMemo((): string => {
     const q = Number(quantityStr);
     const p = Number(priceStr);
     if (!Number.isFinite(q) || !Number.isFinite(p) || q <= 0 || p < 0) {
@@ -46,18 +47,10 @@ export function DisposalForm({ portfolioId, onAfterSuccess }: DisposalFormProps)
 
   return (
     <form action={action} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <input type="hidden" name="portfolioId" value={portfolioId} />
-      <label className="text-sm text-neutral-700 sm:col-span-2">
-        Symbol
-        <input
-          name="symbol"
-          type="text"
-          required
-          maxLength={32}
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          disabled={pending}
-        />
-      </label>
+      <input type="hidden" name="holdingId" value={holdingId} />
+      <p className="text-sm text-neutral-700 sm:col-span-2">
+        Symbol: <span className="font-medium tabular-nums">{holdingSymbol}</span>
+      </p>
       <label className="text-sm text-neutral-700">
         Event date (UTC)
         <input
@@ -84,7 +77,7 @@ export function DisposalForm({ portfolioId, onAfterSuccess }: DisposalFormProps)
           disabled={pending}
         />
       </label>
-      <label className="text-sm text-neutral-700 sm:col-span-2">
+      <label className="text-sm text-neutral-700">
         Price/share ($)
         <input
           name="pricePerShareUsd"
@@ -106,7 +99,7 @@ export function DisposalForm({ portfolioId, onAfterSuccess }: DisposalFormProps)
           className="mt-1 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm tabular-nums text-neutral-800"
           aria-live="polite"
         >
-          {grossDisplay}
+          {proceedsDisplay}
         </div>
       </div>
       <label className="text-sm text-neutral-700 sm:col-span-2">

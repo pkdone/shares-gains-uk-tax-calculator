@@ -13,16 +13,16 @@ export default async function HomePage(): Promise<React.ReactElement> {
       <p className="text-sm font-medium text-[var(--color-accent)]">Shares Gains UK Tax Calculator</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Application is running</h1>
       <p className="mt-4 text-pretty text-base leading-relaxed text-neutral-600">
-        Sign in to manage portfolios. Check{' '}
+        Sign in to manage holdings. Check{' '}
         <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-sm">GET /api/health</code> for database connectivity.
       </p>
       <p className="mt-6 flex flex-wrap gap-3">
         {signedIn ? (
           <Link
-            href="/portfolios"
+            href="/holdings"
             className="inline-flex rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
           >
-            Open portfolios
+            Open holdings
           </Link>
         ) : (
           <>

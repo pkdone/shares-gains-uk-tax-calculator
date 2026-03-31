@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 
-import { addAcquisitionAction, type FormActionState } from '@/app/portfolios/actions';
+import { addAcquisitionAction, type FormActionState } from '@/app/holdings/actions';
 
 const priceUsd = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
@@ -11,12 +11,14 @@ const priceUsd = new Intl.NumberFormat('en-US', {
 });
 
 type AcquisitionFormProps = {
-  readonly portfolioId: string;
+  readonly holdingId: string;
+  readonly holdingSymbol: string;
   readonly onAfterSuccess?: () => void;
 };
 
 export function AcquisitionForm({
-  portfolioId,
+  holdingId,
+  holdingSymbol,
   onAfterSuccess,
 }: AcquisitionFormProps): React.ReactElement {
   const router = useRouter();
@@ -49,18 +51,10 @@ export function AcquisitionForm({
 
   return (
     <form action={action} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <input type="hidden" name="portfolioId" value={portfolioId} />
-      <label className="text-sm text-neutral-700 sm:col-span-2">
-        Symbol
-        <input
-          name="symbol"
-          type="text"
-          required
-          maxLength={32}
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          disabled={pending}
-        />
-      </label>
+      <input type="hidden" name="holdingId" value={holdingId} />
+      <p className="text-sm text-neutral-700 sm:col-span-2">
+        Symbol: <span className="font-medium tabular-nums">{holdingSymbol}</span>
+      </p>
       <label className="text-sm text-neutral-700">
         Event date (UTC)
         <input

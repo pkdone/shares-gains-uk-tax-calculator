@@ -1,29 +1,29 @@
 import { deleteLedgerEntry } from '@/application/ledger/delete-ledger-entry';
-import type { PortfolioRepository } from '@/domain/repositories/portfolio-repository';
+import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
-import type { Portfolio } from '@/domain/schemas/portfolio';
+import type { Holding } from '@/domain/schemas/holding';
 import { DomainError } from '@/shared/errors/app-error';
 
 describe('deleteLedgerEntry', () => {
-  const portfolio: Portfolio = {
-    id: 'p1',
+  const holding: Holding = {
+    id: 'h1',
     userId: 'u1',
-    name: 'Test',
+    symbol: 'TEST',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  const portfolioRepository: PortfolioRepository = {
+  const holdingRepository: HoldingRepository = {
     create: jest.fn(),
-    findByIdForUser: jest.fn().mockResolvedValue(portfolio),
+    findByIdForUser: jest.fn().mockResolvedValue(holding),
     listByUser: jest.fn(),
   };
 
-  it('throws when portfolio is not found', async () => {
+  it('throws when holding is not found', async () => {
     const findByIdForUser = jest.fn().mockResolvedValue(null);
-    const portfolioRepo: PortfolioRepository = {
-      ...portfolioRepository,
+    const holdingRepo: HoldingRepository = {
+      ...holdingRepository,
       findByIdForUser,
     };
     const deleteAcquisition = jest.fn();
@@ -32,18 +32,18 @@ describe('deleteLedgerEntry', () => {
       insert: jest.fn(),
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteAcquisition,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteAcquisition,
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteDisposal,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteDisposal,
     };
 
     await expect(
-      deleteLedgerEntry(portfolioRepo, acquisitionRepo, disposalRepo, {
-        portfolioId: 'p1',
+      deleteLedgerEntry(holdingRepo, acquisitionRepo, disposalRepo, {
+        holdingId: 'h1',
         userId: 'u1',
         kind: 'ACQUISITION',
         entryId: '507f1f77bcf86cd799439011',
@@ -51,13 +51,13 @@ describe('deleteLedgerEntry', () => {
     ).rejects.toThrow(DomainError);
 
     await expect(
-      deleteLedgerEntry(portfolioRepo, acquisitionRepo, disposalRepo, {
-        portfolioId: 'p1',
+      deleteLedgerEntry(holdingRepo, acquisitionRepo, disposalRepo, {
+        holdingId: 'h1',
         userId: 'u1',
         kind: 'ACQUISITION',
         entryId: '507f1f77bcf86cd799439011',
       }),
-    ).rejects.toThrow(/portfolio not found/i);
+    ).rejects.toThrow(/holding not found/i);
 
     expect(deleteAcquisition).not.toHaveBeenCalled();
   });
@@ -68,18 +68,18 @@ describe('deleteLedgerEntry', () => {
       insert: jest.fn(),
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: jest.fn().mockResolvedValue(false),
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: jest.fn().mockResolvedValue(false),
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteDisposal,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteDisposal,
     };
 
     await expect(
-      deleteLedgerEntry(portfolioRepository, acquisitionRepo, disposalRepo, {
-        portfolioId: 'p1',
+      deleteLedgerEntry(holdingRepository, acquisitionRepo, disposalRepo, {
+        holdingId: 'h1',
         userId: 'u1',
         kind: 'ACQUISITION',
         entryId: '507f1f77bcf86cd799439011',
@@ -95,18 +95,18 @@ describe('deleteLedgerEntry', () => {
       insert: jest.fn(),
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteAcquisition,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteAcquisition,
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: jest.fn().mockResolvedValue(false),
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: jest.fn().mockResolvedValue(false),
     };
 
     await expect(
-      deleteLedgerEntry(portfolioRepository, acquisitionRepo, disposalRepo, {
-        portfolioId: 'p1',
+      deleteLedgerEntry(holdingRepository, acquisitionRepo, disposalRepo, {
+        holdingId: 'h1',
         userId: 'u1',
         kind: 'DISPOSAL',
         entryId: '507f1f77bcf86cd799439012',
@@ -123,23 +123,23 @@ describe('deleteLedgerEntry', () => {
       insert: jest.fn(),
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteAcquisition,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteAcquisition,
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteDisposal,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteDisposal,
     };
 
-    await deleteLedgerEntry(portfolioRepository, acquisitionRepo, disposalRepo, {
-      portfolioId: 'p1',
+    await deleteLedgerEntry(holdingRepository, acquisitionRepo, disposalRepo, {
+      holdingId: 'h1',
       userId: 'u1',
       kind: 'ACQUISITION',
       entryId: '507f1f77bcf86cd799439011',
     });
 
-    expect(deleteAcquisition).toHaveBeenCalledWith('p1', 'u1', '507f1f77bcf86cd799439011');
+    expect(deleteAcquisition).toHaveBeenCalledWith('h1', 'u1', '507f1f77bcf86cd799439011');
     expect(deleteDisposal).not.toHaveBeenCalled();
   });
 
@@ -150,23 +150,23 @@ describe('deleteLedgerEntry', () => {
       insert: jest.fn(),
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteAcquisition,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteAcquisition,
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
-      listByPortfolioForUser: jest.fn(),
-      deleteByIdForPortfolioUser: deleteDisposal,
+      listByHoldingForUser: jest.fn(),
+      deleteByIdForHoldingUser: deleteDisposal,
     };
 
-    await deleteLedgerEntry(portfolioRepository, acquisitionRepo, disposalRepo, {
-      portfolioId: 'p1',
+    await deleteLedgerEntry(holdingRepository, acquisitionRepo, disposalRepo, {
+      holdingId: 'h1',
       userId: 'u1',
       kind: 'DISPOSAL',
       entryId: '507f1f77bcf86cd799439012',
     });
 
-    expect(deleteDisposal).toHaveBeenCalledWith('p1', 'u1', '507f1f77bcf86cd799439012');
+    expect(deleteDisposal).toHaveBeenCalledWith('h1', 'u1', '507f1f77bcf86cd799439012');
     expect(deleteAcquisition).not.toHaveBeenCalled();
   });
 });

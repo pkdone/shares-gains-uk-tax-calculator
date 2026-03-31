@@ -1,12 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { listPortfolioSymbols } from '@/application/calculation/list-portfolio-symbols';
 import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
-import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
+import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
-import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
+import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
@@ -15,14 +14,15 @@ import { DomainError } from '@/shared/errors/app-error';
 import {
   CalculationResultSections,
   rateTierToLabel,
-} from '@/app/portfolios/[portfolioId]/calculation/calculation-result-sections';
+} from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 
-const portfolioRepository = new MongoPortfolioRepository();
+const holdingRepository = new MongoHoldingRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
 const fxRateRepository = new MongoFxRateRepository();
+
 type ComputationPackPageProps = {
-  readonly params: Promise<{ portfolioId: string }>;
+  readonly params: Promise<{ holdingId: string }>;
   readonly searchParams: Promise<{
     readonly symbol?: string;
     readonly rateTier?: string;
@@ -34,22 +34,15 @@ export default async function ComputationPackPage({
   params,
   searchParams,
 }: ComputationPackPageProps): Promise<React.ReactElement> {
-  const { portfolioId } = await params;
+  const { holdingId } = await params;
   const sp = await searchParams;
 
   const userId = await requireVerifiedUserId();
 
-  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, userId);
-  if (portfolio === null) {
+  const holding = await holdingRepository.findByIdForUser(holdingId, userId);
+  if (holding === null) {
     notFound();
   }
-
-  const symbols = await listPortfolioSymbols({
-    acquisitionRepository,
-    disposalRepository,
-    portfolioId,
-    userId,
-  });
 
   const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
   const bfParsed = Number.parseFloat(sp.bf ?? '0');
@@ -59,25 +52,25 @@ export default async function ComputationPackPage({
   });
 
   const symbolFromQuery = typeof sp.symbol === 'string' && sp.symbol.trim().length > 0 ? sp.symbol.trim() : '';
-  const symbol = symbolFromQuery.length > 0 ? symbolFromQuery : (symbols[0] ?? '');
+  const symbol =
+    symbolFromQuery.length > 0 ? symbolFromQuery.toUpperCase() : holding.symbol;
 
   const tierParsed = rateTierSchema.safeParse(sp.rateTier ?? 'additional');
   const rateTier = tierParsed.success ? tierParsed.data : 'additional';
 
   let calcError: string | null = null;
-  let result: Awaited<ReturnType<typeof runCalculationForSymbol>> | null = null;
+  let result: Awaited<ReturnType<typeof runCalculationForHoldingSymbol>> | null = null;
 
-  if (symbol.length > 0) {
+  if (symbol === holding.symbol) {
     try {
-      result = await runCalculationForSymbol({
-        portfolioRepository,
+      result = await runCalculationForHoldingSymbol({
+        holdingRepository,
         acquisitionRepository,
         disposalRepository,
         fxRateRepository,
         input: {
-          portfolioId,
+          holdingId,
           userId,
-          symbol,
           rateTier,
           broughtForwardLosses,
         },
@@ -85,24 +78,26 @@ export default async function ComputationPackPage({
     } catch (err) {
       calcError = err instanceof DomainError ? err.message : 'Calculation failed';
     }
+  } else {
+    calcError = 'Symbol does not match this holding.';
   }
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12 print:max-w-none print:px-4 print:py-4">
       <nav className="text-sm text-neutral-600 no-print">
-        <Link href="/portfolios" className="text-[var(--color-accent)] hover:underline">
-          Portfolios
+        <Link href="/holdings" className="text-[var(--color-accent)] hover:underline">
+          Holdings
         </Link>
         <span className="mx-2 text-neutral-400">/</span>
         <Link
-          href={`/portfolios/${portfolioId}`}
+          href={`/holdings/${holdingId}`}
           className="text-[var(--color-accent)] hover:underline"
         >
-          {portfolio.name}
+          {holding.symbol}
         </Link>
         <span className="mx-2 text-neutral-400">/</span>
         <Link
-          href={`/portfolios/${portfolioId}/calculation`}
+          href={`/holdings/${holdingId}/calculation`}
           className="text-[var(--color-accent)] hover:underline"
         >
           Calculation
@@ -122,15 +117,11 @@ export default async function ComputationPackPage({
       </header>
 
       <div className="mt-6 hidden print:block">
-        <h1 className="text-xl font-semibold">Computation pack — {portfolio.name}</h1>
+        <h1 className="text-xl font-semibold">Computation pack — {holding.symbol}</h1>
         <p className="mt-1 text-sm text-neutral-800">
           Symbol {symbol} · Brought-forward losses £{broughtForwardLosses.toFixed(2)}
         </p>
       </div>
-
-      {symbol.length === 0 ? (
-        <p className="mt-8 text-sm text-neutral-600">Nothing to print — add ledger data first.</p>
-      ) : null}
 
       {calcError ? (
         <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">

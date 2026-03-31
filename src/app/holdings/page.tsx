@@ -1,50 +1,53 @@
 import Link from 'next/link';
 
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
-import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
+import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 
-import { CreatePortfolioForm } from '@/app/portfolios/create-portfolio-form';
+import { CreateHoldingForm } from '@/app/holdings/create-holding-form';
 import { SignOutButton } from '@/app/sign-out-button';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PortfoliosPage(): Promise<React.ReactElement> {
+export default async function HoldingsPage(): Promise<React.ReactElement> {
   const userId = await requireVerifiedUserId();
-  const portfolioRepository = new MongoPortfolioRepository();
-  const portfolios = await portfolioRepository.listByUser(userId);
+  const holdingRepository = new MongoHoldingRepository();
+  const holdings = await holdingRepository.listByUser(userId);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <p className="text-sm font-medium text-[var(--color-accent)]">Manual ledger</p>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Portfolios</h1>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Holdings</h1>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <p className="text-pretty text-sm leading-relaxed text-neutral-600">
-          Create a portfolio, then add acquisitions and disposals. Amounts are GBP only; no CGT calculation in this
-          milestone.
+          Each holding is one stock symbol. Add acquisitions and disposals for that symbol. Amounts are USD in the
+          ledger; CGT uses sterling on the calculation page.
         </p>
         <SignOutButton />
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-neutral-900">New portfolio</h2>
+        <h2 className="text-lg font-medium text-neutral-900">New holding</h2>
+        <p className="mt-1 text-xs text-neutral-600">
+          Enter a ticker (e.g. AAPL). It will be stored and shown in uppercase.
+        </p>
         <div className="mt-3">
-          <CreatePortfolioForm />
+          <CreateHoldingForm />
         </div>
       </section>
 
       <section className="mt-10">
-        <h2 className="text-lg font-medium text-neutral-900">Your portfolios</h2>
-        {portfolios.length === 0 ? (
-          <p className="mt-3 text-sm text-neutral-600">No portfolios yet.</p>
+        <h2 className="text-lg font-medium text-neutral-900">Your holdings</h2>
+        {holdings.length === 0 ? (
+          <p className="mt-3 text-sm text-neutral-600">No holdings yet.</p>
         ) : (
           <ul className="mt-3 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
-            {portfolios.map((p) => (
-              <li key={p.id}>
+            {holdings.map((h) => (
+              <li key={h.id}>
                 <Link
-                  href={`/portfolios/${p.id}`}
+                  href={`/holdings/${h.id}`}
                   className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
                 >
-                  {p.name}
+                  {h.symbol}
                 </Link>
               </li>
             ))}

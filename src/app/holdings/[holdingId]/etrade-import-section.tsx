@@ -8,11 +8,12 @@ import {
   previewEtradeImportAction,
   type EtradeImportCommitState,
   type EtradeImportPreviewState,
-} from '@/app/portfolios/import-actions';
+} from '@/app/holdings/import-actions';
 import { pricePerShare } from '@/domain/services/ledger-money';
 
 type EtradeImportSectionProps = {
-  readonly portfolioId: string;
+  readonly holdingId: string;
+  readonly holdingSymbol: string;
   /** `card` = bordered panel with heading (default). `plain` = content only for use inside a modal shell. */
   readonly layout?: 'card' | 'plain';
   readonly onCommitSuccess?: () => void;
@@ -29,7 +30,8 @@ const usdPrice = new Intl.NumberFormat('en-US', {
 });
 
 export function EtradeImportSection({
-  portfolioId,
+  holdingId,
+  holdingSymbol,
   layout = 'card',
   onCommitSuccess,
 }: EtradeImportSectionProps): React.ReactElement {
@@ -52,6 +54,7 @@ export function EtradeImportSection({
 
   const drafts = previewState?.drafts;
   const notices = previewState?.notices;
+  const ignoredSymbols = previewState?.ignoredSymbols;
 
   const shellClassName =
     layout === 'card'
@@ -64,13 +67,13 @@ export function EtradeImportSection({
         <h2 className="text-lg font-medium text-neutral-900">Import RSU vesting (E*Trade By Benefit Type)</h2>
       ) : null}
       <p className={`text-xs text-neutral-600 ${layout === 'card' ? 'mt-1' : ''}`}>
-        Upload the &quot;By Benefit Type&quot; XLSX. Preview drafts, then commit. Values are stored in USD; GBP
-        conversion is Milestone 5. Section 104 calculations (Milestone 4) use GBP only — imported USD rows stay
-        out of the engine until then.
+        Upload the &quot;By Benefit Type&quot; XLSX. Only rows for symbol <strong>{holdingSymbol}</strong> are
+        imported into this holding. Other symbols are skipped; the preview lists how many rows were skipped per
+        symbol.
       </p>
 
       <form action={previewAction} className="mt-4 flex flex-wrap items-end gap-3">
-        <input type="hidden" name="portfolioId" value={portfolioId} />
+        <input type="hidden" name="holdingId" value={holdingId} />
         <label className="text-sm text-neutral-700">
           XLSX file
           <input
@@ -92,9 +95,23 @@ export function EtradeImportSection({
       </form>
 
       {previewState?.error ? (
-        <p className="mt-3 text-sm text-red-600" role="alert">
-          {previewState.error}
-        </p>
+        <div className="mt-3 space-y-2">
+          <p className="text-sm text-red-600" role="alert">
+            {previewState.error}
+          </p>
+          {ignoredSymbols !== undefined && ignoredSymbols.length > 0 ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              <p className="font-medium">Other symbols skipped</p>
+              <ul className="mt-1 list-inside list-disc">
+                {ignoredSymbols.map((row) => (
+                  <li key={row.symbol}>
+                    {row.symbol}: {row.count} row{row.count === 1 ? '' : 's'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       {notices !== undefined && notices.length > 0 ? (
@@ -105,10 +122,23 @@ export function EtradeImportSection({
         </ul>
       ) : null}
 
+      {ignoredSymbols !== undefined && ignoredSymbols.length > 0 && previewState?.error === undefined ? (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          <p className="font-medium">Other symbols skipped</p>
+          <ul className="mt-1 list-inside list-disc">
+            {ignoredSymbols.map((row) => (
+              <li key={row.symbol}>
+                {row.symbol}: {row.count} row{row.count === 1 ? '' : 's'}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {drafts !== undefined && drafts.length > 0 ? (
         <div className="mt-4">
           <form action={commitAction} className="flex flex-wrap items-center gap-3">
-            <input type="hidden" name="portfolioId" value={portfolioId} />
+            <input type="hidden" name="holdingId" value={holdingId} />
             <input type="hidden" name="draftsJson" value={JSON.stringify(drafts)} />
             <button
               type="submit"

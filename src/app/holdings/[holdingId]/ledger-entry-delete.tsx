@@ -3,16 +3,16 @@
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useRef, useState } from 'react';
 
-import { deleteLedgerEntryAction, type FormActionState } from '@/app/portfolios/actions';
+import { deleteLedgerEntryAction, type FormActionState } from '@/app/holdings/actions';
 
 type LedgerEntryDeleteProps = {
-  readonly portfolioId: string;
+  readonly holdingId: string;
   readonly kind: 'ACQUISITION' | 'DISPOSAL';
   readonly entryId: string;
 };
 
 export function LedgerEntryDelete({
-  portfolioId,
+  holdingId,
   kind,
   entryId,
 }: LedgerEntryDeleteProps): React.ReactElement {
@@ -72,7 +72,7 @@ export function LedgerEntryDelete({
             setSubmissionAttempted(true);
           }}
         >
-          <input type="hidden" name="portfolioId" value={portfolioId} />
+          <input type="hidden" name="holdingId" value={holdingId} />
           <input type="hidden" name="kind" value={kind} />
           <input type="hidden" name="entryId" value={entryId} />
 
@@ -81,7 +81,7 @@ export function LedgerEntryDelete({
               Delete this ledger entry?
             </h2>
             <p className="mt-1 text-sm text-neutral-600">
-              This cannot be undone. The row will be removed from your portfolio.
+              This cannot be undone. The row will be removed from this holding.
             </p>
             {submissionAttempted && state?.error !== undefined ? (
               <p className="mt-2 text-sm text-red-700" role="alert">

@@ -4,30 +4,39 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { commitEtradeByBenefitImport } from '@/application/import/commit-etrade-by-benefit-import';
+import { filterEtradeDraftsForHoldingSymbol } from '@/application/import/filter-etrade-drafts-for-holding-symbol';
 import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-etrade-by-benefit-type-import';
 import { shareAcquisitionImportUsdSchema } from '@/domain/schemas/share-acquisition';
 import { readXlsxForEtradeByBenefitTypeImport } from '@/infrastructure/import/read-xlsx-sheet';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
-import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
+import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { DomainError } from '@/shared/errors/app-error';
 
-const portfolioRepo = new MongoPortfolioRepository();
+const holdingRepo = new MongoHoldingRepository();
 const acquisitionRepo = new MongoShareAcquisitionRepository();
 
 export type EtradeImportPreviewState = {
   readonly error?: string;
   readonly drafts?: z.infer<typeof shareAcquisitionImportUsdSchema>[];
   readonly notices?: string[];
+  /** Rows skipped because their symbol did not match this holding (symbol → count). */
+  readonly ignoredSymbols?: ReadonlyArray<{ readonly symbol: string; readonly count: number }>;
 };
 
 export async function previewEtradeImportAction(
   _prev: EtradeImportPreviewState | undefined,
   formData: FormData,
 ): Promise<EtradeImportPreviewState> {
-  const portfolioId = formData.get('portfolioId');
-  if (typeof portfolioId !== 'string' || portfolioId.length < 1) {
-    return { error: 'Missing portfolio' };
+  const holdingId = formData.get('holdingId');
+  if (typeof holdingId !== 'string' || holdingId.length < 1) {
+    return { error: 'Missing holding' };
+  }
+
+  const userId = await requireVerifiedUserId();
+  const holding = await holdingRepo.findByIdForUser(holdingId, userId);
+  if (holding === null) {
+    return { error: 'Holding not found' };
   }
 
   const file = formData.get('etradeFile');
@@ -58,16 +67,20 @@ export async function previewEtradeImportAction(
     };
   }
 
-  if (drafts.length === 0) {
+  const { matching, ignoredBySymbol } = filterEtradeDraftsForHoldingSymbol(drafts, holding.symbol);
+
+  if (matching.length === 0) {
     return {
-      error: 'No acquisitions to import.',
+      error: 'No acquisitions match this holding symbol.',
       notices: notices.length > 0 ? [...notices] : undefined,
+      ignoredSymbols: ignoredBySymbol.length > 0 ? ignoredBySymbol : undefined,
     };
   }
 
   return {
-    drafts: [...drafts],
+    drafts: [...matching],
     notices: notices.length > 0 ? [...notices] : undefined,
+    ignoredSymbols: ignoredBySymbol.length > 0 ? ignoredBySymbol : undefined,
   };
 }
 
@@ -80,9 +93,9 @@ export async function commitEtradeImportAction(
   _prev: EtradeImportCommitState | undefined,
   formData: FormData,
 ): Promise<EtradeImportCommitState> {
-  const portfolioId = formData.get('portfolioId');
+  const holdingId = formData.get('holdingId');
   const draftsJson = formData.get('draftsJson');
-  if (typeof portfolioId !== 'string' || typeof draftsJson !== 'string') {
+  if (typeof holdingId !== 'string' || typeof draftsJson !== 'string') {
     return { error: 'Invalid request' };
   }
 
@@ -101,8 +114,8 @@ export async function commitEtradeImportAction(
   const userId = await requireVerifiedUserId();
 
   try {
-    await commitEtradeByBenefitImport(portfolioRepo, acquisitionRepo, {
-      portfolioId,
+    await commitEtradeByBenefitImport(holdingRepo, acquisitionRepo, {
+      holdingId,
       userId,
       drafts: draftsResult.data,
     });
@@ -113,6 +126,6 @@ export async function commitEtradeImportAction(
     return { error: err instanceof Error ? err.message : 'Import failed' };
   }
 
-  revalidatePath(`/portfolios/${portfolioId}`);
+  revalidatePath(`/holdings/${holdingId}`);
   return { ok: true };
 }

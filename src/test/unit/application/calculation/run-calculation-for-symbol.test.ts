@@ -1,31 +1,31 @@
-import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
-import type { PortfolioRepository } from '@/domain/repositories/portfolio-repository';
+import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
+import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
 import type { FxRateRepository } from '@/domain/repositories/fx-rate-repository';
-import type { Portfolio } from '@/domain/schemas/portfolio';
+import type { Holding } from '@/domain/schemas/holding';
 import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import type { ShareDisposal } from '@/domain/schemas/share-disposal';
 
-describe('runCalculationForSymbol', () => {
-  const portfolio: Portfolio = {
-    id: 'p1',
+describe('runCalculationForHoldingSymbol', () => {
+  const holding: Holding = {
+    id: 'h1',
     userId: 'u1',
-    name: 'Test',
+    symbol: 'LOB',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  const portfolioRepository: PortfolioRepository = {
+  const holdingRepository: HoldingRepository = {
     create: jest.fn(),
-    findByIdForUser: jest.fn().mockResolvedValue(portfolio),
+    findByIdForUser: jest.fn().mockResolvedValue(holding),
     listByUser: jest.fn(),
   };
 
   const acquisitions: ShareAcquisition[] = [
     {
       id: 'acq1',
-      portfolioId: 'p1',
+      holdingId: 'h1',
       userId: 'u1',
       economicsKind: 'manual_usd',
       symbol: 'LOB',
@@ -41,7 +41,7 @@ describe('runCalculationForSymbol', () => {
   const disposals: ShareDisposal[] = [
     {
       id: 'd1',
-      portfolioId: 'p1',
+      holdingId: 'h1',
       userId: 'u1',
       symbol: 'LOB',
       eventDate: '2023-05-01',
@@ -57,14 +57,14 @@ describe('runCalculationForSymbol', () => {
     insert: jest.fn(),
     insertMany: jest.fn(),
     upsertImportUsdBatch: jest.fn(),
-    listByPortfolioForUser: jest.fn().mockResolvedValue(acquisitions),
-    deleteByIdForPortfolioUser: jest.fn(),
+    listByHoldingForUser: jest.fn().mockResolvedValue(acquisitions),
+    deleteByIdForHoldingUser: jest.fn(),
   };
 
   const disposalRepository: ShareDisposalRepository = {
     insert: jest.fn(),
-    listByPortfolioForUser: jest.fn().mockResolvedValue(disposals),
-    deleteByIdForPortfolioUser: jest.fn(),
+    listByHoldingForUser: jest.fn().mockResolvedValue(disposals),
+    deleteByIdForHoldingUser: jest.fn(),
   };
 
   const fxRateRepository: FxRateRepository = {
@@ -73,16 +73,15 @@ describe('runCalculationForSymbol', () => {
     upsertMany: jest.fn(),
   };
 
-  it('returns calculation output for a symbol', async () => {
-    const result = await runCalculationForSymbol({
-      portfolioRepository,
+  it('returns calculation output for the holding symbol', async () => {
+    const result = await runCalculationForHoldingSymbol({
+      holdingRepository,
       acquisitionRepository,
       disposalRepository,
       fxRateRepository,
       input: {
-        portfolioId: 'p1',
+        holdingId: 'h1',
         userId: 'u1',
-        symbol: 'LOB',
         rateTier: 'higher',
         broughtForwardLosses: 0,
       },

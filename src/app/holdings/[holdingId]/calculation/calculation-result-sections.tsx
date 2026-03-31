@@ -1,4 +1,4 @@
-import type { SuccessfulPortfolioCalculation } from '@/application/calculation/calculation-types';
+import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
 import type { MatchingSource, RateTier } from '@/domain/schemas/calculation';
 
 const money = new Intl.NumberFormat('en-GB', {
@@ -29,7 +29,7 @@ export function rateTierToLabel(tier: RateTier): string {
 }
 
 type CalculationResultSectionsProps = {
-  readonly result: SuccessfulPortfolioCalculation;
+  readonly result: SuccessfulHoldingCalculation;
   readonly rateTierLabel: string;
 };
 

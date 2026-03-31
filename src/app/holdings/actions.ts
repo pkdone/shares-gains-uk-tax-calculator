@@ -6,17 +6,17 @@ import { redirect } from 'next/navigation';
 import { addAcquisition } from '@/application/ledger/add-acquisition';
 import { addDisposal } from '@/application/ledger/add-disposal';
 import { deleteLedgerEntry } from '@/application/ledger/delete-ledger-entry';
-import { createPortfolio } from '@/application/portfolio/create-portfolio';
-import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
+import { createHolding } from '@/application/holding/create-holding';
+import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 import {
-  createPortfolioFormSchema,
+  createHoldingFormSchema,
   deleteLedgerEntryFormSchema,
   formDataString,
   parseAcquisitionForm,
   parseDisposalForm,
-} from '@/app/portfolios/form-parsing';
+} from '@/app/holdings/form-parsing';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
@@ -24,64 +24,68 @@ export type FormActionState = {
   readonly error?: string;
 };
 
-const portfolioRepo = new MongoPortfolioRepository();
+const holdingRepo = new MongoHoldingRepository();
 const acquisitionRepo = new MongoShareAcquisitionRepository();
 const disposalRepo = new MongoShareDisposalRepository();
 
-export async function createPortfolioAction(
+export async function createHoldingAction(
   _prevState: FormActionState | undefined,
   formData: FormData,
 ): Promise<FormActionState | undefined> {
-  const parsed = createPortfolioFormSchema.safeParse({
-    name: formData.get('name'),
+  const parsed = createHoldingFormSchema.safeParse({
+    symbol: formData.get('symbol'),
   });
 
   if (!parsed.success) {
-    const msg = parsed.error.flatten().fieldErrors.name?.[0] ?? 'Invalid name';
+    const msg = parsed.error.flatten().fieldErrors.symbol?.[0] ?? 'Invalid symbol';
     return { error: msg };
   }
 
   const userId = await requireVerifiedUserId();
 
-  let portfolio;
+  let holding;
   try {
-    portfolio = await createPortfolio(portfolioRepo, {
+    holding = await createHolding(holdingRepo, {
       userId,
-      name: parsed.data.name,
+      symbol: parsed.data.symbol,
     });
   } catch (err) {
     if (err instanceof DomainError) {
       return { error: err.message };
     }
-    return { error: err instanceof Error ? err.message : 'Failed to create portfolio' };
+    return { error: err instanceof Error ? err.message : 'Failed to create holding' };
   }
 
-  revalidatePath('/portfolios');
-  revalidatePath(`/portfolios/${portfolio.id}`);
-  redirect(`/portfolios/${portfolio.id}`);
+  revalidatePath('/holdings');
+  revalidatePath(`/holdings/${holding.id}`);
+  redirect(`/holdings/${holding.id}`);
 }
 
 export async function addAcquisitionAction(
   _prevState: FormActionState | undefined,
   formData: FormData,
 ): Promise<FormActionState | undefined> {
-  const portfolioId = formDataString(formData, 'portfolioId');
-  if (portfolioId.length < 1) {
-    return { error: 'Missing portfolio' };
+  const holdingId = formDataString(formData, 'holdingId');
+  if (holdingId.length < 1) {
+    return { error: 'Missing holding' };
   }
 
-  const parsed = parseAcquisitionForm(formData);
+  const userId = await requireVerifiedUserId();
+  const holding = await holdingRepo.findByIdForUser(holdingId, userId);
+  if (holding === null) {
+    return { error: 'Holding not found' };
+  }
+
+  const parsed = parseAcquisitionForm(formData, holding.symbol);
   if (!parsed.success) {
     const first = parsed.error.flatten().formErrors[0] ?? Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
     return { error: first ?? 'Invalid acquisition' };
   }
 
-  const userId = await requireVerifiedUserId();
-
   try {
-    await addAcquisition(portfolioRepo, acquisitionRepo, {
+    await addAcquisition(holdingRepo, acquisitionRepo, {
       ...parsed.data,
-      portfolioId,
+      holdingId,
       userId,
     });
   } catch (err) {
@@ -91,7 +95,7 @@ export async function addAcquisitionAction(
     return { error: err instanceof Error ? err.message : 'Failed to add acquisition' };
   }
 
-  revalidatePath(`/portfolios/${portfolioId}`);
+  revalidatePath(`/holdings/${holdingId}`);
   return undefined;
 }
 
@@ -99,23 +103,27 @@ export async function addDisposalAction(
   _prevState: FormActionState | undefined,
   formData: FormData,
 ): Promise<FormActionState | undefined> {
-  const portfolioId = formDataString(formData, 'portfolioId');
-  if (portfolioId.length < 1) {
-    return { error: 'Missing portfolio' };
+  const holdingId = formDataString(formData, 'holdingId');
+  if (holdingId.length < 1) {
+    return { error: 'Missing holding' };
   }
 
-  const parsed = parseDisposalForm(formData);
+  const userId = await requireVerifiedUserId();
+  const holding = await holdingRepo.findByIdForUser(holdingId, userId);
+  if (holding === null) {
+    return { error: 'Holding not found' };
+  }
+
+  const parsed = parseDisposalForm(formData, holding.symbol);
   if (!parsed.success) {
     const first = parsed.error.flatten().formErrors[0] ?? Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
     return { error: first ?? 'Invalid disposal' };
   }
 
-  const userId = await requireVerifiedUserId();
-
   try {
-    await addDisposal(portfolioRepo, disposalRepo, {
+    await addDisposal(holdingRepo, disposalRepo, {
       ...parsed.data,
-      portfolioId,
+      holdingId,
       userId,
     });
   } catch (err) {
@@ -125,7 +133,7 @@ export async function addDisposalAction(
     return { error: err instanceof Error ? err.message : 'Failed to add disposal' };
   }
 
-  revalidatePath(`/portfolios/${portfolioId}`);
+  revalidatePath(`/holdings/${holdingId}`);
   return undefined;
 }
 
@@ -134,7 +142,7 @@ export async function deleteLedgerEntryAction(
   formData: FormData,
 ): Promise<FormActionState | undefined> {
   const parsed = deleteLedgerEntryFormSchema.safeParse({
-    portfolioId: formData.get('portfolioId'),
+    holdingId: formData.get('holdingId'),
     kind: formData.get('kind'),
     entryId: formData.get('entryId'),
   });
@@ -146,13 +154,13 @@ export async function deleteLedgerEntryAction(
     return { error: first ?? 'Invalid request' };
   }
 
-  const { portfolioId, kind, entryId } = parsed.data;
+  const { holdingId, kind, entryId } = parsed.data;
 
   const userId = await requireVerifiedUserId();
 
   try {
-    await deleteLedgerEntry(portfolioRepo, acquisitionRepo, disposalRepo, {
-      portfolioId,
+    await deleteLedgerEntry(holdingRepo, acquisitionRepo, disposalRepo, {
+      holdingId,
       userId,
       kind,
       entryId,
@@ -164,6 +172,6 @@ export async function deleteLedgerEntryAction(
     return { error: err instanceof Error ? err.message : 'Failed to delete entry' };
   }
 
-  revalidatePath(`/portfolios/${portfolioId}`);
+  revalidatePath(`/holdings/${holdingId}`);
   return undefined;
 }

@@ -6,51 +6,37 @@ import { useState } from 'react';
 import type { RateTier } from '@/domain/schemas/calculation';
 
 type CalculationControlsProps = {
-  readonly portfolioId: string;
-  readonly symbols: readonly string[];
-  readonly currentSymbol: string;
+  readonly holdingId: string;
+  readonly holdingSymbol: string;
   readonly currentRateTier: RateTier;
   readonly currentBf: number;
 };
 
 export function CalculationControls({
-  portfolioId,
-  symbols,
-  currentSymbol,
+  holdingId,
+  holdingSymbol,
   currentRateTier,
   currentBf,
 }: CalculationControlsProps): React.ReactElement {
   const router = useRouter();
-  const [symbol, setSymbol] = useState(currentSymbol);
   const [rateTier, setRateTier] = useState<RateTier>(currentRateTier);
   const [bf, setBf] = useState(String(currentBf));
 
   function runCalculate(): void {
     const q = new URLSearchParams();
-    q.set('symbol', symbol);
+    q.set('symbol', holdingSymbol);
     q.set('rateTier', rateTier);
     q.set('bf', bf);
-    router.push(`/portfolios/${portfolioId}/calculation?${q.toString()}`);
+    router.push(`/holdings/${holdingId}/calculation?${q.toString()}`);
   }
 
   return (
     <div className="flex flex-wrap items-end gap-4">
       <div>
-        <label htmlFor="symbol" className="block text-xs font-medium text-neutral-600">
-          Symbol
-        </label>
-        <select
-          id="symbol"
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          className="mt-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm"
-        >
-          {symbols.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <p className="block text-xs font-medium text-neutral-600">Symbol</p>
+        <p className="mt-1 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm font-medium tabular-nums text-neutral-900">
+          {holdingSymbol}
+        </p>
       </div>
       <div>
         <label htmlFor="rateTier" className="block text-xs font-medium text-neutral-600">

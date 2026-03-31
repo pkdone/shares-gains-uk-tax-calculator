@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactElement, ReactNode } from 'react';
 
-import { getLedgerForPortfolio } from '@/application/ledger/get-ledger-for-portfolio';
+import { getLedgerForHolding } from '@/application/ledger/get-ledger-for-holding';
 import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import {
   netDisposalProceedsUsd,
@@ -10,12 +10,12 @@ import {
   totalAcquisitionCostUsd,
 } from '@/domain/services/ledger-money';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
-import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
+import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 
-import { LedgerEntryDelete } from '@/app/portfolios/[portfolioId]/ledger-entry-delete';
-import { PortfolioLedgerActions } from '@/app/portfolios/[portfolioId]/portfolio-ledger-actions';
+import { LedgerEntryDelete } from '@/app/holdings/[holdingId]/ledger-entry-delete';
+import { HoldingLedgerActions } from '@/app/holdings/[holdingId]/holding-ledger-actions';
 
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
@@ -27,7 +27,7 @@ const priceUsd = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 4,
 });
 
-const portfolioRepository = new MongoPortfolioRepository();
+const holdingRepository = new MongoHoldingRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
 
@@ -41,44 +41,42 @@ function acquisitionGrantCell(a: ShareAcquisition): ReactNode {
   return '—';
 }
 
-type PortfolioDetailPageProps = {
-  readonly params: Promise<{ portfolioId: string }>;
+type HoldingDetailPageProps = {
+  readonly params: Promise<{ holdingId: string }>;
 };
 
-export default async function PortfolioDetailPage({
-  params,
-}: PortfolioDetailPageProps): Promise<ReactElement> {
-  const { portfolioId } = await params;
+export default async function HoldingDetailPage({ params }: HoldingDetailPageProps): Promise<ReactElement> {
+  const { holdingId } = await params;
 
   const userId = await requireVerifiedUserId();
 
-  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, userId);
-  if (portfolio === null) {
+  const holding = await holdingRepository.findByIdForUser(holdingId, userId);
+  if (holding === null) {
     notFound();
   }
 
-  const ledger = await getLedgerForPortfolio(
-    portfolioRepository,
+  const ledger = await getLedgerForHolding(
+    holdingRepository,
     acquisitionRepository,
     disposalRepository,
-    { portfolioId, userId },
+    { holdingId, userId },
   );
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-12">
       <nav className="text-sm text-neutral-600">
-        <Link href="/portfolios" className="text-[var(--color-accent)] hover:underline">
-          Portfolios
+        <Link href="/holdings" className="text-[var(--color-accent)] hover:underline">
+          Holdings
         </Link>
         <span className="mx-2 text-neutral-400">/</span>
-        <span className="text-neutral-900">{portfolio.name}</span>
+        <span className="text-neutral-900">{holding.symbol}</span>
       </nav>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">{portfolio.name}</h1>
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight">{holding.symbol}</h1>
 
       <p className="mt-4">
         <Link
-          href={`/portfolios/${portfolioId}/calculation`}
+          href={`/holdings/${holdingId}/calculation`}
           className="text-sm font-medium text-[var(--color-accent)] hover:underline"
         >
           Open capital gains calculation
@@ -86,7 +84,7 @@ export default async function PortfolioDetailPage({
       </p>
 
       <div className="mt-10">
-        <PortfolioLedgerActions portfolioId={portfolioId} />
+        <HoldingLedgerActions holdingId={holdingId} holdingSymbol={holding.symbol} />
       </div>
 
       <section className="mt-8">
@@ -106,7 +104,6 @@ export default async function PortfolioDetailPage({
                       <tr>
                         <th className="px-3 py-2 font-medium">Type</th>
                         <th className="px-3 py-2 font-medium">Date</th>
-                        <th className="px-3 py-2 font-medium">Symbol</th>
                         <th className="px-3 py-2 font-medium">Grant #</th>
                         <th className="px-3 py-2 font-medium">Vest period</th>
                         <th className="px-3 py-2 font-medium">Vested</th>
@@ -125,7 +122,6 @@ export default async function PortfolioDetailPage({
                           <tr key={line.data.id}>
                             <td className="px-3 py-2 text-neutral-800">Acquisition (USD)</td>
                             <td className="px-3 py-2 tabular-nums text-neutral-800">{line.data.eventDate}</td>
-                            <td className="px-3 py-2">{line.data.symbol}</td>
                             <td className="px-3 py-2 text-neutral-600">{acquisitionGrantCell(line.data)}</td>
                             <td className="px-3 py-2 text-neutral-600">
                               {line.data.vestPeriod != null && line.data.vestPeriod !== ''
@@ -165,7 +161,7 @@ export default async function PortfolioDetailPage({
                               )}
                             </td>
                             <LedgerEntryDelete
-                              portfolioId={portfolioId}
+                              holdingId={holdingId}
                               kind="ACQUISITION"
                               entryId={line.data.id}
                             />
@@ -174,7 +170,6 @@ export default async function PortfolioDetailPage({
                           <tr key={line.data.id}>
                             <td className="px-3 py-2 text-neutral-800">Disposal</td>
                             <td className="px-3 py-2 tabular-nums text-neutral-800">{line.data.eventDate}</td>
-                            <td className="px-3 py-2">{line.data.symbol}</td>
                             <td className="px-3 py-2 text-neutral-600">
                               <em className="italic">(manual)</em>
                             </td>
@@ -197,7 +192,7 @@ export default async function PortfolioDetailPage({
                               )}
                             </td>
                             <LedgerEntryDelete
-                              portfolioId={portfolioId}
+                              holdingId={holdingId}
                               kind="DISPOSAL"
                               entryId={line.data.id}
                             />

@@ -2,19 +2,21 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-import { AcquisitionForm } from '@/app/portfolios/[portfolioId]/acquisition-form';
-import { DisposalForm } from '@/app/portfolios/[portfolioId]/disposal-form';
-import { EtradeImportSection } from '@/app/portfolios/[portfolioId]/etrade-import-section';
+import { AcquisitionForm } from '@/app/holdings/[holdingId]/acquisition-form';
+import { DisposalForm } from '@/app/holdings/[holdingId]/disposal-form';
+import { EtradeImportSection } from '@/app/holdings/[holdingId]/etrade-import-section';
 
-type PortfolioLedgerActionsProps = {
-  readonly portfolioId: string;
+type HoldingLedgerActionsProps = {
+  readonly holdingId: string;
+  readonly holdingSymbol: string;
 };
 
 type ModalId = 'acquisition' | 'disposal' | 'import';
 
-export function PortfolioLedgerActions({
-  portfolioId,
-}: PortfolioLedgerActionsProps): React.ReactElement {
+export function HoldingLedgerActions({
+  holdingId,
+  holdingSymbol,
+}: HoldingLedgerActionsProps): React.ReactElement {
   const acquisitionDialogRef = useRef<HTMLDialogElement>(null);
   const disposalDialogRef = useRef<HTMLDialogElement>(null);
   const importDialogRef = useRef<HTMLDialogElement>(null);
@@ -98,91 +100,87 @@ export function PortfolioLedgerActions({
 
       <dialog
         ref={acquisitionDialogRef}
-        className="w-[min(100vw-2rem,32rem)] max-w-none rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        className="w-full max-w-lg rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
         onPointerDown={onBackdropPointerDown}
-        aria-labelledby="portfolio-modal-acquisition-title"
+        aria-labelledby="holding-modal-acquisition-title"
       >
-        <div className="flex max-h-[min(85vh,40rem)] flex-col">
-          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-neutral-200 px-4 py-3">
-            <h2 id="portfolio-modal-acquisition-title" className="text-lg font-medium text-neutral-900">
-              Add acquisition
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="holding-modal-acquisition-title" className="text-lg font-medium text-neutral-900">
+              Add acquisition ({holdingSymbol})
             </h2>
             <button
               type="button"
-              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
               onClick={closeAcquisitionModal}
             >
               Close
             </button>
           </div>
-          <div className="min-h-0 overflow-y-auto px-4 py-3">
-            <p className="text-xs text-neutral-500">
-              Amounts in USD. Total cost for display = consideration (before fees) + fees.
-            </p>
-            <div className="mt-4">
-              <AcquisitionForm portfolioId={portfolioId} onAfterSuccess={closeAcquisitionModal} />
-            </div>
-          </div>
+          <p className="mt-1 text-xs text-neutral-600">USD amounts; sterling conversion is on the calculation page.</p>
+        </div>
+        <div className="px-4 py-4">
+          <AcquisitionForm
+            holdingId={holdingId}
+            holdingSymbol={holdingSymbol}
+            onAfterSuccess={closeAcquisitionModal}
+          />
         </div>
       </dialog>
 
       <dialog
         ref={disposalDialogRef}
-        className="w-[min(100vw-2rem,32rem)] max-w-none rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        className="w-full max-w-lg rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
         onPointerDown={onBackdropPointerDown}
-        aria-labelledby="portfolio-modal-disposal-title"
+        aria-labelledby="holding-modal-disposal-title"
       >
-        <div className="flex max-h-[min(85vh,40rem)] flex-col">
-          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-neutral-200 px-4 py-3">
-            <h2 id="portfolio-modal-disposal-title" className="text-lg font-medium text-neutral-900">
-              Add disposal
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="holding-modal-disposal-title" className="text-lg font-medium text-neutral-900">
+              Add disposal ({holdingSymbol})
             </h2>
             <button
               type="button"
-              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
               onClick={closeDisposalModal}
             >
               Close
             </button>
           </div>
-          <div className="min-h-0 overflow-y-auto px-4 py-3">
-            <p className="text-xs text-neutral-500">
-              Amounts in USD. Net proceeds for display = gross proceeds − fees.
-            </p>
-            <div className="mt-4">
-              <DisposalForm portfolioId={portfolioId} onAfterSuccess={closeDisposalModal} />
-            </div>
-          </div>
+        </div>
+        <div className="px-4 py-4">
+          <DisposalForm holdingId={holdingId} holdingSymbol={holdingSymbol} onAfterSuccess={closeDisposalModal} />
         </div>
       </dialog>
 
       <dialog
         ref={importDialogRef}
-        className="w-[min(100vw-2rem,42rem)] max-w-none rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        className="w-full max-w-4xl rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
         onPointerDown={onBackdropPointerDown}
-        aria-labelledby="portfolio-modal-import-title"
+        aria-labelledby="holding-modal-import-title"
       >
-        <div className="flex max-h-[min(90vh,48rem)] flex-col">
-          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-neutral-200 px-4 py-3">
-            <h2 id="portfolio-modal-import-title" className="text-lg font-medium text-neutral-900">
-              Import RSU vesting (E*Trade By Benefit Type)
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="holding-modal-import-title" className="text-lg font-medium text-neutral-900">
+              Import RSU vesting ({holdingSymbol})
             </h2>
             <button
               type="button"
-              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
               onClick={closeImportModal}
             >
               Close
             </button>
           </div>
-          <div className="min-h-0 overflow-y-auto px-4 py-3">
-            <EtradeImportSection
-              key={etradeImportSectionKey}
-              portfolioId={portfolioId}
-              layout="plain"
-              onCommitSuccess={onImportCommitSuccess}
-            />
-          </div>
+        </div>
+        <div className="max-h-[min(80vh,720px)] overflow-y-auto px-4 py-4">
+          <EtradeImportSection
+            key={etradeImportSectionKey}
+            holdingId={holdingId}
+            holdingSymbol={holdingSymbol}
+            layout="plain"
+            onCommitSuccess={onImportCommitSuccess}
+          />
         </div>
       </dialog>
     </>

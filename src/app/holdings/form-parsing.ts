@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
-import { portfolioNameSchema } from '@/domain/schemas/portfolio';
+import { stockSymbolSchema } from '@/domain/schemas/stock-symbol';
 import { shareAcquisitionManualUsdSchema } from '@/domain/schemas/share-acquisition';
 import { shareDisposalBaseSchema } from '@/domain/schemas/share-disposal';
 import { roundMoney2dp } from '@/domain/services/section-104-pool';
 
-/** Server action / form payload: create portfolio (name only; user from config). */
-export const createPortfolioFormSchema = z.object({
-  name: portfolioNameSchema,
+/** Server action / form payload: create holding (symbol only; user from session). */
+export const createHoldingFormSchema = z.object({
+  symbol: stockSymbolSchema,
 });
 
 export function formDataString(formData: FormData, key: string): string {
@@ -32,6 +32,7 @@ function coerceNumber(formData: FormData, key: string): unknown {
 
 export function parseAcquisitionForm(
   formData: FormData,
+  holdingSymbol: string,
 ): z.SafeParseReturnType<
   z.infer<typeof shareAcquisitionManualUsdSchema>,
   z.infer<typeof shareAcquisitionManualUsdSchema>
@@ -50,7 +51,7 @@ export function parseAcquisitionForm(
   }
   return shareAcquisitionManualUsdSchema.safeParse({
     economicsKind: 'manual_usd',
-    symbol: formData.get('symbol'),
+    symbol: holdingSymbol,
     eventDate: formData.get('eventDate'),
     quantity,
     considerationUsd,
@@ -60,6 +61,7 @@ export function parseAcquisitionForm(
 
 export function parseDisposalForm(
   formData: FormData,
+  holdingSymbol: string,
 ): z.SafeParseReturnType<z.infer<typeof shareDisposalBaseSchema>, z.infer<typeof shareDisposalBaseSchema>> {
   const quantity = coerceNumber(formData, 'quantity');
   const pricePerShareUsd = coerceNumber(formData, 'pricePerShareUsd');
@@ -74,7 +76,7 @@ export function parseDisposalForm(
     grossProceedsUsd = roundMoney2dp(quantity * pricePerShareUsd);
   }
   return shareDisposalBaseSchema.safeParse({
-    symbol: formData.get('symbol'),
+    symbol: holdingSymbol,
     eventDate: formData.get('eventDate'),
     quantity,
     grossProceedsUsd,
@@ -85,7 +87,7 @@ export function parseDisposalForm(
 export const ledgerEntryKindSchema = z.enum(['ACQUISITION', 'DISPOSAL']);
 
 export const deleteLedgerEntryFormSchema = z.object({
-  portfolioId: z.string().trim().min(1),
+  holdingId: z.string().trim().min(1),
   kind: ledgerEntryKindSchema,
   entryId: z.string().trim().min(1),
 });

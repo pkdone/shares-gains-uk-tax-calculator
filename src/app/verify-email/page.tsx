@@ -19,7 +19,7 @@ export default async function VerifyEmailPage({
         {showPending ? 'Verify your email to continue' : 'Resend verification'}
       </h1>
       <p className="mt-2 text-sm text-neutral-600">
-        Portfolio pages require a verified email. Check your inbox for the link we sent, or request a new one below.
+        Holding pages require a verified email. Check your inbox for the link we sent, or request a new one below.
       </p>
       <div className="mt-8">
         <ResendVerificationForm />
