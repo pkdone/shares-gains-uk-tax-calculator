@@ -1,25 +1,25 @@
-import type { PortfolioRepository } from '@/domain/repositories/portfolio-repository';
+import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
 import { ukTaxYearLabelFromDateOnly } from '@/domain/services/uk-tax-year';
 import { DomainError } from '@/shared/errors/app-error';
 
-import type { LedgerForPortfolio, LedgerLine, LedgerTaxYearGroup } from './ledger-types';
+import type { LedgerForHolding, LedgerLine, LedgerTaxYearGroup } from './ledger-types';
 
-export async function getLedgerForPortfolio(
-  portfolioRepository: PortfolioRepository,
+export async function getLedgerForHolding(
+  holdingRepository: HoldingRepository,
   acquisitionRepository: ShareAcquisitionRepository,
   disposalRepository: ShareDisposalRepository,
-  input: { readonly portfolioId: string; readonly userId: string },
-): Promise<LedgerForPortfolio> {
-  const portfolio = await portfolioRepository.findByIdForUser(input.portfolioId, input.userId);
-  if (portfolio === null) {
-    throw new DomainError('Portfolio not found');
+  input: { readonly holdingId: string; readonly userId: string },
+): Promise<LedgerForHolding> {
+  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
+  if (holding === null) {
+    throw new DomainError('Holding not found');
   }
 
   const [acquisitions, disposals] = await Promise.all([
-    acquisitionRepository.listByPortfolioForUser(input.portfolioId, input.userId),
-    disposalRepository.listByPortfolioForUser(input.portfolioId, input.userId),
+    acquisitionRepository.listByHoldingForUser(input.holdingId, input.userId),
+    disposalRepository.listByHoldingForUser(input.holdingId, input.userId),
   ]);
 
   const lines: LedgerLine[] = [
@@ -60,7 +60,7 @@ export async function getLedgerForPortfolio(
   }));
 
   return {
-    portfolioId: input.portfolioId,
+    holdingId: input.holdingId,
     orderedLines: lines,
     byTaxYear,
   };

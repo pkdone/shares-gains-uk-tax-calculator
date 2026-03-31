@@ -10,8 +10,8 @@ export type LedgerTaxYearGroup = {
   readonly lines: readonly LedgerLine[];
 };
 
-export type LedgerForPortfolio = {
-  readonly portfolioId: string;
+export type LedgerForHolding = {
+  readonly holdingId: string;
   readonly orderedLines: readonly LedgerLine[];
   readonly byTaxYear: readonly LedgerTaxYearGroup[];
 };
