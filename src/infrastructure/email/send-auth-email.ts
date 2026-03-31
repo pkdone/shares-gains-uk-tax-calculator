@@ -17,10 +17,13 @@ export async function sendAuthEmail(payload: AuthEmailPayload): Promise<void> {
     return;
   }
 
-  // Noop: no SMTP. Log the full text body so local dev can copy the verification/reset URL from the server log.
-  logInfo(
-    `Auth email (noop): subject=${payload.subject} recipient=${payload.to} body=${payload.text}`,
-  );
+  // Noop: no SMTP. Log a dedicated URL line so it is visible right after POST /api/auth/... in the dev terminal.
+  logInfo(`Auth email (noop): subject=${payload.subject} recipient=${payload.to}`);
+  const urlMatch = payload.text.match(/https?:\/\/[^\s<>"']+/);
+  if (urlMatch !== null) {
+    logInfo(`[dev] Copy this URL into the browser (noop email — not sent): ${urlMatch[0]}`);
+  }
+  logInfo(`Auth email (noop) full text: ${payload.text}`);
 }
 
 /** Reserved for SMTP / Resend / SES — implement when {@link env.AUTH_EMAIL_PROVIDER} is `smtp`. */

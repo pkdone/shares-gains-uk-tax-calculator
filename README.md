@@ -69,9 +69,9 @@ Open [http://localhost:3000](http://localhost:3000). Health check: [http://local
 
 By default **`AUTH_EMAIL_PROVIDER=noop`**: no real email is sent. Verification and password-reset links are still generated; the app logs them via `src/shared/app-logger.ts`.
 
-1. Keep the **terminal where `npm run dev` is running** visible (that is where auth emails are logged).
-2. Complete **Sign up** in the browser. After submit, watch that terminal for a line like `Auth email (noop): ... body=...` — the **body** includes the full verification URL.
-3. **Copy the URL** from the log (it starts with your app origin and includes the verification token), paste it into the browser, and complete verification.
+1. Keep the **terminal where `npm run dev` is running** visible (that is where auth emails are logged). The URL is **not** on the `POST /api/auth/sign-up/email` line — look for the next **`console.log` lines** printed right after it.
+2. Complete **Sign up** in the browser. Look for **`[dev] Copy this URL into the browser`** (or `Auth email (noop) full text:`) — copy that **http(s)://…** link and open it in the browser to verify.
+3. **Paste the URL** into the address bar if needed, complete verification, then continue.
 4. Use **Sign in** with the same email and password. Portfolio routes require a verified email.
 
 Password reset flows work the same way in noop mode: copy the reset URL from the server log.
