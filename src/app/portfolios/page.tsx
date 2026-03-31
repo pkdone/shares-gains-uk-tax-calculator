@@ -1,24 +1,29 @@
 import Link from 'next/link';
 
+import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
-import { env } from '@/shared/config/env';
 
 import { CreatePortfolioForm } from '@/app/portfolios/create-portfolio-form';
+import { SignOutButton } from '@/app/sign-out-button';
 
 export const dynamic = 'force-dynamic';
 
 export default async function PortfoliosPage(): Promise<React.ReactElement> {
+  const userId = await requireVerifiedUserId();
   const portfolioRepository = new MongoPortfolioRepository();
-  const portfolios = await portfolioRepository.listByUser(env.STUB_USER_ID);
+  const portfolios = await portfolioRepository.listByUser(userId);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <p className="text-sm font-medium text-[var(--color-accent)]">Manual ledger</p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">Portfolios</h1>
-      <p className="mt-2 text-pretty text-sm leading-relaxed text-neutral-600">
-        Create a portfolio, then add acquisitions and disposals. Amounts are GBP only; no CGT calculation in this
-        milestone.
-      </p>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-pretty text-sm leading-relaxed text-neutral-600">
+          Create a portfolio, then add acquisitions and disposals. Amounts are GBP only; no CGT calculation in this
+          milestone.
+        </p>
+        <SignOutButton />
+      </div>
 
       <section className="mt-8">
         <h2 className="text-lg font-medium text-neutral-900">New portfolio</h2>
@@ -47,10 +52,7 @@ export default async function PortfoliosPage(): Promise<React.ReactElement> {
         )}
       </section>
 
-      <p className="mt-10 text-xs text-neutral-500">
-        Stub user <code className="rounded bg-neutral-100 px-1">{env.STUB_USER_ID}</code>. Not professional tax
-        advice.
-      </p>
+      <p className="mt-10 text-xs text-neutral-500">Not professional tax advice.</p>
     </main>
   );
 }

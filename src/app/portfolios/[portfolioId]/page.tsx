@@ -9,10 +9,10 @@ import {
   pricePerShare,
   totalAcquisitionCostUsd,
 } from '@/domain/services/ledger-money';
+import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
-import { env } from '@/shared/config/env';
 
 import { LedgerEntryDelete } from '@/app/portfolios/[portfolioId]/ledger-entry-delete';
 import { PortfolioLedgerActions } from '@/app/portfolios/[portfolioId]/portfolio-ledger-actions';
@@ -50,7 +50,9 @@ export default async function PortfolioDetailPage({
 }: PortfolioDetailPageProps): Promise<ReactElement> {
   const { portfolioId } = await params;
 
-  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, env.STUB_USER_ID);
+  const userId = await requireVerifiedUserId();
+
+  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, userId);
   if (portfolio === null) {
     notFound();
   }
@@ -59,7 +61,7 @@ export default async function PortfolioDetailPage({
     portfolioRepository,
     acquisitionRepository,
     disposalRepository,
-    { portfolioId, userId: env.STUB_USER_ID },
+    { portfolioId, userId },
   );
 
   return (

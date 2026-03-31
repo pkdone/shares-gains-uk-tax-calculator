@@ -17,7 +17,7 @@ import {
   parseAcquisitionForm,
   parseDisposalForm,
 } from '@/app/portfolios/form-parsing';
-import { env } from '@/shared/config/env';
+import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
 export type FormActionState = {
@@ -41,10 +41,12 @@ export async function createPortfolioAction(
     return { error: msg };
   }
 
+  const userId = await requireVerifiedUserId();
+
   let portfolio;
   try {
     portfolio = await createPortfolio(portfolioRepo, {
-      userId: env.STUB_USER_ID,
+      userId,
       name: parsed.data.name,
     });
   } catch (err) {
@@ -74,11 +76,13 @@ export async function addAcquisitionAction(
     return { error: first ?? 'Invalid acquisition' };
   }
 
+  const userId = await requireVerifiedUserId();
+
   try {
     await addAcquisition(portfolioRepo, acquisitionRepo, {
       ...parsed.data,
       portfolioId,
-      userId: env.STUB_USER_ID,
+      userId,
     });
   } catch (err) {
     if (err instanceof DomainError) {
@@ -106,11 +110,13 @@ export async function addDisposalAction(
     return { error: first ?? 'Invalid disposal' };
   }
 
+  const userId = await requireVerifiedUserId();
+
   try {
     await addDisposal(portfolioRepo, disposalRepo, {
       ...parsed.data,
       portfolioId,
-      userId: env.STUB_USER_ID,
+      userId,
     });
   } catch (err) {
     if (err instanceof DomainError) {
@@ -142,10 +148,12 @@ export async function deleteLedgerEntryAction(
 
   const { portfolioId, kind, entryId } = parsed.data;
 
+  const userId = await requireVerifiedUserId();
+
   try {
     await deleteLedgerEntry(portfolioRepo, acquisitionRepo, disposalRepo, {
       portfolioId,
-      userId: env.STUB_USER_ID,
+      userId,
       kind,
       entryId,
     });

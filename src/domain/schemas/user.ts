@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Logical tenant identity until authentication (see ADR-007).
+ * Logical tenant identity: matches Better Auth user id on persisted documents.
  */
 export const userIdentitySchema = z.object({
   userId: z.string().min(1),
