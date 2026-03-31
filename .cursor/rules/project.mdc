@@ -93,7 +93,7 @@ MongoDB driver usage and repository **implementations** live in **`src/infrastru
 
 **Database provisioning (explicit, not at app request time):**
 
-- **Collections, validators (`$jsonSchema`), and indexes** are applied by **`npm run db:init`** (`scripts/db-init.ts`), which calls **`initMongoDatabase`**. Run once per Atlas database / environment (local dev, CI database, deployment) before the app or **`npm run seed:users`** expects to read/write.
+- **Collections, validators (`$jsonSchema`), and indexes** are applied by **`npm run db:init`** (`scripts/db-init.ts`), which calls **`initMongoDatabase`**. Run once per Atlas database / environment (local dev, CI database, deployment) before the app expects to read/write.
 - **`getMongoClient()`** must **not** create or migrate schema. It only connects and, on first use, **asserts** that all managed collections exist; if not, throw **`ConfigurationError`** with guidance to run **`db:init`**.
 - **`createConnectedMongoClient()`** connects without that check — use for **`db:init`**, **`db:teardown`**, and integration test setup that calls **`initMongoDatabase`** first.
 - **`npm run db:teardown`** (`scripts/db-teardown.ts`) drops managed collections for development resets; it requires **`ALLOW_DB_TEARDOWN=1`** to run. Do not rely on teardown in production workflows without an explicit operational decision.
@@ -221,6 +221,6 @@ Apply secure defaults and treat user financial data carefully (persistence, logg
 
 - MongoDB Atlas is an external dependency.
 - **Single variable `MONGODB_URI`** for the connection string; encode username, password, and database name in the URI in `.env.example`, Docker, and Kubernetes. **Do not** add separate env vars for MongoDB user, password, or database name.
-- **Provision each target database** with **`npm run db:init`** before the application runs against it (and before **`seed:users`**). Container/orchestrator images should document or automate that step for new environments.
+- **Provision each target database** with **`npm run db:init`** before the application runs against it. Container/orchestrator images should document or automate that step for new environments.
 - Validate and centralise application configuration; never hard-code secrets.
 - Keep Docker and Kubernetes assets aligned with runtime assumptions and environment-driven configuration (same core app as local dev).

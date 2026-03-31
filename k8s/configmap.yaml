@@ -6,4 +6,7 @@ metadata:
     app: shares-gains-uk-tax-calculator
 data:
   NODE_ENV: "production"
-  STUB_USER_ID: "stub-seed-users"
+  AUTH_EMAIL_PROVIDER: "noop"
+  NEXT_PUBLIC_APP_URL: "https://example.com"
+  NEXT_PUBLIC_BETTER_AUTH_URL: "https://example.com/api/auth"
+  BETTER_AUTH_URL: "https://example.com/api/auth"

@@ -11,7 +11,7 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
 
 ## Setup
 
-1. Copy the environment template to `.env.local`, then edit `.env.local` and set variables appropriately (at minimum `MONGODB_URI` and `STUB_USER_ID`; database name must appear in the URI path):
+1. Copy the environment template to `.env.local`, then edit `.env.local` and set variables appropriately (at minimum `MONGODB_URI`, `NEXT_PUBLIC_APP_URL`, matching `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL`, and `BETTER_AUTH_SECRET`; database name must appear in the URI path):
 
    ```bash
    cp .env.example .env.local
@@ -29,13 +29,7 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
    npm run db:init
    ```
 
-4. **Seed stub user(s)** (after `db:init`; currently one user from `STUB_USER_ID`):
-
-   ```bash
-   npm run seed:users
-   ```
-
-5. **Load Bank of England USD/GBP spot rates** (after `db:init`; required for sterling conversion of imported USD vest rows at calculation time):
+4. **Load Bank of England USD/GBP spot rates** (after `db:init`; required for sterling conversion of imported USD vest rows at calculation time):
 
    ```bash
    npm run fetch:fx-rates
@@ -45,7 +39,7 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
 
 | Command | Purpose |
 |--------|---------|
-| `npm run db:init` | Idempotent setup: managed collections (including `portfolio_calculation_prefs`), validators, indexes. **Run before** first app use or `seed:users` on a new database. |
+| `npm run db:init` | Idempotent setup: managed collections (including `portfolio_calculation_prefs`), validators, indexes. **Run before** first app use on a new database. |
 | `npm run fetch:fx-rates` | Downloads BoE XUDLUSS series and upserts into the `fx_rates` collection. **Run after** `db:init`; safe to re-run to refresh rates. |
 | `npm run db:teardown` | Drops managed collections (development reset). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
 
@@ -55,11 +49,11 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
 ALLOW_DB_TEARDOWN=1 npm run db:teardown
 ```
 
-After teardown, the app will not start until you run **`npm run db:init`** again. Run **`npm run seed:users`** afterward if you need the stub user document recreated.
+After teardown, the app will not start until you run **`npm run db:init`** again.
 
 The application **`getMongoClient()`** does not create collections at runtime; it checks that provisioned collections exist and fails with a clear error if you skipped `db:init`.
 
-**Suggested order for a new environment:** `db:init` → `seed:users` → `fetch:fx-rates` → `npm run dev`.
+**Suggested order for a new environment:** `db:init` → `fetch:fx-rates` → `npm run dev` (then sign up via the app; email uses `AUTH_EMAIL_PROVIDER=noop` by default — check logs for verification links in development).
 
 For Docker/Kubernetes, run **`db:init`** and **`fetch:fx-rates`** against the target database (e.g. init container or CI job) before serving traffic, in addition to configuring `MONGODB_URI` at runtime.
 
@@ -77,10 +71,15 @@ Open [http://localhost:3000](http://localhost:3000). Health check: [http://local
 npm run validate
 ```
 
-Runs `build`, `lint`, `npm test`, and `npm run test:integration`. **Build** loads the same env as Next.js (`/.env.local`); ensure `MONGODB_URI` is set so server modules that validate config can compile. For CI without secrets, pass a non-empty placeholder URI for the build step only, for example:
+Runs `build`, `lint`, `npm test`, and `npm run test:integration`. **Build** loads the same env as Next.js (`/.env.local`); set `MONGODB_URI` plus Better Auth variables (`NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`) so config validation passes. For CI without secrets, pass placeholders for the build step only, for example:
 
 ```bash
-MONGODB_URI='mongodb://127.0.0.1:27017/ci-build' npm run build
+MONGODB_URI='mongodb://127.0.0.1:27017/ci-build' \
+NEXT_PUBLIC_APP_URL='http://localhost:3000' \
+NEXT_PUBLIC_BETTER_AUTH_URL='http://localhost:3000/api/auth' \
+BETTER_AUTH_URL='http://localhost:3000/api/auth' \
+BETTER_AUTH_SECRET='0123456789abcdef0123456789abcdef' \
+npm run build
 ```
 
 Integration tests need a **reachable** Atlas URI and will run `db:init` logic in setup when needed.

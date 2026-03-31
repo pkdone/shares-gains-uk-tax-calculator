@@ -15,7 +15,7 @@ import { ensureTestDatabase } from '@/test/integration/helpers/ensure-test-datab
 describe('manual ledger repositories', () => {
   jest.setTimeout(30_000);
 
-  const userId = process.env.STUB_USER_ID ?? 'test-stub-user';
+  const userId = 'integration-test-user';
 
   beforeAll(async () => {
     await ensureTestDatabase();
