@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     },
   },
   /** Driver must not be bundled (CSFLE / Node built-ins). */
-  serverExternalPackages: ['mongodb'],
+  serverExternalPackages: ['mongodb', 'better-auth', '@better-auth/mongo-adapter'],
   webpack: (config: WebpackServerConfig, { isServer }: { isServer: boolean }) => {
     if (isServer && Array.isArray(config.externals)) {
       config.externals.push('mongodb');
