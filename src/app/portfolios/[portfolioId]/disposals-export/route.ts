@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { listPortfolioSymbols } from '@/application/calculation/list-portfolio-symbols';
-import { resolveBroughtForwardFromQueryAndPrefs } from '@/application/calculation/resolve-brought-forward';
+import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
 import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
-import { MongoPortfolioCalculationPrefsRepository } from '@/infrastructure/repositories/mongo-portfolio-calculation-prefs-repository';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { getVerifiedUserIdFromRequest } from '@/infrastructure/auth/session';
@@ -16,8 +15,6 @@ const portfolioRepository = new MongoPortfolioRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
 const fxRateRepository = new MongoFxRateRepository();
-const prefsRepository = new MongoPortfolioCalculationPrefsRepository();
-
 function csvEscape(value: string): string {
   if (/[",\n\r]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
@@ -50,13 +47,11 @@ export async function GET(
     userId,
   });
 
-  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, userId);
   const hasBfQuery = sp.has('bf') && sp.get('bf')?.trim() !== '';
   const bfParsed = Number.parseFloat(sp.get('bf') ?? '0');
-  const broughtForwardLosses = resolveBroughtForwardFromQueryAndPrefs({
+  const broughtForwardLosses = resolveBroughtForwardFromQuery({
     hasBfQuery,
     queryBfParsed: bfParsed,
-    storedBroughtForwardLossesGbp: prefs?.broughtForwardLossesGbp,
   });
 
   const symbolFromQuery = sp.get('symbol')?.trim() ?? '';

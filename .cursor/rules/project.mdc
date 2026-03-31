@@ -13,7 +13,7 @@ This is **not**: a generic tax calculator; a toy demo; a public brochure site; a
 
 This is: a niche end-user product; focused on imported share transaction history and explainable UK capital gains outcomes; intended for repeated workflows, not one-off calculations.
 
-The application must run locally, in Docker, and in Kubernetes, and connects to an **external MongoDB Atlas** database.
+The application must run locally and in Docker, and connects to an **external MongoDB Atlas** database. Deployment target beyond that is not fixed in this repository.
 
 Do not invent product requirements. If product behaviour is unclear, surface assumptions explicitly and prefer flexible architecture over speculative implementation.
 
@@ -39,7 +39,7 @@ Unless explicitly instructed otherwise:
 - **App:** Next.js (**App Router**) + React, Tailwind CSS
 - **Data / validation:** zod, mongodb native Node.js driver
 - **Quality:** Jest, ESLint (Next.js + TypeScript + strict project rules)
-- **Packaging / ops:** `npm`, Docker, Kubernetes
+- **Packaging / ops:** `npm`, Docker
 
 **Gate:** use **`npm run validate`** when completing feature work or refactors. When bootstrapping or updating tooling, align with these choices.
 
@@ -220,7 +220,7 @@ Apply secure defaults and treat user financial data carefully (persistence, logg
 ## Infrastructure and configuration
 
 - MongoDB Atlas is an external dependency.
-- **Single variable `MONGODB_URI`** for the connection string; encode username, password, and database name in the URI in `.env.example`, Docker, and Kubernetes. **Do not** add separate env vars for MongoDB user, password, or database name.
+- **Single variable `MONGODB_URI`** for the connection string; encode username, password, and database name in the URI in `.env.example` and Docker. **Do not** add separate env vars for MongoDB user, password, or database name.
 - **Provision each target database** with **`npm run db:init`** before the application runs against it. Container/orchestrator images should document or automate that step for new environments.
 - Validate and centralise application configuration; never hard-code secrets.
-- Keep Docker and Kubernetes assets aligned with runtime assumptions and environment-driven configuration (same core app as local dev).
+- Keep Docker assets aligned with runtime assumptions and environment-driven configuration (same core app as local dev).

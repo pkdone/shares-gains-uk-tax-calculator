@@ -23,7 +23,6 @@ async function main(): Promise<void> {
     COLLECTION_ACQUISITIONS,
     COLLECTION_DISPOSALS,
     COLLECTION_FX_RATES,
-    COLLECTION_PORTFOLIO_CALCULATION_PREFS,
     COLLECTION_PORTFOLIOS,
     COLLECTION_USERS,
   } = await import('../src/infrastructure/persistence/schema-registry');
@@ -46,7 +45,6 @@ async function main(): Promise<void> {
     );
     logInfo(`    - ${COLLECTION_DISPOSALS}: { portfolioId: 1, userId: 1 }`);
     logInfo(`    - ${COLLECTION_FX_RATES}: unique on { date: 1 }`);
-    logInfo(`    - ${COLLECTION_PORTFOLIO_CALCULATION_PREFS}: unique on { portfolioId: 1, userId: 1 }`);
     logInfo('  Applying…');
     await initMongoDatabase(db);
     logInfo('db:init — done.');

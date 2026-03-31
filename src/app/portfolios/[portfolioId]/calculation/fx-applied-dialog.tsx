@@ -1,0 +1,91 @@
+'use client';
+
+import { useCallback, useRef } from 'react';
+
+import type { FxAppliedToAcquisition } from '@/application/calculation/calculation-types';
+
+type FxAppliedDialogProps = {
+  readonly rows: readonly FxAppliedToAcquisition[];
+};
+
+export function FxAppliedDialog({ rows }: FxAppliedDialogProps): React.ReactElement {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  const open = useCallback((): void => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  const close = useCallback((): void => {
+    dialogRef.current?.close();
+  }, []);
+
+  const onBackdropPointerDown = useCallback((event: React.PointerEvent<HTMLDialogElement>): void => {
+    if (event.target === event.currentTarget) {
+      event.currentTarget.close();
+    }
+  }, []);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="text-[var(--color-accent)] underline"
+        onClick={open}
+      >
+        View FX applied (import USD)
+      </button>
+
+      <dialog
+        ref={dialogRef}
+        className="w-[min(100vw-2rem,56rem)] max-w-none rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        onPointerDown={onBackdropPointerDown}
+        aria-labelledby="fx-applied-dialog-title"
+      >
+        <div className="flex max-h-[min(90vh,48rem)] flex-col">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-neutral-200 px-4 py-3">
+            <h2 id="fx-applied-dialog-title" className="text-lg font-medium text-neutral-900">
+              FX applied (import USD acquisitions)
+            </h2>
+            <button
+              type="button"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              onClick={close}
+            >
+              Close
+            </button>
+          </div>
+          <div className="min-h-0 overflow-y-auto px-4 py-3">
+            {rows.length === 0 ? (
+              <p className="text-sm text-neutral-600">
+                None — only manual GBP acquisitions for this symbol.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-neutral-200">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-neutral-50 text-neutral-700">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Event date</th>
+                      <th className="px-3 py-2 font-medium">XUDLUSS (USD per £1)</th>
+                      <th className="px-3 py-2 font-medium">Rate date used</th>
+                      <th className="px-3 py-2 font-medium">Fallback</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 bg-white">
+                    {rows.map((row) => (
+                      <tr key={row.acquisitionId}>
+                        <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
+                        <td className="px-3 py-2 tabular-nums">{row.usdPerGbp.toFixed(4)}</td>
+                        <td className="px-3 py-2 tabular-nums">{row.rateDateUsed}</td>
+                        <td className="px-3 py-2">{row.usedFallback ? 'Yes' : 'No'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </dialog>
+    </>
+  );
+}

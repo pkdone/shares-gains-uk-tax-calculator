@@ -3,12 +3,10 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { listPortfolioSymbols } from '@/application/calculation/list-portfolio-symbols';
-import { resolveBroughtForwardFromQueryAndPrefs } from '@/application/calculation/resolve-brought-forward';
+import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
 import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
-import { getPortfolioReportingOverview } from '@/application/portfolio/get-portfolio-reporting-overview';
 import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
-import { MongoPortfolioCalculationPrefsRepository } from '@/infrastructure/repositories/mongo-portfolio-calculation-prefs-repository';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
@@ -20,18 +18,13 @@ import {
   rateTierToLabel,
 } from '@/app/portfolios/[portfolioId]/calculation/calculation-result-sections';
 import { CalculationControls } from '@/app/portfolios/[portfolioId]/calculation/calculation-controls';
+import { FxAppliedDialog } from '@/app/portfolios/[portfolioId]/calculation/fx-applied-dialog';
 import { ScrollToCalculationResults } from '@/app/portfolios/[portfolioId]/calculation/scroll-to-calculation-results';
-
-const money = new Intl.NumberFormat('en-GB', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 const portfolioRepository = new MongoPortfolioRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
 const fxRateRepository = new MongoFxRateRepository();
-const prefsRepository = new MongoPortfolioCalculationPrefsRepository();
 
 type CalculationPageProps = {
   readonly params: Promise<{ portfolioId: string }>;
@@ -63,34 +56,18 @@ export default async function PortfolioCalculationPage({
     userId,
   });
 
-  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, userId);
   const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
   const bfParsed = Number.parseFloat(sp.bf ?? '0');
-  const broughtForwardLosses = resolveBroughtForwardFromQueryAndPrefs({
+  const broughtForwardLosses = resolveBroughtForwardFromQuery({
     hasBfQuery,
     queryBfParsed: bfParsed,
-    storedBroughtForwardLossesGbp: prefs?.broughtForwardLossesGbp,
   });
-  const registeredForSelfAssessment = prefs?.registeredForSelfAssessment ?? false;
 
   const symbolFromQuery = typeof sp.symbol === 'string' && sp.symbol.trim().length > 0 ? sp.symbol.trim() : '';
   const symbol = symbolFromQuery.length > 0 ? symbolFromQuery : (symbols[0] ?? '');
 
   const tierParsed = rateTierSchema.safeParse(sp.rateTier ?? 'additional');
   const rateTier = tierParsed.success ? tierParsed.data : 'additional';
-
-  const reportingOverview = await getPortfolioReportingOverview({
-    portfolioRepository,
-    acquisitionRepository,
-    disposalRepository,
-    fxRateRepository,
-    portfolioId,
-    userId,
-    rateTier,
-    broughtForwardLosses,
-    registeredForSelfAssessment,
-    symbols,
-  });
 
   let calcError: string | null = null;
   let result: Awaited<ReturnType<typeof runCalculationForSymbol>> | null = null;
@@ -143,67 +120,9 @@ export default async function PortfolioCalculationPage({
       </nav>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">Capital gains calculation</h1>
-      <p className="mt-2 text-sm text-neutral-600">
-        Matching uses HMRC order: same-day, then 30-day (bed and breakfast), then Section 104 pool. USD vest
-        imports use Bank of England XUDLUSS rates loaded by{' '}
-        <code className="text-xs">npm run fetch:fx-rates</code>.
-      </p>
       <p className="mt-2 text-xs text-amber-800">
         This application does not provide professional tax advice and could be wrong.
       </p>
-
-      <section className="mt-8 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm no-print">
-        <h2 className="font-semibold text-neutral-900">Do I need to report?</h2>
-        <p className="mt-1 text-xs text-neutral-600">
-          Portfolio-wide disposal proceeds (all symbols) vs HMRC-style reporting thresholds. Taxable-gain signals
-          sum each symbol’s calculator output (approximate — each line of stock uses the annual exempt amount
-          separately). Confirm with HMRC or an adviser.
-        </p>
-        {reportingOverview.assessments.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-600">No tax years with data yet.</p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {reportingOverview.assessments.map((a) => (
-              <li
-                key={a.taxYear}
-                className={`rounded-md border px-3 py-2 ${a.likelyNeedsReporting ? 'border-amber-300 bg-amber-50' : 'border-neutral-200 bg-neutral-50'}`}
-              >
-                <p className="font-medium text-neutral-900">{a.taxYear}</p>
-                <p className="mt-1 text-xs text-neutral-700">
-                  Total disposal proceeds (portfolio): £{money.format(a.totalDisposalProceedsGbp)} · Threshold:{' '}
-                  £{money.format(a.proceedsThresholdGbp)} ({a.proceedsThresholdDescription})
-                </p>
-                <p className="mt-1 text-xs text-neutral-700">
-                  Sum of taxable gains (per-symbol engine): £{money.format(a.portfolioSumTaxableGainGbp)}
-                </p>
-                <p className="mt-1 text-sm font-medium text-neutral-900">
-                  {a.likelyNeedsReporting
-                    ? 'You may need to report — see reasons below and check HMRC guidance.'
-                    : 'No automatic trigger from these rules alone — still verify your full tax position.'}
-                </p>
-                {a.reasons.length > 0 ? (
-                  <ul className="mt-2 list-disc pl-5 text-xs text-neutral-700">
-                    {a.reasons.map((r) => (
-                      <li key={r}>{r}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {reportingOverview.dataQualityWarnings.length > 0 ? (
-        <section className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm no-print">
-          <h2 className="font-semibold text-amber-950">Data quality</h2>
-          <ul className="mt-2 list-disc pl-5 text-amber-950">
-            {reportingOverview.dataQualityWarnings.map((w) => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <section className="mt-8 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm no-print">
         <h2 className="font-semibold text-neutral-900">RSU timing (plain English)</h2>
@@ -231,13 +150,12 @@ export default async function PortfolioCalculationPage({
         <>
           <div className="mt-8 no-print">
             <CalculationControls
-              key={`${symbol}|${rateTier}|${broughtForwardLosses}|${registeredForSelfAssessment}`}
+              key={`${symbol}|${rateTier}|${broughtForwardLosses}`}
               portfolioId={portfolioId}
               symbols={symbols}
               currentSymbol={symbol}
               currentRateTier={rateTier}
               currentBf={broughtForwardLosses}
-              registeredForSelfAssessment={registeredForSelfAssessment}
             />
           </div>
 
@@ -267,6 +185,7 @@ export default async function PortfolioCalculationPage({
                 >
                   Download disposals CSV
                 </a>
+                <FxAppliedDialog rows={Object.values(result.fxByAcquisitionId)} />
               </div>
               <CalculationResultSections result={result} rateTierLabel={rateTierToLabel(rateTier)} />
             </>

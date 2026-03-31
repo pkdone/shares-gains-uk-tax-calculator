@@ -1,8 +1,10 @@
 # ADR-010: Exports, computation pack, and reporting thresholds (Milestone 7)
 
-**Status:** Accepted  
+**Status:** Accepted (amended 2026-03-31)  
 **Date:** 2026-03-30  
 **Deciders:** Paul Done
+
+**Amendment:** The calculation page no longer shows portfolio-level “Do I need to report?” guidance or persisted **Saved defaults**. The **`portfolio_calculation_prefs`** collection was removed from managed schema (`db:init`). Brought-forward losses apply only via the **`bf`** query parameter on calculation, computation pack, and CSV export URLs. The domain logic that implemented HMRC-style reporting thresholds (`reporting-thresholds.ts`, `getPortfolioReportingOverview`) was removed with that UI.
 
 ## Context
 
@@ -29,5 +31,5 @@ Milestone 7 requires outputs suitable for Self Assessment record keeping, portfo
 
 ## Consequences
 
-- Users must run **`npm run db:init`** after deploy to create the new collection and validator.
-- Portfolio-wide CGT liability remains a **future enhancement** if a single combined multi-symbol annual computation is required; until then, reporting hints remain threshold- and disclaimer-driven.
+- Existing deployments may still have a legacy **`portfolio_calculation_prefs`** collection in MongoDB; it is no longer created or used by the app.
+- Portfolio-wide CGT liability remains a **future enhancement** if a single combined multi-symbol annual computation is required.
