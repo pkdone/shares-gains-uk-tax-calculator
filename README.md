@@ -69,8 +69,8 @@ Open [http://localhost:3000](http://localhost:3000). Health check: [http://local
 
 By default **`AUTH_EMAIL_PROVIDER=noop`**: no real email is sent. Verification and password-reset links are still generated; the app logs them via `src/shared/app-logger.ts`.
 
-1. Keep the **terminal where `npm run dev` is running** visible (that is where auth emails are logged). The URL is **not** on the `POST /api/auth/sign-up/email` line — look for the next **`console.log` lines** printed right after it.
-2. Complete **Sign up** in the browser. Look for **`[dev] Copy this URL into the browser`** (or `Auth email (noop) full text:`) — copy that **http(s)://…** link and open it in the browser to verify.
+1. Keep the **terminal where `npm run dev` is running** visible (that is where auth emails are logged). The URL is **not** on the `POST /api/auth/sign-up/email` line — look for a **`[dev] NOOP EMAIL`** line (printed with `console.warn` so it is easy to spot) or `Auth email (noop) full text:` right after it.
+2. Complete **Sign up** in the browser with a **new email**, or use **Resend verification** on `/verify-email` if you already registered. **Re-using an email that already exists** used to produce a success response with **no** verification email (Better Auth’s duplicate-email path); the app now **resends** the verification link for unverified accounts in that case.
 3. **Paste the URL** into the address bar if needed, complete verification, then continue.
 4. Use **Sign in** with the same email and password. Portfolio routes require a verified email.
 

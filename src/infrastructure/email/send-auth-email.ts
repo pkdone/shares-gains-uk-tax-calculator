@@ -1,4 +1,4 @@
-import { logInfo } from '@/shared/app-logger';
+import { logInfo, logWarn } from '@/shared/app-logger';
 import { env } from '@/shared/config/env';
 
 export type AuthEmailPayload = {
@@ -17,11 +17,12 @@ export async function sendAuthEmail(payload: AuthEmailPayload): Promise<void> {
     return;
   }
 
-  // Noop: no SMTP. Log a dedicated URL line so it is visible right after POST /api/auth/... in the dev terminal.
+  // Noop: no SMTP. Use warn so the URL stands out in `next dev` output (same stream as POST lines).
   logInfo(`Auth email (noop): subject=${payload.subject} recipient=${payload.to}`);
-  const urlMatch = payload.text.match(/https?:\/\/[^\s<>"']+/);
+  const urlRe = /https?:\/\/[^\s<>"']+/;
+  const urlMatch = urlRe.exec(payload.text);
   if (urlMatch !== null) {
-    logInfo(`[dev] Copy this URL into the browser (noop email — not sent): ${urlMatch[0]}`);
+    logWarn(`[dev] NOOP EMAIL — copy this URL into the browser: ${urlMatch[0]}`);
   }
   logInfo(`Auth email (noop) full text: ${payload.text}`);
 }

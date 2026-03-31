@@ -1,3 +1,4 @@
+import { createEmailVerificationToken } from 'better-auth/api';
 import { betterAuth, type Auth } from 'better-auth';
 import { nextCookies } from 'better-auth/next-js';
 import { mongodbAdapter } from '@better-auth/mongo-adapter';
@@ -47,6 +48,30 @@ export async function getAuth(): Promise<Auth> {
       enabled: true,
       requireEmailVerification: true,
       autoSignIn: false,
+      /**
+       * Better Auth returns 200 with a synthetic user when the email already exists (anti-enumeration).
+       * It does not call `sendVerificationEmail` on that path — so noop logs stay empty on re-sign-up.
+       * Resend verification when the real user exists and is still unverified.
+       */
+      onExistingUserSignUp: async ({ user }) => {
+        if (user.emailVerified) {
+          return;
+        }
+        const token = await createEmailVerificationToken(
+          env.BETTER_AUTH_SECRET,
+          user.email,
+          undefined,
+          3600,
+        );
+        const callbackURL = encodeURIComponent('/portfolios');
+        const url = `${env.BETTER_AUTH_URL}/verify-email?token=${token}&callbackURL=${callbackURL}`;
+        await sendAuthEmail({
+          to: user.email,
+          subject: 'Verify your email',
+          text: `Verify your email: ${url}`,
+          html: `<p>Verify your email:</p><p><a href="${url}">${url}</a></p>`,
+        });
+      },
       sendResetPassword: async ({ user, url }) => {
         await sendAuthEmail({
           to: user.email,
