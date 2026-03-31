@@ -45,36 +45,6 @@ export function CalculationResultSections({
       </p>
 
       <section>
-        <h2 className="text-lg font-medium text-neutral-900">FX applied (import USD acquisitions)</h2>
-        {Object.keys(result.fxByAcquisitionId).length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-600">None — only manual GBP acquisitions for this symbol.</p>
-        ) : (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-neutral-50 text-neutral-700">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Event date</th>
-                  <th className="px-3 py-2 font-medium">XUDLUSS (USD per £1)</th>
-                  <th className="px-3 py-2 font-medium">Rate date used</th>
-                  <th className="px-3 py-2 font-medium">Fallback</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 bg-white">
-                {Object.values(result.fxByAcquisitionId).map((row) => (
-                  <tr key={row.acquisitionId}>
-                    <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                    <td className="px-3 py-2 tabular-nums">{row.usdPerGbp.toFixed(4)}</td>
-                    <td className="px-3 py-2 tabular-nums">{row.rateDateUsed}</td>
-                    <td className="px-3 py-2">{row.usedFallback ? 'Yes' : 'No'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section>
         <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
         <ul className="mt-2 list-disc pl-5 text-sm text-neutral-700">
           {result.warnings.map((w) => (

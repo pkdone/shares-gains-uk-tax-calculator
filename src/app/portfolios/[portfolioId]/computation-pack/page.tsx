@@ -2,11 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { listPortfolioSymbols } from '@/application/calculation/list-portfolio-symbols';
-import { resolveBroughtForwardFromQueryAndPrefs } from '@/application/calculation/resolve-brought-forward';
+import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
 import { runCalculationForSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
-import { MongoPortfolioCalculationPrefsRepository } from '@/infrastructure/repositories/mongo-portfolio-calculation-prefs-repository';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
@@ -22,8 +21,6 @@ const portfolioRepository = new MongoPortfolioRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
 const disposalRepository = new MongoShareDisposalRepository();
 const fxRateRepository = new MongoFxRateRepository();
-const prefsRepository = new MongoPortfolioCalculationPrefsRepository();
-
 type ComputationPackPageProps = {
   readonly params: Promise<{ portfolioId: string }>;
   readonly searchParams: Promise<{
@@ -54,13 +51,11 @@ export default async function ComputationPackPage({
     userId,
   });
 
-  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, userId);
   const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
   const bfParsed = Number.parseFloat(sp.bf ?? '0');
-  const broughtForwardLosses = resolveBroughtForwardFromQueryAndPrefs({
+  const broughtForwardLosses = resolveBroughtForwardFromQuery({
     hasBfQuery,
     queryBfParsed: bfParsed,
-    storedBroughtForwardLossesGbp: prefs?.broughtForwardLossesGbp,
   });
 
   const symbolFromQuery = typeof sp.symbol === 'string' && sp.symbol.trim().length > 0 ? sp.symbol.trim() : '';

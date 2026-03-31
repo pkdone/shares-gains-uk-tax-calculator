@@ -8,7 +8,7 @@ const SCROLL_RETRY_MS = 50;
 
 /**
  * After GET submit (or direct link with ?symbol=…), scroll results into view so the
- * user sees output below the form instead of an apparently empty area under "FX applied".
+ * user sees calculation output below the form instead of an apparently empty gap.
  * Retries briefly so we still run after RSC/streaming finishes inserting `#calculation-results`.
  */
 export function ScrollToCalculationResults(): null {

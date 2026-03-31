@@ -3,7 +3,7 @@
 **Status:** Draft
 **Owner:** Paul Done
 **Audience:** Product, Engineering, Architecture, Security, Operations
-**Last updated:** 2026-03-28
+**Last updated:** 2026-03-31
 
 ---
 
@@ -19,7 +19,7 @@ The application must:
 
 - run locally in development
 - run in Docker
-- run in Kubernetes
+- be deployable to typical container or hosted environments (specific orchestration — e.g. a particular cloud PaaS or cluster — is not fixed in this repository)
 - connect to an external MongoDB Atlas database
 
 Appendices 1–4 at the end of this document provide deep information on tax logic and calculation rules, data sources and import strategy, user experience and outputs, validation and risks to mitigate. **Appendix 5** lists external reference materials (including the HMRC HS284 Example 3 PDF and a companion notes file) used to align and verify implementation against HMRC’s published worked example.
@@ -132,7 +132,6 @@ The first implementation should focus on building a strong product and engineeri
 - import-oriented design
 - calculation-oriented domain boundaries
 - Docker packaging
-- Kubernetes deployment assets
 
 ### 7.2 Deferred scope
 
@@ -242,7 +241,7 @@ The application should help users understand how results were produced.
 
 - The application must run locally in development.
 - It must run in Docker.
-- It must be deployable to Kubernetes.
+- It must be deployable using the same container image and environment-variable model to other targets as chosen later (not prescribed in this repository).
 - It must connect to an external Atlas-hosted MongoDB database.
 
 ### 9.6 Developer quality gates
@@ -265,7 +264,6 @@ The application should help users understand how results were produced.
 - zod
 - Jest
 - Docker
-- Kubernetes
 - MongoDB Atlas
 
 ### 10.2 Agreed engineering decisions
@@ -309,8 +307,7 @@ The initial build is successful if it provides:
 - validated configuration
 - Mongo connectivity through repository abstractions
 - meaningful test coverage for core business logic boundaries
-- containerised deployment assets
-- Kubernetes deployment assets
+- containerised deployment assets (Docker)
 - a codebase that can be safely extended as the product is refined
 
 ---
@@ -322,7 +319,7 @@ The initial build is successful if it provides:
 - the target user is a UK taxpayer using the product in self-service mode
 - the product is focused on equity compensation and share disposal workflows
 - MongoDB Atlas is the approved persistence platform
-- Docker and Kubernetes are valid deployment targets
+- Docker is a supported deployment target; further hosting choices are left to operations
 
 ### Risks
 

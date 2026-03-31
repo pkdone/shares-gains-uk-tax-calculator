@@ -1,12 +1,14 @@
 # ADR-002: Environment and Configuration Loading
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-03-31)
 **Date:** 2026-03-28
 **Deciders:** Paul Done
 
+**Amendment:** Example Kubernetes manifests are **not** maintained in this repository. Inject the same environment variables your platform uses (Docker, PaaS, or a future Kubernetes setup).
+
 ## Context
 
-The application connects to an external MongoDB Atlas database and must run in three environments (local dev, Docker, Kubernetes). Configuration must be:
+The application connects to an external MongoDB Atlas database and must run in local development, Docker, and other deployment targets using the same validated configuration. Configuration must be:
 
 - validated at startup, failing fast on missing or malformed values
 - consistent across all deployment targets
@@ -69,10 +71,10 @@ The actual `.env` file is gitignored.
 - Route handlers and services import config from `src/shared/config/env.ts` — never from `process.env` directly.
 - No module outside `src/shared/config/env.ts` reads `process.env` for application configuration.
 
-### Docker and Kubernetes
+### Docker and hosted environments
 
 - **Docker:** environment variables passed via `docker run -e` or `--env-file`.
-- **Kubernetes:** `MONGODB_URI` stored in a Secret; non-sensitive variables in a ConfigMap. Both injected as container env vars in the Deployment manifest.
+- **Other platforms:** supply the same variables as process environment (e.g. secret store or env config in your orchestrator).
 
 ## Consequences
 
@@ -86,7 +88,7 @@ The actual `.env` file is gitignored.
 
 ### Negative
 
-- Every new environment variable requires updating the Zod schema, `.env.example`, and potentially the K8s manifests. This is intentional friction — it prevents config sprawl.
+- Every new environment variable requires updating the Zod schema and `.env.example`. This is intentional friction — it prevents config sprawl.
 - Module-load-time validation means importing `env.ts` has a side effect. This is acceptable given the fail-fast requirement, but tests must be aware of it.
 
 ### Risks

@@ -39,7 +39,7 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
 
 | Command | Purpose |
 |--------|---------|
-| `npm run db:init` | Idempotent setup: managed collections (including `portfolio_calculation_prefs`), validators, indexes. **Run before** first app use on a new database. |
+| `npm run db:init` | Idempotent setup: managed collections, validators, indexes. **Run before** first app use on a new database. |
 | `npm run fetch:fx-rates` | Downloads BoE XUDLUSS series and upserts into the `fx_rates` collection. **Run after** `db:init`; safe to re-run to refresh rates. |
 | `npm run db:teardown` | Drops managed app collections **and** Better Auth collections (`user`, `session`, `account`, `verification`, optional `rateLimit`). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
 
@@ -55,7 +55,7 @@ The application **`getMongoClient()`** does not create collections at runtime; i
 
 **Suggested order for a new environment:** `db:init` → `fetch:fx-rates` → `npm run dev`, then sign up (see **Sign up and email verification (development)** under Development).
 
-For Docker/Kubernetes, run **`db:init`** and **`fetch:fx-rates`** against the target database (e.g. init container or CI job) before serving traffic, in addition to configuring `MONGODB_URI` at runtime.
+For container or hosted deployments, run **`db:init`** and **`fetch:fx-rates`** against the target database (e.g. CI job or startup hook) before serving traffic, in addition to configuring `MONGODB_URI` at runtime.
 
 ## Development
 
@@ -116,21 +116,11 @@ Run with your Atlas URI (run **`db:init`** and **`fetch:fx-rates`** against that
 docker run --rm -p 3000:3000 -e MONGODB_URI='mongodb+srv://...' shares-gains-uk-tax-calculator:latest
 ```
 
-## Kubernetes
-
-Example manifests are in `k8s/`. Replace the placeholder secret with your connection string (or wire an external secret operator), then apply:
-
-```bash
-kubectl apply -f k8s/
-```
-
-Ensure the target Atlas database has been provisioned with **`npm run db:init`** and **`npm run fetch:fx-rates`** (or equivalent automation) for that environment.
-
 ## Security and operations
 
-- **Secrets:** supply `MONGODB_URI` only via environment or Kubernetes secrets — never commit real URIs. The app logs through `src/shared/app-logger.ts`; do not add `console.log` of connection strings or user financial payloads.
+- **Secrets:** supply `MONGODB_URI` only via environment (or your platform’s secret store) — never commit real URIs. The app logs through `src/shared/app-logger.ts`; do not add `console.log` of connection strings or user financial payloads.
 - **Data:** portfolio and transaction data live in MongoDB Atlas; treat backups and access control as part of your deployment policy.
-- **Container:** the production image runs as a non-root user (`nextjs`, UID 1001). Kubernetes manifests include resource requests/limits and a restrictive container `securityContext`.
+- **Container:** the production image runs as a non-root user (`nextjs`, UID 1001).
 
 ## Documentation
 

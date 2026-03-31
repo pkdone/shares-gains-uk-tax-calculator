@@ -1,5 +1,5 @@
 /**
- * Registers graceful MongoDB client shutdown on process signals (Docker/Kubernetes, local `next start`).
+ * Registers graceful MongoDB client shutdown on process signals (containers, local `next start`).
  * Loaded only on the Node.js server runtime.
  */
 export async function register(): Promise<void> {

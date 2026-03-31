@@ -1,32 +1,29 @@
-import { resolveBroughtForwardFromQueryAndPrefs } from '@/application/calculation/resolve-brought-forward';
+import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
 
-describe('resolveBroughtForwardFromQueryAndPrefs', () => {
-  it('uses stored value when there is no bf query', () => {
+describe('resolveBroughtForwardFromQuery', () => {
+  it('returns zero when there is no bf query', () => {
     expect(
-      resolveBroughtForwardFromQueryAndPrefs({
+      resolveBroughtForwardFromQuery({
         hasBfQuery: false,
         queryBfParsed: 99,
-        storedBroughtForwardLossesGbp: 500,
       }),
-    ).toBe(500);
+    ).toBe(0);
   });
 
   it('uses query when present', () => {
     expect(
-      resolveBroughtForwardFromQueryAndPrefs({
+      resolveBroughtForwardFromQuery({
         hasBfQuery: true,
         queryBfParsed: 100,
-        storedBroughtForwardLossesGbp: 500,
       }),
     ).toBe(100);
   });
 
-  it('defaults to zero when stored is undefined', () => {
+  it('defaults to zero when query is not finite', () => {
     expect(
-      resolveBroughtForwardFromQueryAndPrefs({
-        hasBfQuery: false,
-        queryBfParsed: 0,
-        storedBroughtForwardLossesGbp: undefined,
+      resolveBroughtForwardFromQuery({
+        hasBfQuery: true,
+        queryBfParsed: Number.NaN,
       }),
     ).toBe(0);
   });

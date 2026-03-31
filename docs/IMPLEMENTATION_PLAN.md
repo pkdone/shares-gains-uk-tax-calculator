@@ -74,8 +74,8 @@ The following real-world export files inform the import pipeline design. They ar
 - [x] **Sell-to-cover at vest: not modelled as disposals.** When RSUs vest and shares are sold to cover PAYE/NI, only the net shares received are tracked as acquisitions. The withheld shares are treated as never received.
 - [x] **Import formats: XLSX and CSV** (and later, potentially parsed PDF). The E\*Trade "ByBenefitType" export (XLSX) is the first target for acquisition/vesting import. Sale/disposal data will require a separate source (e.g. trade confirmations or "Gains & Losses" report) because the Orders PDF lacks execution prices.
 - [x] **FX rates: on-demand download script.** Provide a script to fetch Bank of England daily USD/GBP spot rates (XUDLUSS series) and seed them into MongoDB. Run once to initialise; re-run to update.
-- [x] **MongoDB Atlas required for all environments.** No local MongoDB fallback. The `MONGODB_URI` env var points to Atlas in dev, Docker, and Kubernetes. The developer provides their own Atlas connection string.
-- [x] **Kubernetes: vanilla manifests.** Deployment + Service + ConfigMap/Secret. No specific cluster provider assumptions.
+- [x] **MongoDB Atlas required for all environments.** No local MongoDB fallback. The `MONGODB_URI` env var points to Atlas in dev, Docker, and other deployed environments. The developer provides their own Atlas connection string.
+- [x] **Deployment beyond Docker:** orchestration-specific manifests (e.g. Kubernetes) are **not** maintained in this repository; the same app image and env model apply wherever the container runs (see ADR-002 amendment, 2026-03-31).
 - [x] **No tax filing or submission — ever.** This is a permanent product boundary, not a deferred feature. The app produces computation packs and summaries for the user's own records. SA108 field alignment is for reference only.
 - [x] **Milestone 2 scope: manual data entry slice** (not import). A small "add acquisition + add disposal + view ledger" flow to prove the full stack before introducing CSV/XLSX parsing complexity.
 - [x] **Calculation engine (Milestone 4): Section 104 pool first, GBP-only.** Reproduce HS284 Example 3 as primary acceptance test. Same-day and 30-day matching rules layered on afterward. FX conversion added after pool mechanics are solid.
@@ -146,7 +146,6 @@ A single Next.js application using the App Router and providing:
 - domain services for business rules
 - repository-based persistence against MongoDB Atlas
 - Docker packaging
-- Kubernetes deployment manifests
 
 ### 5.2 DDD layering
 
@@ -188,7 +187,7 @@ MongoDB Atlas via the native Node.js driver. All database access through reposit
 
 - **Local dev:** `npm run dev` against developer's Atlas instance.
 - **Docker:** multi-stage build, `MONGODB_URI` via env var.
-- **Kubernetes:** Deployment + Service + ConfigMap + Secret. Vanilla manifests, no Helm or operator dependencies.
+- **Other targets:** supply the same environment variables your platform uses; no Kubernetes manifests are kept in-repo (2026-03-31).
 
 ---
 
@@ -243,11 +242,6 @@ Target structure after Milestone 1:
 │              └─ mongodb-client.int.test.ts
 ├─ docker/
 │  └─ Dockerfile
-├─ k8s/
-│  ├─ deployment.yaml
-│  ├─ service.yaml
-│  ├─ configmap.yaml
-│  └─ secret.yaml
 ├─ public/
 ├─ .env.example
 ├─ .gitignore
@@ -307,7 +301,7 @@ This milestone produces a running app with no business features — only infrast
 - [x] Add integration test for MongoDB client (connects, health check)
 - [x] Add `npm run validate` script: `build && lint && test`
 - [x] Add Dockerfile (multi-stage: deps → build → runtime)
-- [x] Add Kubernetes manifests (`k8s/`): Deployment, Service, ConfigMap, Secret
+- [x] ~~Add Kubernetes manifests (`k8s/`)~~ **Superseded 2026-03-31:** manifests removed from the repo; deployment target beyond Docker is not fixed here.
 - [x] Add `.env.example` with documented variables
 - [x] Update `README.md` with setup and run instructions
 - [x] Update `.gitignore` (exclude sample data files, `.env`, node_modules, `.next`)
@@ -333,10 +327,6 @@ This milestone produces a running app with no business features — only infrast
 | `src/test/unit/shared/config/env.test.ts` | create |
 | `src/test/integration/infrastructure/persistence/mongodb-client.int.test.ts` | create |
 | `docker/Dockerfile` | create |
-| `k8s/deployment.yaml` | create |
-| `k8s/service.yaml` | create |
-| `k8s/configmap.yaml` | create |
-| `k8s/secret.yaml` | create |
 | `.env.example` | create |
 | `.gitignore` | modify |
 | `README.md` | modify |
@@ -441,7 +431,6 @@ export default tseslint.config(
 - [x] stub user seed script ran successfully in early delivery *(superseded: auth + sign-up — see §3.5)*
 - [x] `npm run validate` passes (build + lint + test)
 - [x] `docker build` succeeds
-- [x] Kubernetes manifests are syntactically valid
 - [x] DDD folder structure is established with placeholder READMEs or index files where helpful
 
 ---
@@ -834,7 +823,7 @@ Milestone 6 delivered 2026-03-30; see **Status** and **Validated** above. Sell-s
 - Data quality warnings: missing FX, incomplete portfolios, unresolved items
 - Assumption labelling: selected CGT rate tier visible on outputs
 - "Not professional tax advice" disclaimer
-- Refined Docker and Kubernetes assets
+- Refined Docker assets
 - Security review: env var handling, no secrets in logs, sensitive data treatment
 - Updated README and operational docs
 
@@ -869,7 +858,7 @@ Milestone 6 delivered 2026-03-30; see **Status** and **Validated** above. Sell-s
 
 **Ops**
 
-- [x] Docker/K8s README alignment; security notes (README + Deployment `securityContext` / resources)
+- [x] Docker README alignment; security notes (README + container image non-root user)
 
 #### Likely files (Milestone 7)
 
@@ -926,7 +915,7 @@ Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-01
 | 8 | Sell-to-cover treatment | Not modelled as disposals; net shares only |
 | 9 | FX rate source mechanism | On-demand download script, seeded into MongoDB |
 | 10 | Local MongoDB | Not supported; Atlas required for all environments |
-| 11 | Kubernetes specifics | Vanilla manifests, no provider assumptions |
+| 11 | Orchestration beyond Docker | Not fixed in-repo; no Kubernetes manifests maintained (2026-03-31) |
 | 12 | Tax filing/submission | Never; permanent product boundary |
 | 13 | Sell transaction prices | Assume available eventually; manual entry acceptable as fallback |
 | 14 | Stock Options / ESPP scope | RSU-only. Options and ESPP are permanently out of scope. Import pipeline must filter them out. |
@@ -1015,7 +1004,7 @@ Per PRD Appendix 4, the calculation engine must pass:
 - This is a multi-user self-service end-user product.
 - The initial goal is architectural strength and one correct vertical slice, not complete tax-domain coverage.
 - MongoDB Atlas is the only supported persistence target (no local MongoDB).
-- Docker and Kubernetes are both relevant deployment targets.
+- Docker is the container deployment target captured in this repository; other hosting is a product/ops decision.
 - Strict linting, validation, and testing are required from Milestone 1.
 - Backwards compatibility is not a goal during early milestones.
 - The user declares their CGT rate tier; the app does not compute income tax bands.
