@@ -72,7 +72,7 @@ By default **`AUTH_EMAIL_PROVIDER=noop`**: no real email is sent. Verification a
 1. Keep the **terminal where `npm run dev` is running** visible (that is where auth emails are logged). The URL is **not** on the `POST /api/auth/sign-up/email` line — look for a **`[dev] NOOP EMAIL`** line (printed with `console.warn` so it is easy to spot) or `Auth email (noop) full text:` right after it.
 2. Complete **Sign up** in the browser with a **new email**, or use **Resend verification** on `/verify-email` if you already registered. **Re-using an email that already exists** used to produce a success response with **no** verification email (Better Auth’s duplicate-email path); the app now **resends** the verification link for unverified accounts in that case.
 3. **Paste the URL** into the address bar if needed, complete verification, then continue.
-4. Use **Sign in** with the same email and password. Portfolio routes require a verified email.
+4. Use **Sign in** with the same email and password. Holding routes require a verified email.
 
 Password reset flows work the same way in noop mode: copy the reset URL from the server log.
 
@@ -119,7 +119,7 @@ docker run --rm -p 3000:3000 -e MONGODB_URI='mongodb+srv://...' shares-gains-uk-
 ## Security and operations
 
 - **Secrets:** supply `MONGODB_URI` only via environment (or your platform’s secret store) — never commit real URIs. The app logs through `src/shared/app-logger.ts`; do not add `console.log` of connection strings or user financial payloads.
-- **Data:** portfolio and transaction data live in MongoDB Atlas; treat backups and access control as part of your deployment policy.
+- **Data:** holding and transaction data live in MongoDB Atlas; treat backups and access control as part of your deployment policy.
 - **Container:** the production image runs as a non-root user (`nextjs`, UID 1001).
 
 ## Documentation

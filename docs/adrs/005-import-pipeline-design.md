@@ -14,7 +14,7 @@ Imports must respect DDD boundaries: no MongoDB or `xlsx` in `src/domain`; canon
 
 ### Pipeline stages
 
-1. **Upload (interfaces):** User selects an `.xlsx` file on the portfolio screen. The file is posted to a **server action** (or equivalent App Router handler) with a documented size limit.
+1. **Upload (interfaces):** User selects an `.xlsx` file on the holding screen. The file is posted to a **server action** (or equivalent App Router handler) with a documented size limit.
 2. **Read (infrastructure):** Bytes are parsed with the **`xlsx`** library into a **rectangular grid** (`string[][]`) for the target sheet (`Restricted Stock` if present, else first sheet).
 3. **Parse (domain):** A pure function interprets the hierarchical **Row Kind** rows: `Grant` → `Vest Schedule` → `Tax Withholding`. It emits typed intermediate rows.
 4. **Normalise (domain):** Tax Withholding rows become **draft acquisitions** with **`economicsKind: 'import_usd'`**: `considerationUsd` and `feesUsd` (fees USD default `0` in M3), **net quantity** = Vested Qty − Shares Traded for Taxes, **symbol** from the row, **eventDate** as UTC date-only. Per product decision #15, **Taxable Gain** is USD; **per-share USD** = Taxable Gain ÷ Vested Qty (row); **total gross USD** = per-share × net quantity.
@@ -51,7 +51,7 @@ Real customer exports are **not** committed (see `IMPLEMENTATION_PLAN.md` Sectio
 
 - Domain stays free of file-format libraries; tests can feed **grids** without binary XLSX.
 - MongoDB validators must accept the **`economicsKind`** discriminated shape (`db:init` / `collMod`).
-- Users may hold **manual GBP** and **import USD** acquisitions in the same portfolio; M4 must later filter or join on economics kind (M5).
+- Users may hold **manual USD** and **import USD** acquisitions in the same holding; M4 must later filter or join on economics kind (M5).
 
 ## Related
 

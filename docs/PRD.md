@@ -139,7 +139,7 @@ The following can be intentionally deferred until later product discovery is com
 
 - exact import formats and mappings
 - precise CGT rules and every edge case
-- portfolio-wide advanced scenario modelling
+- holding-wide advanced scenario modelling
 - reporting and export formats
 - authentication provider selection
 - subscription and billing
@@ -159,10 +159,10 @@ The application should support a user returning to saved work rather than treati
 
 **Agreed model (stakeholder decision; see `docs/IMPLEMENTATION_PLAN.md` Section 3.2):**
 
-- **Top-level object:** a **Portfolio** — the primary organising entity for share events and later calculations. It belongs to a user and can span multiple tax years; tax-year views are **derived** from portfolio data, not separate top-level entities.
+- **Top-level object:** a **Holding** — one per **stock symbol** (ticker) for the user. It is the primary organising entity for share events and later calculations for that line of stock; it can span multiple tax years; tax-year views are **derived** from holding data, not separate top-level entities.
 - **Multi-user:** the data model includes `userId` on persisted documents from the start. **Authentication** uses Better Auth with MongoDB-backed sessions; the persisted `userId` matches the signed-in user id (see ADR-007).
-- **Saved work:** users create and open portfolios; acquisitions, disposals, and imports attach to a portfolio. Organisation within a portfolio is by instrument (e.g. ticker) and **UK tax year** (6 April–5 April) for views such as the ledger.
-- **Draft vs final vs archived:** not prescribed for early milestones; may be introduced when workflows need explicit locking or reporting packs. Until then, persisted portfolio data is the source of truth the user can edit and revisit.
+- **Saved work:** users create and open holdings (named by uppercase symbol); acquisitions, disposals, and imports attach to that holding. The ledger is organised by **UK tax year** (6 April–5 April).
+- **Draft vs final vs archived:** not prescribed for early milestones; may be introduced when workflows need explicit locking or reporting packs. Until then, persisted holding data is the source of truth the user can edit and revisit.
 
 ### 8.2 Import and transaction data handling
 

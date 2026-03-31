@@ -12,7 +12,7 @@ The application persists domain data in MongoDB Atlas. Domain rules and use case
 
 ### Interfaces in the domain layer
 
-Repository **contracts** live under `src/domain/repositories/` as TypeScript interfaces. They use domain types and identifiers (strings for `userId`, `portfolioId`, etc.) — never `MongoClient`, `Db`, or BSON types.
+Repository **contracts** live under `src/domain/repositories/` as TypeScript interfaces. They use domain types and identifiers (strings for `userId`, `holdingId`, etc.) — never `MongoClient`, `Db`, or BSON types.
 
 ### Implementations in infrastructure
 
@@ -24,7 +24,7 @@ Concrete classes under `src/infrastructure/repositories/` implement those interf
 
 ### Collections for Milestone 2
 
-To keep MongoDB `$jsonSchema` validators simple and avoid complex `oneOf` trees, **acquisitions** and **disposals** are stored in **separate collections** (`acquisitions`, `disposals`). Both reference a portfolio by `portfolioId` and scope by `userId`. A future milestone could merge into a single `share_holding_events` collection if product needs justify the added validator complexity.
+To keep MongoDB `$jsonSchema` validators simple and avoid complex `oneOf` trees, **acquisitions** and **disposals** are stored in **separate collections** (`acquisitions`, `disposals`). Both reference a holding by `holdingId` and scope by `userId`. A future milestone could merge into a single `share_holding_events` collection if product needs justify the added validator complexity.
 
 ### Schema enforcement
 

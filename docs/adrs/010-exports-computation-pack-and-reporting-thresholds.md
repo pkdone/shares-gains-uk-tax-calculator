@@ -14,11 +14,11 @@ Milestone 7 requires outputs suitable for Self Assessment record keeping, portfo
 
 ### Computation pack
 
-- **Print-only:** a dedicated route (`/portfolios/[portfolioId]/computation-pack`) renders the same calculation artefacts as the main calculation page (FX table, pool roll-forward, disposals, tax-year summaries) in a **print-friendly** layout. Users save via the browser (Print → Save as PDF). Global CSS hides elements marked `no-print` when printing.
+- **Print-only:** a dedicated route (`/holdings/[holdingId]/computation-pack`) renders the same calculation artefacts as the main calculation page (FX table, pool roll-forward, disposals, tax-year summaries) in a **print-friendly** layout. Users save via the browser (Print → Save as PDF). Global CSS hides elements marked `no-print` when printing.
 
 ### CSV export
 
-- **GET** route ` /portfolios/[portfolioId]/disposals-export` returns `text/csv` with one row per disposal for the **selected symbol** and current rate tier / brought-forward inputs (aligned with the calculation query string). Columns include symbol, dates, tax year, proceeds, fees, allowable cost, gain/loss, rounded gain, and a semicolon-separated matching breakdown.
+- **GET** route `/holdings/[holdingId]/disposals-export` returns `text/csv` with one row per disposal for the holding symbol and current rate tier / brought-forward inputs (aligned with the calculation query string). Columns include symbol, dates, tax year, proceeds, fees, allowable cost, gain/loss, rounded gain, and a semicolon-separated matching breakdown.
 
 ### Reporting thresholds
 
