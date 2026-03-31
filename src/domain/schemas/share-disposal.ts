@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
 import { dateOnlyStringSchema } from '@/domain/schemas/date-only';
+import { stockSymbolSchema } from '@/domain/schemas/stock-symbol';
 
 export const shareDisposalBaseSchema = z.object({
-  symbol: z.string().trim().min(1).max(32),
+  symbol: stockSymbolSchema,
   eventDate: dateOnlyStringSchema,
   quantity: z.number().positive().finite(),
   /** Gross proceeds before fees (USD); converted to sterling at event date for CGT. */
@@ -15,7 +16,7 @@ export type ShareDisposalBase = z.infer<typeof shareDisposalBaseSchema>;
 
 export const shareDisposalSchema = shareDisposalBaseSchema.extend({
   id: z.string().min(1),
-  portfolioId: z.string().min(1),
+  holdingId: z.string().min(1),
   userId: z.string().min(1),
   createdAt: z.date(),
   updatedAt: z.date(),

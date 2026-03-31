@@ -148,7 +148,7 @@ export function withObjectIdFields(
 
 /**
  * Injects BSON `objectId` fields into **each** branch of a top-level `anyOf` (from Zod `union`).
- * A sibling `allOf` with `_id` / `portfolioId` fails MongoDB validation when each branch has
+ * A sibling `allOf` with `_id` / `holdingId` fails MongoDB validation when each branch has
  * `additionalProperties: false` without those keys.
  */
 export function injectBsonObjectIdsIntoEachAnyOfBranch(

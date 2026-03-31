@@ -15,7 +15,7 @@ type DisposalDoc = WithId<DisposalDocument>;
 function mapDoc(doc: DisposalDoc): ShareDisposal {
   return {
     id: doc._id.toHexString(),
-    portfolioId: doc.portfolioId.toHexString(),
+    holdingId: doc.holdingId.toHexString(),
     userId: doc.userId,
     symbol: doc.symbol,
     eventDate: doc.eventDate,
@@ -29,8 +29,8 @@ function mapDoc(doc: DisposalDoc): ShareDisposal {
 
 export class MongoShareDisposalRepository implements ShareDisposalRepository {
   async insert(input: CreateShareDisposal): Promise<ShareDisposal> {
-    if (!ObjectId.isValid(input.portfolioId)) {
-      throw new PersistenceError('Invalid portfolio id');
+    if (!ObjectId.isValid(input.holdingId)) {
+      throw new PersistenceError('Invalid holding id');
     }
 
     try {
@@ -40,7 +40,7 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
       const now = new Date();
       const doc: DisposalDoc = {
         _id,
-        portfolioId: new ObjectId(input.portfolioId),
+        holdingId: new ObjectId(input.holdingId),
         userId: input.userId,
         symbol: input.symbol,
         eventDate: input.eventDate,
@@ -57,11 +57,11 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
     }
   }
 
-  async listByPortfolioForUser(
-    portfolioId: string,
+  async listByHoldingForUser(
+    holdingId: string,
     userId: string,
   ): Promise<ShareDisposal[]> {
-    if (!ObjectId.isValid(portfolioId)) {
+    if (!ObjectId.isValid(holdingId)) {
       return [];
     }
 
@@ -70,7 +70,7 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
       const coll = client.db().collection<DisposalDoc>(COLLECTION_DISPOSALS);
       const cursor = coll
         .find({
-          portfolioId: new ObjectId(portfolioId),
+          holdingId: new ObjectId(holdingId),
           userId,
         })
         .sort({ eventDate: 1, _id: 1 });
@@ -81,12 +81,12 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
     }
   }
 
-  async deleteByIdForPortfolioUser(
-    portfolioId: string,
+  async deleteByIdForHoldingUser(
+    holdingId: string,
     userId: string,
     id: string,
   ): Promise<boolean> {
-    if (!ObjectId.isValid(portfolioId) || !ObjectId.isValid(id)) {
+    if (!ObjectId.isValid(holdingId) || !ObjectId.isValid(id)) {
       return false;
     }
 
@@ -95,7 +95,7 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
       const coll = client.db().collection<DisposalDoc>(COLLECTION_DISPOSALS);
       const res = await coll.deleteOne({
         _id: new ObjectId(id),
-        portfolioId: new ObjectId(portfolioId),
+        holdingId: new ObjectId(holdingId),
         userId,
       });
       return res.deletedCount === 1;
