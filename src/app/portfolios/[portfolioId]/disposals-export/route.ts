@@ -8,8 +8,8 @@ import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-ra
 import { MongoPortfolioCalculationPrefsRepository } from '@/infrastructure/repositories/mongo-portfolio-calculation-prefs-repository';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
+import { getVerifiedUserIdFromRequest } from '@/infrastructure/auth/session';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
-import { env } from '@/shared/config/env';
 import { DomainError } from '@/shared/errors/app-error';
 
 const portfolioRepository = new MongoPortfolioRepository();
@@ -33,7 +33,12 @@ export async function GET(
   const { portfolioId } = await context.params;
   const sp = req.nextUrl.searchParams;
 
-  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, env.STUB_USER_ID);
+  const userId = await getVerifiedUserIdFromRequest(req);
+  if (userId === null) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+
+  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, userId);
   if (portfolio === null) {
     return new NextResponse('Not found', { status: 404 });
   }
@@ -42,10 +47,10 @@ export async function GET(
     acquisitionRepository,
     disposalRepository,
     portfolioId,
-    userId: env.STUB_USER_ID,
+    userId,
   });
 
-  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, env.STUB_USER_ID);
+  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, userId);
   const hasBfQuery = sp.has('bf') && sp.get('bf')?.trim() !== '';
   const bfParsed = Number.parseFloat(sp.get('bf') ?? '0');
   const broughtForwardLosses = resolveBroughtForwardFromQueryAndPrefs({
@@ -73,7 +78,7 @@ export async function GET(
       fxRateRepository,
       input: {
         portfolioId,
-        userId: env.STUB_USER_ID,
+        userId,
         symbol,
         rateTier,
         broughtForwardLosses,

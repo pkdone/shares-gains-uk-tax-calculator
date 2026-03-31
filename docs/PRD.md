@@ -161,7 +161,7 @@ The application should support a user returning to saved work rather than treati
 **Agreed model (stakeholder decision; see `docs/IMPLEMENTATION_PLAN.md` Section 3.2):**
 
 - **Top-level object:** a **Portfolio** — the primary organising entity for share events and later calculations. It belongs to a user and can span multiple tax years; tax-year views are **derived** from portfolio data, not separate top-level entities.
-- **Multi-user:** the data model includes `userId` on persisted documents from the start. **Authentication is deferred;** development uses a **stub user** identified by environment (`STUB_USER_ID`) until an auth approach is chosen (see ADR-007 in the implementation plan).
+- **Multi-user:** the data model includes `userId` on persisted documents from the start. **Authentication** uses Better Auth with MongoDB-backed sessions; the persisted `userId` matches the signed-in user id (see ADR-007).
 - **Saved work:** users create and open portfolios; acquisitions, disposals, and imports attach to a portfolio. Organisation within a portfolio is by instrument (e.g. ticker) and **UK tax year** (6 April–5 April) for views such as the ledger.
 - **Draft vs final vs archived:** not prescribed for early milestones; may be introduced when workflows need explicit locking or reporting packs. Until then, persisted portfolio data is the source of truth the user can edit and revisit.
 

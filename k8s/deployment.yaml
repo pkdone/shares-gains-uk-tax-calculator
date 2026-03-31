@@ -42,6 +42,11 @@ spec:
                 secretKeyRef:
                   name: shares-gains-app-secrets
                   key: MONGODB_URI
+            - name: BETTER_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: shares-gains-app-secrets
+                  key: BETTER_AUTH_SECRET
           readinessProbe:
             httpGet:
               path: /api/health

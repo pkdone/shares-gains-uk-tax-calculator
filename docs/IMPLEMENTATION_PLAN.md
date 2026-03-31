@@ -2,7 +2,7 @@
 
 **Status:** Draft — post-interview refinement
 **Prepared by:** Paul Done
-**Last updated:** 2026-03-30
+**Last updated:** 2026-03-31
 
 ---
 
@@ -68,7 +68,7 @@ The following real-world export files inform the import pipeline design. They ar
 
 ### 3.2 Product decisions (stakeholder interview, 2026-03-28)
 
-- [x] **Multi-user application.** Data model includes `userId` on every document from day one. Real authentication deferred; Milestone 1 uses a stub/seed user.
+- [x] **Multi-user application.** Data model includes `userId` on every document from day one. **Authentication** is implemented with **Better Auth** (MongoDB adapter, cookie sessions, email/password; see ADR-007). Historical Milestones 1–2 used a **stub user** (`STUB_USER_ID` + `seed:users`); that path has been **removed** — tenant `userId` is the signed-in Better Auth user id.
 - [x] **Top-level domain object: Portfolio.** A portfolio is the primary organising entity. It belongs to a user and can span multiple tax years. Tax-year views are derived from portfolio data, not separate top-level entities.
 - [x] **CGT rate tier: user-selectable.** Support basic (10%/18%), higher (20%/24%), and additional (same as higher for CGT purposes) rate tiers. Default to "additional" in the UI. The app does not compute the user's income tax band — the user declares it.
 - [x] **Sell-to-cover at vest: not modelled as disposals.** When RSUs vest and shares are sold to cover PAYE/NI, only the net shares received are tracked as acquisitions. The withheld shares are treated as never received.
@@ -85,7 +85,7 @@ The following real-world export files inform the import pipeline design. They ar
 - [x] **Bootstrap approach: manual setup.** No `create-next-app`. Manually initialise `package.json`, install dependencies explicitly, and create all files from scratch for full control.
 - [x] **ESLint: flat config (`eslint.config.mjs`).** ESLint 9 flat config format with `typescript-eslint` type-checked mode. Dev dependencies: `eslint`, `typescript-eslint`, `@next/eslint-plugin-next`, `eslint-plugin-react`, `eslint-plugin-react-hooks`.
 - [x] **Tailwind CSS v4: CSS-based config.** No `tailwind.config.ts`; Tailwind v4 uses `@import "tailwindcss"` and `@theme` in `globals.css`. `postcss.config.mjs` is the only config file.
-- [x] **Stub user seed: minimal script.** A seed script (not startup-time logic) that writes a simple hardcoded user document to prove MongoDB write/read. Gets a proper schema in M2.
+- [x] **Stub user seed: minimal script (historical M1).** Delivered as `scripts/seed-users.ts` for MongoDB write/read proof; **removed** once Better Auth shipped — users are created via sign-up instead.
 - [x] **Schema registry and base repository: deferred to M2.** The Zod → JSON Schema → MongoDB `$jsonSchema` pipeline and abstract repository pattern have no real consumers in M1. They move to M2 where Portfolio and share event schemas are the first consumers.
 - [x] **ADR-003 and ADR-004: deferred to M2.** M1 implementations (AppError, MongoDB client) are simple enough without formal ADRs. Write them when M2 demands structured patterns.
 - [x] **`@typescript-eslint/promise-function-async`: strict (`"error"`).** Per the project rule: "The ESLint configuration is the source of truth." Tune with rule options later if specific patterns need exemption.
@@ -93,8 +93,15 @@ The following real-world export files inform the import pipeline design. They ar
 ### 3.4 Stakeholder refinements (2026-03-28)
 
 - [x] **Multiple tickers per portfolio:** **Explicit support** — Section 104 pooling applies **per symbol** (separate pool state per ticker) within a portfolio, consistent with UK CGT line-of-stock treatment at this level of modelling.
-- [x] **Authentication provider:** **No vendor preference** recorded; choose when auth is implemented and document in ADR-007.
+- [x] **Authentication provider:** **Better Auth** embedded in the Next.js app, MongoDB-backed sessions, email/password with required verification — documented in **ADR-007** (`docs/adrs/007-authentication-better-auth.md`).
 - [x] **Brought-forward losses:** **Milestone 4** implements the **calculation rules** with **test inputs** (including zero / explicit brought-forward in tests). **User-facing entry** of brought-forward amounts is **Milestone 7** (see Milestone 4 stakeholder decisions and Section 8.1).
+
+### 3.5 Authentication delivery (2026-03-31)
+
+- [x] **Better Auth** integrated: App Router `/api/auth/[...all]`, `@better-auth/mongo-adapter` sharing `MONGODB_URI`, cookie sessions (`nextCookies` plugin).
+- [x] **Email/password** with **required email verification** before portfolio access; password reset and verification email scaffolding (`AUTH_EMAIL_PROVIDER=noop` default — log-based until a real provider is wired).
+- [x] **Stub user removed:** no `STUB_USER_ID`, no `scripts/seed-users.ts`; `userId` on tenant documents = Better Auth `user.id`. Domain `users` collection upserted on sign-up for consistency with existing provisioning.
+- [x] **ADR-007** written: `docs/adrs/007-authentication-better-auth.md`.
 
 ---
 
@@ -291,7 +298,7 @@ This milestone produces a running app with no business features — only infrast
 - [x] Add `AppError` base class and initial error taxonomy (`src/shared/errors/`)
 - [x] Add Zod-based environment validation (`src/shared/config/env.ts`): validate `MONGODB_URI`, `NODE_ENV`, and any other required env vars on startup
 - [x] Add MongoDB client singleton (`src/infrastructure/persistence/mongodb-client.ts`): lazy connection, graceful shutdown, connection-health check
-- [x] Add stub user seed script: a standalone script that writes a known user document to prove MongoDB write/read (not startup-time logic; gets a proper schema in M2)
+- [x] Add stub user seed script *(historical; script later removed — see §3.5)*: proved MongoDB write/read in early milestones
 - [x] Add `GET /api/health` route handler returning `{ status: "ok", db: "connected" | "disconnected" }`
 - [x] Add landing page (`src/app/page.tsx`): minimal styled page confirming the app is running
 - [x] Add ESLint flat config (`eslint.config.mjs`): type-checked mode via `typescript-eslint` with `projectService: true`, `@next/eslint-plugin-next` flat config, `eslint-plugin-react`, `eslint-plugin-react-hooks`, and the full project rule set (see Section 7.1.1 below for complete config)
@@ -322,7 +329,7 @@ This milestone produces a running app with no business features — only infrast
 | `src/shared/config/env.ts` | create |
 | `src/shared/errors/app-error.ts` | create |
 | `src/infrastructure/persistence/mongodb-client.ts` | create |
-| `scripts/seed-users.ts` | create (stub user seed script) |
+| `scripts/seed-users.ts` | create *(historical; removed after auth — see §3.5)* |
 | `src/test/unit/shared/config/env.test.ts` | create |
 | `src/test/integration/infrastructure/persistence/mongodb-client.int.test.ts` | create |
 | `docker/Dockerfile` | create |
@@ -431,7 +438,7 @@ export default tseslint.config(
 - [x] `npm run dev` starts the app; landing page renders; `/api/health` returns `200`
 - [x] environment validation rejects missing or malformed `MONGODB_URI`
 - [x] MongoDB client connects to Atlas and reports healthy
-- [x] stub user seed script runs successfully (writes and reads back a user document)
+- [x] stub user seed script ran successfully in early delivery *(superseded: auth + sign-up — see §3.5)*
 - [x] `npm run validate` passes (build + lint + test)
 - [x] `docker build` succeeds
 - [x] Kubernetes manifests are syntactically valid
@@ -451,7 +458,7 @@ This milestone is **GBP-only** and has **no calculation logic** — it proves th
 
 #### Stakeholder decisions (2026-03-28)
 
-- **Stub user:** `STUB_USER_ID` (string) in environment; seed script **upserts** by `userId`; all tenant-scoped documents use this value until authentication (ADR-007).
+- **Tenant identity (historical note):** M2 was delivered with **`STUB_USER_ID`** + **`seed:users`** for all tenant-scoped documents. **Superseded (2026-03-31):** **Better Auth** user id as `userId`; stub env and seed script **removed** (ADR-007).
 - **Manual events:** store **gross/price components and fees in separate fields**; derive net amounts for display; Milestone 4 calculation consumes the same explicit fields.
 - **Ledger tax-year grouping:** events use **UTC date-only** calendar dates (no time-of-day); group into **UK tax years** (6 April–5 April), consistent with PRD Appendix 3.
 - **Symbol:** single **free-text ticker** per event for this milestone; ISIN may be added later if imports require it.
@@ -477,7 +484,7 @@ This milestone is **GBP-only** and has **no calculation logic** — it proves th
 
 - [x] Persistence record schemas (extend domain with `_id`, timestamps, `userId`); derive MongoDB validators from Zod
 - [x] Repository **implementations** (base pattern deferred from M1); MongoDB access only here
-- [x] Update **stub user seed script**: read `STUB_USER_ID`, **upsert** by `userId` (no duplicate logical users on re-run)
+- [x] Update **stub user seed script** *(historical; removed after auth — see §3.5)*
 
 **Application**
 
@@ -487,7 +494,7 @@ This milestone is **GBP-only** and has **no calculation logic** — it proves th
 
 - [x] Next.js App Router: portfolio creation, acquisition/disposal **forms**, **ledger** view
 - [x] Route handlers or server actions for mutations and queries; validate HTTP payloads in the interface layer
-- [x] Resolve current user from validated **`STUB_USER_ID`** in config
+- [x] Resolve current user *(M2: `STUB_USER_ID`; superseded by session — see §3.5)*
 
 **Tests**
 
@@ -499,9 +506,9 @@ This milestone is **GBP-only** and has **no calculation logic** — it proves th
 | File | Action |
 |------|--------|
 | `docs/adrs/003-repository-abstraction-design.md`, `004-error-taxonomy.md` | create (align naming with `001-` / `002-` in `docs/adrs/`) |
-| `src/shared/config/env.ts` | extend — validate `STUB_USER_ID` |
-| `.env.example` | add `STUB_USER_ID` |
-| `scripts/seed-users.ts` | modify — upsert by `userId`, use env |
+| `src/shared/config/env.ts` | extend — *(M2: `STUB_USER_ID`; superseded by Better Auth env — see §3.5)* |
+| `.env.example` | *(M2: `STUB_USER_ID`; superseded — see §3.5)* |
+| `scripts/seed-users.ts` | modify *(historical; removed — see §3.5)* |
 | `src/infrastructure/persistence/schema-registry.ts` (or equivalent) | create |
 | `src/domain/schemas/*.ts` | create |
 | `src/domain/repositories/*.ts` | create |
@@ -621,7 +628,7 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 
 - **Multi-ticker:** One Section 104 pool **per symbol** within a portfolio (see Section 8.1, #22). Events for different tickers do not share a pool.
 - **Brought-forward losses:** Engine and tests implement the **rules** (including brought-forward down to AEA); **no UI to capture** prior-year loss pools in M4 — use test fixtures and explicit inputs; full user input **Milestone 7** (see Section 8.1, #24); M5 calculation page may expose a numeric field only.
-- **Authentication:** Irrelevant to M4 scope; no provider lock-in (see Section 8.1, #23).
+- **Authentication:** Irrelevant to M4 calculation scope; **Better Auth** added post-M7 delivery (see Section 3.5, ADR-007).
 
 #### Stakeholder / planning decisions (2026-03-30)
 
@@ -910,8 +917,8 @@ Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-01
 | # | Question | Resolution |
 |---|----------|-----------|
 | 1 | Primary top-level object | Portfolio |
-| 2 | Single-user or multi-user | Multi-user (stub user for now) |
-| 3 | Authentication timing | Deferred; stub user in M1 |
+| 2 | Single-user or multi-user | Multi-user; tenant id = signed-in user (Better Auth) |
+| 3 | Authentication timing | **Better Auth** (2026-03-31); historically stub user until then |
 | 4 | Import format first | E\*Trade "ByBenefitType" XLSX for acquisitions |
 | 5 | Minimum end-to-end workflow | Manual add acquisition + disposal + ledger (M2) |
 | 6 | Calculation scope for first engine | Section 104 pool, GBP-only, HS284 Example 3 (M4) |
@@ -924,14 +931,14 @@ Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-01
 | 13 | Sell transaction prices | Assume available eventually; manual entry acceptable as fallback |
 | 14 | Stock Options / ESPP scope | RSU-only. Options and ESPP are permanently out of scope. Import pipeline must filter them out. |
 | 15 | Tax Withholding "Taxable Gain" currency | USD. Divide by Vested Qty to derive per-share USD market value at vest for CGT acquisition cost. |
-| 16 | Stub user for Milestone 2+ | `STUB_USER_ID` (string) in env; seed **upserts** by `userId`; tenant-scoped documents use this until auth (ADR-007). |
+| 16 | Stub user for Milestone 2+ *(historical)* | Delivered as `STUB_USER_ID` + `seed:users`; **removed** when Better Auth shipped — tenant `userId` = Better Auth user id (ADR-007). |
 | 17 | Manual acquisition/disposal economics (M2) | Store gross/price components and **fees in separate fields**; derive net for display; M4 uses the same explicit fields. |
 | 18 | Ledger tax-year grouping (M2) | **UTC date-only** calendar dates; UK tax year **6 April–5 April** for grouping. |
 | 19 | Symbol field (M2) | Single **free-text ticker** per event; ISIN deferred unless M3+ requires it. |
 | 20 | PRD workspace theme vs Portfolio | **Portfolio** is the top-level organising entity; PRD §8.1 updated to match (2026-03-28). |
 | 21 | M4 vs `import_usd` acquisitions | M4 pool engine is **GBP-only**. **`import_usd`** rows are converted to sterling in the **application layer** (M5) via BoE XUDLUSS before calling the engine; ledger may still list USD for traceability (see ADR-005, ADR-008). |
 | 22 | Multiple tickers in one portfolio | **Supported explicitly:** Section 104 pooling and disposal matching apply **per symbol** (per-line-of-stock) within a portfolio — not a single blended pool across tickers. UX may stay minimal in early milestones; correctness is per symbol (stakeholder decision, 2026-03-28). |
-| 23 | Authentication provider | **No preference recorded** — choose at implementation time when auth is added; capture provider, sessions, and migration from stub user in **ADR-007** (stakeholder decision, 2026-03-28). |
+| 23 | Authentication provider | **Better Auth** + MongoDB adapter + cookie sessions; **ADR-007** records provider, sessions, and replacement of stub user (updated 2026-03-31). |
 | 24 | Brought-forward losses — user input vs engine | **Milestone 4:** implement loss netting rules in the **calculation engine** and unit tests using **explicit test inputs** (including zero / hardcoded brought-forward where needed). **User-facing input** of brought-forward loss pools is **deferred to Milestone 7** (stakeholder decision, 2026-03-28). |
 
 ### 8.2 Still open
@@ -961,7 +968,7 @@ Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-01
 | ADR-008: FX rate infrastructure and conversion | M5 | BoE XUDLUSS storage, lookup, fallback, application-layer GBP conversion for `import_usd`. |
 | ADR-009: Share matching algorithm | M6 | HMRC order (same-day, 30-day, Section 104), CG51560 aggregation, `matchingBreakdown` schema. |
 | ADR-010: Exports, computation pack, reporting thresholds | M7 | Print-only pack, CSV shape, proceeds aggregation, SA checkbox, BF persistence. |
-| ADR-007: Authentication and user model | When auth is added | Provider choice, session model, user document shape, migration from stub user. |
+| ADR-007: Authentication and user model | **Done** — `docs/adrs/007-authentication-better-auth.md` | Better Auth, MongoDB sessions, `userId` = Better Auth user id; stub user path removed (no migration — greenfield / DB refresh). |
 
 ---
 

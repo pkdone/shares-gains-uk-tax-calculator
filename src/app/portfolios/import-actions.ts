@@ -7,9 +7,9 @@ import { commitEtradeByBenefitImport } from '@/application/import/commit-etrade-
 import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-etrade-by-benefit-type-import';
 import { shareAcquisitionImportUsdSchema } from '@/domain/schemas/share-acquisition';
 import { readXlsxForEtradeByBenefitTypeImport } from '@/infrastructure/import/read-xlsx-sheet';
+import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
-import { env } from '@/shared/config/env';
 import { DomainError } from '@/shared/errors/app-error';
 
 const portfolioRepo = new MongoPortfolioRepository();
@@ -98,10 +98,12 @@ export async function commitEtradeImportAction(
     return { error: 'Drafts failed validation' };
   }
 
+  const userId = await requireVerifiedUserId();
+
   try {
     await commitEtradeByBenefitImport(portfolioRepo, acquisitionRepo, {
       portfolioId,
-      userId: env.STUB_USER_ID,
+      userId,
       drafts: draftsResult.data,
     });
   } catch (err) {

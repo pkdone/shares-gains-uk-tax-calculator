@@ -9,7 +9,8 @@ config({ path: resolve(process.cwd(), '.env') });
 const FALLBACK_JEST_URI = 'mongodb://127.0.0.1:27017/jest-fallback';
 
 /**
- * Drops managed application collections. Requires explicit opt-in to reduce accidental production use.
+ * Drops managed application collections and Better Auth collections in the same database.
+ * Requires explicit opt-in to reduce accidental production use.
  */
 async function main(): Promise<void> {
   if (process.env.ALLOW_DB_TEARDOWN !== '1') {
@@ -25,14 +26,21 @@ async function main(): Promise<void> {
   }
 
   const { createConnectedMongoClient } = await import('../src/infrastructure/persistence/mongodb-client');
+  const { BETTER_AUTH_COLLECTION_NAMES } = await import(
+    '../src/infrastructure/persistence/better-auth-collections'
+  );
   const { MANAGED_COLLECTION_NAMES } = await import('../src/infrastructure/persistence/ensure-collections');
 
   const client = await createConnectedMongoClient();
   try {
     const db = client.db();
     /** Drop dependent data first (no FK enforcement, but logical order). */
-    const dropOrder = [...MANAGED_COLLECTION_NAMES].reverse();
-    logInfo('db:teardown — dropping managed collections');
+    const appDropOrder = [...MANAGED_COLLECTION_NAMES].reverse();
+    /** Session/account before user; verification and rateLimit are independent. */
+    const authDropOrder = [...BETTER_AUTH_COLLECTION_NAMES];
+    const dropOrder = [...appDropOrder, ...authDropOrder];
+
+    logInfo('db:teardown — dropping managed collections (app + Better Auth)');
     logInfo(`  Database: ${db.databaseName}`);
     logInfo('  Planned drop order:');
     for (const name of dropOrder) {

@@ -10,7 +10,7 @@ import { MongoPortfolioCalculationPrefsRepository } from '@/infrastructure/repos
 import { MongoPortfolioRepository } from '@/infrastructure/repositories/mongo-portfolio-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
-import { env } from '@/shared/config/env';
+import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
 import {
@@ -40,7 +40,9 @@ export default async function ComputationPackPage({
   const { portfolioId } = await params;
   const sp = await searchParams;
 
-  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, env.STUB_USER_ID);
+  const userId = await requireVerifiedUserId();
+
+  const portfolio = await portfolioRepository.findByIdForUser(portfolioId, userId);
   if (portfolio === null) {
     notFound();
   }
@@ -49,10 +51,10 @@ export default async function ComputationPackPage({
     acquisitionRepository,
     disposalRepository,
     portfolioId,
-    userId: env.STUB_USER_ID,
+    userId,
   });
 
-  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, env.STUB_USER_ID);
+  const prefs = await prefsRepository.findByPortfolioForUser(portfolioId, userId);
   const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
   const bfParsed = Number.parseFloat(sp.bf ?? '0');
   const broughtForwardLosses = resolveBroughtForwardFromQueryAndPrefs({
@@ -79,7 +81,7 @@ export default async function ComputationPackPage({
         fxRateRepository,
         input: {
           portfolioId,
-          userId: env.STUB_USER_ID,
+          userId,
           symbol,
           rateTier,
           broughtForwardLosses,
