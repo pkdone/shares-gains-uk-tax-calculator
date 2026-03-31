@@ -3,7 +3,11 @@ import { envSchema, parseEnv } from '@/shared/config/env';
 
 const base = {
   MONGODB_URI: 'mongodb+srv://user:pass@cluster.example.net/mydb?retryWrites=true',
-  STUB_USER_ID: 'stub-user',
+  NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+  NEXT_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000/api/auth',
+  BETTER_AUTH_URL: 'http://localhost:3000/api/auth',
+  BETTER_AUTH_SECRET: '0123456789abcdef0123456789abcdef',
+  AUTH_EMAIL_PROVIDER: 'noop' as const,
 };
 
 describe('parseEnv', () => {
@@ -14,7 +18,7 @@ describe('parseEnv', () => {
     });
     expect(result.NODE_ENV).toBe('development');
     expect(result.MONGODB_URI).toContain('mongodb');
-    expect(result.STUB_USER_ID).toBe('stub-user');
+    expect(result.BETTER_AUTH_URL).toContain('/api/auth');
   });
 
   it('defaults NODE_ENV to development when omitted', () => {
@@ -28,7 +32,11 @@ describe('parseEnv', () => {
     expect(() =>
       parseEnv({
         NODE_ENV: 'test',
-        STUB_USER_ID: 'x',
+        NEXT_PUBLIC_APP_URL: base.NEXT_PUBLIC_APP_URL,
+        NEXT_PUBLIC_BETTER_AUTH_URL: base.NEXT_PUBLIC_BETTER_AUTH_URL,
+        BETTER_AUTH_URL: base.BETTER_AUTH_URL,
+        BETTER_AUTH_SECRET: base.BETTER_AUTH_SECRET,
+        AUTH_EMAIL_PROVIDER: base.AUTH_EMAIL_PROVIDER,
       }),
     ).toThrow(ConfigurationError);
   });
@@ -37,17 +45,19 @@ describe('parseEnv', () => {
     expect(() =>
       parseEnv({
         NODE_ENV: 'test',
+        ...base,
         MONGODB_URI: '',
-        STUB_USER_ID: 'x',
       }),
     ).toThrow(ConfigurationError);
   });
 
-  it('throws ConfigurationError when STUB_USER_ID is missing', () => {
+  it('throws ConfigurationError when BETTER_AUTH_URL and NEXT_PUBLIC_BETTER_AUTH_URL differ', () => {
     expect(() =>
       parseEnv({
         NODE_ENV: 'test',
-        MONGODB_URI: 'mongodb://localhost/test',
+        ...base,
+        BETTER_AUTH_URL: 'http://localhost:3000/api/auth',
+        NEXT_PUBLIC_BETTER_AUTH_URL: 'http://127.0.0.1:3000/api/auth',
       }),
     ).toThrow(ConfigurationError);
   });
