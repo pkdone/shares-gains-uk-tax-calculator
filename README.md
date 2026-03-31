@@ -53,7 +53,7 @@ After teardown, the app will not start until you run **`npm run db:init`** again
 
 The application **`getMongoClient()`** does not create collections at runtime; it checks that provisioned collections exist and fails with a clear error if you skipped `db:init`.
 
-**Suggested order for a new environment:** `db:init` → `fetch:fx-rates` → `npm run dev` (then sign up via the app; email uses `AUTH_EMAIL_PROVIDER=noop` by default — check logs for verification links in development).
+**Suggested order for a new environment:** `db:init` → `fetch:fx-rates` → `npm run dev`, then sign up (see **Sign up and email verification (development)** under Development).
 
 For Docker/Kubernetes, run **`db:init`** and **`fetch:fx-rates`** against the target database (e.g. init container or CI job) before serving traffic, in addition to configuring `MONGODB_URI` at runtime.
 
@@ -64,6 +64,19 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Health check: [http://localhost:3000/api/health](http://localhost:3000/api/health) (`db` is `connected` when Atlas is reachable and the database is provisioned).
+
+### Sign up and email verification (development)
+
+By default **`AUTH_EMAIL_PROVIDER=noop`**: no real email is sent. Verification and password-reset links are still generated; the app logs them via `src/shared/app-logger.ts`.
+
+1. Keep the **terminal where `npm run dev` is running** visible (that is where auth emails are logged).
+2. Complete **Sign up** in the browser. After submit, watch that terminal for a line like `Auth email (noop): ... body=...` — the **body** includes the full verification URL.
+3. **Copy the URL** from the log (it starts with your app origin and includes the verification token), paste it into the browser, and complete verification.
+4. Use **Sign in** with the same email and password. Portfolio routes require a verified email.
+
+Password reset flows work the same way in noop mode: copy the reset URL from the server log.
+
+For production, configure a real transactional email provider and set `AUTH_EMAIL_PROVIDER` (and any provider-specific env vars) once implemented — do not rely on noop for real users.
 
 ## Quality gate
 
