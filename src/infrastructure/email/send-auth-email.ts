@@ -17,8 +17,9 @@ export async function sendAuthEmail(payload: AuthEmailPayload): Promise<void> {
     return;
   }
 
+  // Noop: no SMTP. Log the full text body so local dev can copy the verification/reset URL from the server log.
   logInfo(
-    `Auth email (noop): subject=${payload.subject} toDomain=${payload.to.split('@')[1] ?? 'unknown'}`,
+    `Auth email (noop): subject=${payload.subject} recipient=${payload.to} body=${payload.text}`,
   );
 }
 
