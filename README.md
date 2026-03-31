@@ -41,7 +41,7 @@ UK capital gains planning for equity compensation (e.g. RSUs from a US employer)
 |--------|---------|
 | `npm run db:init` | Idempotent setup: managed collections (including `portfolio_calculation_prefs`), validators, indexes. **Run before** first app use on a new database. |
 | `npm run fetch:fx-rates` | Downloads BoE XUDLUSS series and upserts into the `fx_rates` collection. **Run after** `db:init`; safe to re-run to refresh rates. |
-| `npm run db:teardown` | Drops managed collections (development reset). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
+| `npm run db:teardown` | Drops managed app collections **and** Better Auth collections (`user`, `session`, `account`, `verification`, optional `rateLimit`). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
 
 **Teardown example** (destructive; use only on a database you intend to wipe):
 
