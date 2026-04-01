@@ -2,7 +2,7 @@
 
 # Shares Gains UK Tax Calculator
 
-UK capital gains planning for equity compensation (e.g. RSUs from a US employer). This repository is under active development.
+UK capital gains workflow for equity compensation (e.g. RSUs from a US employer). The app calculates **capital gains and losses (chargeable gains mechanics) per holding** you import — not your **overall CGT liability** for a tax year (other disposals, brought-forward losses, reliefs, and your rate position can change what you owe). This repository is under active development.
 
 ## Prerequisites
 

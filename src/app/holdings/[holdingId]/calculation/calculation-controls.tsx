@@ -20,8 +20,8 @@ export function CalculationControls(): React.ReactElement {
         Calculate
       </button>
       <p className="max-w-xl text-xs text-neutral-600">
-        Figures below are for this holding only. They do not include gains or losses from your other holdings or
-        from assets not recorded in this app. Annual exempt amount and CGT due are not shown here.
+        Capital gains and losses (chargeable gains mechanics) for this holding only. Final CGT liability may differ
+        with other disposals, brought-forward losses, reliefs, or your rate position — not estimated here.
       </p>
     </div>
   );

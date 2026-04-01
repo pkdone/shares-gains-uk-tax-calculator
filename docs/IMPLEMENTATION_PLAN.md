@@ -58,6 +58,13 @@ The following real-world export files inform the import pipeline design. They ar
 
 ## 3. Agreed Decisions
 
+### 3.0 Product purpose (2026-03-31)
+
+- **What the app does:** **Capital gains and losses (and chargeable gains mechanics) per holding** for imported ledger data — Section 104 pool, same-day and 30-day matching, sterling conversion for `import_usd` rows, per–tax-year gain/loss totals **for that symbol**.
+- **What it does not do:** **Overall personal CGT liability** for a tax year. Final liability may differ with other disposals, brought-forward losses, reliefs, or rate position.
+- **Brought-forward losses** and **CGT rate tier** are **not** inputs in the shipped app (not needed for holding-level mechanics; would only matter for a future **“tax owed”** estimate).
+- **Reporting obligation** UX is **not implemented**; users must **not infer** reporting obligation from a single holding (see PRD §1, Appendix 1).
+
 ### 3.1 Tooling (confirmed in Milestone 0)
 
 - [x] Package manager: `npm`
@@ -679,7 +686,7 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 - Tax-year summary *(historical milestone text)*: full BF/AEA/tax pipeline was planned; **current code** exposes simplified per-year totals for the holding UI (PRD §8.1)
 - *(Deferred from holding UI:)* AEA application, BF, CGT due, rate tier — not shown on `/holdings/.../calculation`
 - Calculation service in `src/domain/services/` — pure logic, no DB or UI dependencies
-- Unit tests for calculation rules; HS284 + annual summary + **2024-25** split-rate test
+- Unit tests for calculation rules; HS284 + annual summary; `cgt-config` tests cover rate boundaries where relevant
 - **Deferred to a later milestone:** same-day matching, 30-day matching, FX conversion; application-layer wiring from repositories to `calculateGainsForSymbol`
 
 #### Exit criteria
@@ -917,7 +924,7 @@ Per PRD Appendix 4, the calculation engine must pass:
 - [x] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M6)
 - [x] **FX handling:** per-transaction GBP conversion, not "compute USD gain then convert" (M5)
 - [x] **Loss utilisation:** *(HMRC reference / historical engine tests)* — holding UI does not apply BF or AEA (PRD §8.1)
-- [x] **2024-25 rate change:** informational copy on outputs; no tier-based tax computation in holding UI
+- [x] **Holding-level scope:** no in-product 2024–25 rate-change banner; `cgt-config` remains for tests / future use
 
 ---
 

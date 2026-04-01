@@ -26,7 +26,7 @@ Stakeholders chose to align the **organising entity** with **one stock symbol**:
 
 ## Amendment (2026-03-31): Holding calculation scope
 
-The calculation and computation pack show **matching, pool roll-forward, disposals, and simple per–tax-year gain/loss totals for this holding only**. They do **not** include user-selectable CGT rate tier, brought-forward losses (not holding-scoped), annual exempt amount, or CGT tax due. The **disposals CSV** export and **`bf` / `rateTier` query parameters** were removed. See simplified `computeAnnualSummaries` in `cgt-annual-summary.ts`.
+The calculation and computation pack show **capital gains and losses (chargeable gains mechanics) for this holding** — matching, pool roll-forward, disposals, and simple per–tax-year gain/loss totals. They do **not** estimate **overall personal CGT liability**. They do **not** include user-selectable CGT rate tier, brought-forward losses (not holding-scoped), annual exempt amount, or CGT tax due. The **disposals CSV** export and **`bf` / `rateTier` query parameters** were removed. In-product **2024–25 main-rate change** messaging was removed from the tax year summary UI. See simplified `computeAnnualSummaries` in `cgt-annual-summary.ts`.
 
 ## Related
 

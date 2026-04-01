@@ -86,7 +86,8 @@ export type PoolSnapshot = z.infer<typeof poolSnapshotSchema>;
 
 /**
  * Per UK tax year, gains/losses for this symbol only (from disposal gain/loss lines).
- * Not annual exempt amount, not tax due, not brought-forward losses from outside the app.
+ * Holding-level capital gains and losses — not overall personal CGT liability, AEA, tax due, or
+ * brought-forward losses (those would be user-wide / “tax owed” concerns).
  */
 export const taxYearSummarySchema = z.object({
   taxYear: z.string().min(1),

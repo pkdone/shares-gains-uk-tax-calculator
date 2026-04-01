@@ -69,7 +69,7 @@ Milestone 4 delivers **GBP-only** pool mechanics and **pool-only** matching. Sam
 
 ## Amendment (2026-03-31): Product scope for holding-level UI
 
-The **end-user calculation** for a holding no longer applies **rate tier**, **brought-forward losses**, **AEA**, or **CGT due** in the engine path used for that screen. **`CalcInput`** is now **`symbol` + `events` only**. **`computeAnnualSummaries`** aggregates **per–tax-year total gains, total losses, and net (gains − losses)** from disposal lines for **this symbol only** — not a personal SA108 position. Full HMRC loss netting / AEA / rate rules remain documented above for reference and tests may still target pool and disposal mechanics (`cgt-calculator`, `share-matching`).
+The **end-user calculation** for a holding no longer applies **rate tier**, **brought-forward losses**, **AEA**, or **CGT due** in the engine path used for that screen. **`CalcInput`** is now **`symbol` + `events` only**. **`computeAnnualSummaries`** aggregates **per–tax-year total gains, total losses, and net (gains − losses)** from disposal lines for **this symbol only** — **capital gains and losses (chargeable gains mechanics) per holding**, not overall personal CGT liability. Full HMRC loss netting / AEA / rate rules remain documented above for reference; **`cgt-config`** supports tests and any future “tax owed” feature. The **holding UI** does **not** show 2024–25 main-rate change messaging (removed 2026-03-31).
 
 ## Related
 

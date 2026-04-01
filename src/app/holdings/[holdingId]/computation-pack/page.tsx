@@ -87,14 +87,16 @@ export default async function ComputationPackPage({
         <p className="mt-2 text-sm text-neutral-600">
           Use your browser’s Print dialog to save as PDF. This page omits navigation when printing.
         </p>
-        <p className="mt-2 text-xs text-amber-800">
-          Not professional tax advice. Verify figures against your records and HMRC guidance.
+        <p className="mt-2 text-xs text-neutral-600">
+          Holding-level gains and losses only — not overall CGT liability. Not professional tax advice.
         </p>
       </header>
 
       <div className="mt-6 hidden print:block">
         <h1 className="text-xl font-semibold">Computation pack — {holding.symbol}</h1>
-        <p className="mt-1 text-sm text-neutral-800">This holding only — not your full tax position for any year.</p>
+        <p className="mt-1 text-sm text-neutral-800">
+          Holding-level gains and losses only — not overall CGT liability for any year.
+        </p>
       </div>
 
       {hasLedgerData ? null : (

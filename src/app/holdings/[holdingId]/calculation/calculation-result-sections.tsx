@@ -112,8 +112,9 @@ export function CalculationResultSections({
       <section>
         <h2 className="text-lg font-medium text-neutral-900">Tax year summaries (this holding only)</h2>
         <p className="mt-1 text-xs text-neutral-600">
-          Net figures sum gains and losses from disposals in this app for this symbol. They are not your full Self
-          Assessment position for the year.
+          Net figures are capital gains and losses (chargeable gains mechanics) for this holding only. Your final CGT
+          liability may differ if you have other disposals, allowable losses brought forward, reliefs, or a different
+          CGT rate position for the tax year.
         </p>
         <div className="mt-3 space-y-6">
           {result.output.taxYearSummaries.map((y) => (
@@ -122,12 +123,6 @@ export function CalculationResultSections({
               className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm"
             >
               <h3 className="font-semibold text-neutral-900">{y.taxYear}</h3>
-              {y.taxYear === '2024-25' ? (
-                <p className="mt-2 text-xs text-amber-900">
-                  Main CGT rates for shares changed on 30 October 2024. Disposals on or after that date use the
-                  new rates in HMRC guidance. This table does not compute tax due.
-                </p>
-              ) : null}
               <dl className="mt-2 grid gap-1 sm:grid-cols-2">
                 <div>
                   <dt className="text-neutral-500">Total gains</dt>
