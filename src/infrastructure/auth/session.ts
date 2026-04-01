@@ -18,7 +18,7 @@ export async function getVerifiedUserIdFromRequest(request: Request): Promise<st
 }
 
 function callbackUrlFromHeaders(h: Headers): string {
-  return h.get('x-pathname') ?? '/portfolios';
+  return h.get('x-pathname') ?? '/holdings';
 }
 
 /**

@@ -14,7 +14,7 @@ describe('buildCalcDisposalFromShareDisposal', () => {
   it('converts disposal USD to sterling using XUDLUSS', async () => {
     const disposal: ShareDisposal = {
       id: 'd1',
-      portfolioId: 'p1',
+      holdingId: 'h1',
       userId: 'u1',
       symbol: 'X',
       eventDate: '2024-06-01',

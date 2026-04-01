@@ -4,7 +4,7 @@ import {
   COLLECTION_ACQUISITIONS,
   COLLECTION_DISPOSALS,
   COLLECTION_FX_RATES,
-  COLLECTION_PORTFOLIOS,
+  COLLECTION_HOLDINGS,
   COLLECTION_USERS,
   getJsonSchemaForCollection,
 } from '@/infrastructure/persistence/schema-registry';
@@ -12,7 +12,7 @@ import {
 /** Collections provisioned by `initMongoDatabase` / `npm run db:init`. */
 export const MANAGED_COLLECTION_NAMES = [
   COLLECTION_USERS,
-  COLLECTION_PORTFOLIOS,
+  COLLECTION_HOLDINGS,
   COLLECTION_ACQUISITIONS,
   COLLECTION_DISPOSALS,
   COLLECTION_FX_RATES,
@@ -46,13 +46,11 @@ export async function initMongoDatabase(db: Db): Promise<void> {
 
   await db.collection(COLLECTION_USERS).createIndex({ userId: 1 }, { unique: true });
 
-  await db
-    .collection(COLLECTION_PORTFOLIOS)
-    .createIndex({ userId: 1, name: 1 }, { unique: true });
+  await db.collection(COLLECTION_HOLDINGS).createIndex({ userId: 1, symbol: 1 }, { unique: true });
 
-  await db.collection(COLLECTION_ACQUISITIONS).createIndex({ portfolioId: 1, userId: 1 });
+  await db.collection(COLLECTION_ACQUISITIONS).createIndex({ holdingId: 1, userId: 1 });
   await db.collection(COLLECTION_ACQUISITIONS).createIndex(
-    { portfolioId: 1, userId: 1, symbol: 1, grantNumber: 1, vestPeriod: 1 },
+    { holdingId: 1, userId: 1, symbol: 1, grantNumber: 1, vestPeriod: 1 },
     {
       unique: true,
       name: 'acquisitions_import_usd_symbol_grant_vest',
@@ -63,6 +61,6 @@ export async function initMongoDatabase(db: Db): Promise<void> {
       },
     },
   );
-  await db.collection(COLLECTION_DISPOSALS).createIndex({ portfolioId: 1, userId: 1 });
+  await db.collection(COLLECTION_DISPOSALS).createIndex({ holdingId: 1, userId: 1 });
   await db.collection(COLLECTION_FX_RATES).createIndex({ date: 1 }, { unique: true });
 }

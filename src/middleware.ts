@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const PROTECTED_PREFIXES = ['/portfolios'];
+const PROTECTED_PREFIXES = ['/holdings'];
 
 /** Matches Better Auth default cookie name (`better-auth.session_token`). */
 const SESSION_COOKIE = 'better-auth.session_token';
@@ -30,5 +30,5 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/portfolios/:path*'],
+  matcher: ['/holdings/:path*'],
 };

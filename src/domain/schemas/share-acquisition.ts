@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { dateOnlyStringSchema } from '@/domain/schemas/date-only';
+import { stockSymbolSchema } from '@/domain/schemas/stock-symbol';
 
-const symbolField = z.string().trim().min(1).max(32);
+const symbolField = stockSymbolSchema;
 const eventDateField = dateOnlyStringSchema;
 const quantityField = z.number().positive().finite();
 
@@ -55,7 +56,7 @@ export type ShareAcquisitionBase = z.infer<typeof shareAcquisitionBaseSchema>;
 
 const acquisitionIdentitySchema = z.object({
   id: z.string().min(1),
-  portfolioId: z.string().min(1),
+  holdingId: z.string().min(1),
   userId: z.string().min(1),
   createdAt: z.date(),
   updatedAt: z.date(),

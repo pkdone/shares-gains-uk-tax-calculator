@@ -5,7 +5,7 @@ import type {
 } from '@/domain/schemas/share-acquisition';
 
 export type CreateShareAcquisition = ShareAcquisitionBase & {
-  portfolioId: string;
+  holdingId: string;
   userId: string;
 };
 
@@ -21,18 +21,18 @@ export interface ShareAcquisitionRepository {
 
   /**
    * E*Trade import: upserts rows that have grant number + vest period; inserts the rest.
-   * Re-importing the same vest replaces the existing document (same portfolio, user, symbol, grant, vest).
+   * Re-importing the same vest replaces the existing document (same holding, user, symbol, grant, vest).
    */
   upsertImportUsdBatch(
-    portfolioId: string,
+    holdingId: string,
     userId: string,
     drafts: readonly ShareAcquisitionImportUsd[],
   ): Promise<UpsertImportUsdBatchResult>;
 
-  listByPortfolioForUser(portfolioId: string, userId: string): Promise<ShareAcquisition[]>;
+  listByHoldingForUser(holdingId: string, userId: string): Promise<ShareAcquisition[]>;
 
   /**
-   * Deletes one acquisition scoped to portfolio and user. Returns true if a document was removed.
+   * Deletes one acquisition scoped to holding and user. Returns true if a document was removed.
    */
-  deleteByIdForPortfolioUser(portfolioId: string, userId: string, id: string): Promise<boolean>;
+  deleteByIdForHoldingUser(holdingId: string, userId: string, id: string): Promise<boolean>;
 }

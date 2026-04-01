@@ -19,7 +19,7 @@ export function ResendVerificationForm(): React.ReactElement {
     try {
       const { error: err } = await authClient.sendVerificationEmail({
         email,
-        callbackURL: `${envPublic.APP_URL}/portfolios`,
+        callbackURL: `${envPublic.APP_URL}/holdings`,
       });
       if (err) {
         setError(err.message ?? 'Could not send email');

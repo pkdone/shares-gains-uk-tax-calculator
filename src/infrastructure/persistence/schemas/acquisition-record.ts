@@ -7,7 +7,7 @@ import {
 } from '@/domain/schemas/share-acquisition';
 
 const tenancySchema = z.object({
-  portfolioId: z.string().min(1),
+  holdingId: z.string().min(1),
   userId: z.string().min(1),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -18,7 +18,7 @@ const acquisitionUsdDocumentSchema = shareAcquisitionImportUsdSchema.merge(tenan
 
 /**
  * Stored acquisition: domain event fields plus tenancy and timestamps.
- * Zod uses string `portfolioId` for validation / JSON Schema; BSON stores {@link ObjectId} — map in repositories.
+ * Zod uses string `holdingId` for validation / JSON Schema; BSON stores {@link ObjectId} — map in repositories.
  */
 export const acquisitionDocumentSchema = z.discriminatedUnion('economicsKind', [
   acquisitionManualDocumentSchema,
@@ -26,21 +26,21 @@ export const acquisitionDocumentSchema = z.discriminatedUnion('economicsKind', [
 ]);
 
 /**
- * Same shapes as {@link acquisitionDocumentSchema} but without `portfolioId` on the Zod object,
- * so JSON Schema generation can merge in BSON `portfolioId` via {@link withObjectIdFields}.
+ * Same shapes as {@link acquisitionDocumentSchema} but without `holdingId` on the Zod object,
+ * so JSON Schema generation can merge in BSON `holdingId` via {@link withObjectIdFields}.
  */
 export const acquisitionDocumentSchemaForMongoValidator = z.union([
-  acquisitionManualDocumentSchema.omit({ portfolioId: true }),
-  acquisitionUsdDocumentSchema.omit({ portfolioId: true }),
+  acquisitionManualDocumentSchema.omit({ holdingId: true }),
+  acquisitionUsdDocumentSchema.omit({ holdingId: true }),
 ]);
 
 type AcquisitionDocumentZod = z.infer<typeof acquisitionDocumentSchema>;
 
-/** BSON document: `portfolioId` is ObjectId in MongoDB; Zod validators use string ids for JSON Schema. */
+/** BSON document: `holdingId` is ObjectId in MongoDB; Zod validators use string ids for JSON Schema. */
 export type AcquisitionDocument =
-  | (Omit<Extract<AcquisitionDocumentZod, { economicsKind: 'manual_usd' }>, 'portfolioId'> & {
-      portfolioId: ObjectId;
+  | (Omit<Extract<AcquisitionDocumentZod, { economicsKind: 'manual_usd' }>, 'holdingId'> & {
+      holdingId: ObjectId;
     })
-  | (Omit<Extract<AcquisitionDocumentZod, { economicsKind: 'import_usd' }>, 'portfolioId'> & {
-      portfolioId: ObjectId;
+  | (Omit<Extract<AcquisitionDocumentZod, { economicsKind: 'import_usd' }>, 'holdingId'> & {
+      holdingId: ObjectId;
     });

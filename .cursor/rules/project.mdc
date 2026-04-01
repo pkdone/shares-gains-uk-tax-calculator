@@ -105,15 +105,15 @@ MongoDB driver usage and repository **implementations** live in **`src/infrastru
 **App and runtime**
 
 - **Composition:** define each conceptual model once in **`src/domain/schemas`**; derive everything else with `.pick()`, `.omit()`, `.extend()`—never copy-paste parallel `z.object` shapes for the same fields.
-- **Interfaces (Next.js `src/app`, route handlers, server actions):** request and form schemas **pick** or **extend** domain schemas (e.g. `portfolioNameSchema` for a create-portfolio form; `shareAcquisitionBaseSchema` for parsing acquisition fields). Do not re-specify `z.string().min(1).max(200)` when `portfolioNameSchema` already exists.
+- **Interfaces (Next.js `src/app`, route handlers, server actions):** request and form schemas **pick** or **extend** domain schemas (e.g. `stockSymbolSchema` for a create-holding form; `shareAcquisitionBaseSchema` for parsing acquisition fields). Do not re-specify ticker constraints when `stockSymbolSchema` already exists.
 - **Edge:** validate HTTP payloads (and similar external inputs) in **`interfaces`** before **`application`** or **`domain`** runs.
 - **Types:** export `z.infer<typeof schema>` alongside every exported schema callers rely on.
 - **By concern:** domain invariants in **`domain`**; transport in **`interfaces`**; persistence and DB-specific checks in **`infrastructure`**.
 
 **Persistence (`src/infrastructure/persistence/schemas`)**
 
-- Build document Zod schemas by **extending** domain bases: e.g. `shareAcquisitionBaseSchema.extend({ portfolioId, userId, createdAt, updatedAt })`, `portfolioCreateSchema.extend({ createdAt, updatedAt })`, `userIdentitySchema.extend({ createdAt })`.
-- **BSON vs Zod string:** where MongoDB stores `ObjectId` but the domain uses string ids for API boundaries, keep Zod fields as `z.string()` for `$jsonSchema` generation and **map** `ObjectId` ↔ string in repository code only. TypeScript row types may use `Omit<z.infer<typeof docSchema>, 'portfolioId'> & { portfolioId: ObjectId }` (or equivalent) so implementations stay type-safe without putting `ObjectId` in **domain** Zod.
+- Build document Zod schemas by **extending** domain bases: e.g. `shareAcquisitionBaseSchema.extend({ holdingId, userId, createdAt, updatedAt })`, `holdingCreateSchema.extend({ createdAt, updatedAt })`, `userIdentitySchema.extend({ createdAt })`.
+- **BSON vs Zod string:** where MongoDB stores `ObjectId` but the domain uses string ids for API boundaries, keep Zod fields as `z.string()` for `$jsonSchema` generation and **map** `ObjectId` ↔ string in repository code only. TypeScript row types may use `Omit<z.infer<typeof docSchema>, 'holdingId'> & { holdingId: ObjectId }` (or equivalent) so implementations stay type-safe without putting `ObjectId` in **domain** Zod.
 
 **MongoDB (`$jsonSchema`)**
 
@@ -135,8 +135,8 @@ export const userStubDocumentSchema = userIdentitySchema.extend({ createdAt: z.d
 export const userDocumentSchema = userStubDocumentSchema;
 
 // domain + form
-export const portfolioNameSchema = z.string().trim().min(1).max(200);
-export const createPortfolioFormSchema = z.object({ name: portfolioNameSchema });
+export const stockSymbolSchema = z.string().trim().min(1).max(32).transform((s) => s.toUpperCase());
+export const createHoldingFormSchema = z.object({ symbol: stockSymbolSchema });
 ```
 
 ### Services and utilities

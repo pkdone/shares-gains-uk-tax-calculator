@@ -10,7 +10,7 @@ export type FxAppliedToAcquisition = {
   readonly usedFallback: boolean;
 };
 
-export type SuccessfulPortfolioCalculation = {
+export type SuccessfulHoldingCalculation = {
   readonly output: CalcOutput;
   /** Only `import_usd` acquisitions appear here. */
   readonly fxByAcquisitionId: Record<string, FxAppliedToAcquisition>;

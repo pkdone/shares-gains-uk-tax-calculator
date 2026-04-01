@@ -30,7 +30,7 @@ function mapOptionalGrantVest(doc: AcquisitionDoc): {
 function mapDoc(doc: AcquisitionDoc): ShareAcquisition {
   const base = {
     id: doc._id.toHexString(),
-    portfolioId: doc.portfolioId.toHexString(),
+    holdingId: doc.holdingId.toHexString(),
     userId: doc.userId,
     symbol: doc.symbol,
     eventDate: doc.eventDate,
@@ -73,10 +73,10 @@ function optionalGrantVestFields(
 }
 
 function toInsertDoc(input: CreateShareAcquisition, _id: ObjectId, now: Date): AcquisitionDoc {
-  const portfolioId = new ObjectId(input.portfolioId);
+  const holdingId = new ObjectId(input.holdingId);
   const base = {
     _id,
-    portfolioId,
+    holdingId,
     userId: input.userId,
     symbol: input.symbol,
     eventDate: input.eventDate,
@@ -107,8 +107,8 @@ function toInsertDoc(input: CreateShareAcquisition, _id: ObjectId, now: Date): A
 
 export class MongoShareAcquisitionRepository implements ShareAcquisitionRepository {
   async insert(input: CreateShareAcquisition): Promise<ShareAcquisition> {
-    if (!ObjectId.isValid(input.portfolioId)) {
-      throw new PersistenceError('Invalid portfolio id');
+    if (!ObjectId.isValid(input.holdingId)) {
+      throw new PersistenceError('Invalid holding id');
     }
 
     try {
@@ -129,14 +129,14 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
       return [];
     }
 
-    const portfolioId = inputs[0]?.portfolioId;
-    if (portfolioId === undefined || !ObjectId.isValid(portfolioId)) {
-      throw new PersistenceError('Invalid portfolio id');
+    const holdingId = inputs[0]?.holdingId;
+    if (holdingId === undefined || !ObjectId.isValid(holdingId)) {
+      throw new PersistenceError('Invalid holding id');
     }
 
     for (const row of inputs) {
-      if (row.portfolioId !== portfolioId) {
-        throw new PersistenceError('Bulk insert requires a single portfolio');
+      if (row.holdingId !== holdingId) {
+        throw new PersistenceError('Bulk insert requires a single holding');
       }
     }
 
@@ -156,19 +156,19 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
   }
 
   async upsertImportUsdBatch(
-    portfolioId: string,
+    holdingId: string,
     userId: string,
     drafts: readonly ShareAcquisitionImportUsd[],
   ): Promise<UpsertImportUsdBatchResult> {
-    if (!ObjectId.isValid(portfolioId)) {
-      throw new PersistenceError('Invalid portfolio id');
+    if (!ObjectId.isValid(holdingId)) {
+      throw new PersistenceError('Invalid holding id');
     }
 
     if (drafts.length === 0) {
       return { inserted: 0, updated: 0 };
     }
 
-    const portfolioOid = new ObjectId(portfolioId);
+    const holdingOid = new ObjectId(holdingId);
     let inserted = 0;
     let updated = 0;
 
@@ -189,7 +189,7 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
 
         if (hasUpsertKey) {
           const filter = {
-            portfolioId: portfolioOid,
+            holdingId: holdingOid,
             userId,
             economicsKind: 'import_usd' as const,
             symbol: d.symbol,
@@ -224,7 +224,7 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
           const doc = toInsertDoc(
             {
               ...d,
-              portfolioId,
+              holdingId,
               userId,
             },
             _id,
@@ -241,11 +241,11 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
     }
   }
 
-  async listByPortfolioForUser(
-    portfolioId: string,
+  async listByHoldingForUser(
+    holdingId: string,
     userId: string,
   ): Promise<ShareAcquisition[]> {
-    if (!ObjectId.isValid(portfolioId)) {
+    if (!ObjectId.isValid(holdingId)) {
       return [];
     }
 
@@ -254,7 +254,7 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
       const coll = client.db().collection<AcquisitionDoc>(COLLECTION_ACQUISITIONS);
       const cursor = coll
         .find({
-          portfolioId: new ObjectId(portfolioId),
+          holdingId: new ObjectId(holdingId),
           userId,
         })
         .sort({ eventDate: 1, _id: 1 });
@@ -265,12 +265,12 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
     }
   }
 
-  async deleteByIdForPortfolioUser(
-    portfolioId: string,
+  async deleteByIdForHoldingUser(
+    holdingId: string,
     userId: string,
     id: string,
   ): Promise<boolean> {
-    if (!ObjectId.isValid(portfolioId) || !ObjectId.isValid(id)) {
+    if (!ObjectId.isValid(holdingId) || !ObjectId.isValid(id)) {
       return false;
     }
 
@@ -279,7 +279,7 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
       const coll = client.db().collection<AcquisitionDoc>(COLLECTION_ACQUISITIONS);
       const res = await coll.deleteOne({
         _id: new ObjectId(id),
-        portfolioId: new ObjectId(portfolioId),
+        holdingId: new ObjectId(holdingId),
         userId,
       });
       return res.deletedCount === 1;

@@ -8,9 +8,9 @@ import { authClient } from '@/shared/auth-client';
 export function SignInForm(): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawCallback = searchParams.get('callbackUrl') ?? '/portfolios';
+  const rawCallback = searchParams.get('callbackUrl') ?? '/holdings';
   const callbackUrl =
-    rawCallback.startsWith('/') && !rawCallback.startsWith('//') ? rawCallback : '/portfolios';
+    rawCallback.startsWith('/') && !rawCallback.startsWith('//') ? rawCallback : '/holdings';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

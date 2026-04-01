@@ -67,7 +67,12 @@ Milestone 4 delivers **GBP-only** pool mechanics and **pool-only** matching. Sam
 - Unit tests can run without Atlas or Next.js; HS284 Example 3 is exercised as a golden scenario (penny-precision pool; whole-pound rounded gains; correct tax-year grouping).
 - UI and exports will map from `CalcOutput` without duplicating tax logic.
 
+## Amendment (2026-03-31): Product scope for holding-level UI
+
+The **end-user calculation** for a holding no longer applies **rate tier**, **brought-forward losses**, **AEA**, or **CGT due** in the engine path used for that screen. **`CalcInput`** is now **`symbol` + `events` only**. **`computeAnnualSummaries`** aggregates **per–tax-year total gains, total losses, and net (gains − losses)** from disposal lines for **this symbol only** — **capital gains and losses (chargeable gains mechanics) per holding**, not overall personal CGT liability. Full HMRC loss netting / AEA / rate rules remain documented above for reference; **`cgt-config`** supports tests and any future “tax owed” feature. The **holding UI** does **not** show 2024–25 main-rate change messaging (removed 2026-03-31).
+
 ## Related
 
 - `docs/PRD.md` — Appendices 1 and 4; `docs/references/hs284-example-3-2024-notes.md`.
 - ADR-005 (M4/M5 boundary for `import_usd`).
+- ADR-011 (holding scope; CSV and `bf` removed).

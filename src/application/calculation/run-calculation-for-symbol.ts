@@ -1,12 +1,12 @@
-import type { PortfolioRepository } from '@/domain/repositories/portfolio-repository';
+import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
 import type { FxRateRepository } from '@/domain/repositories/fx-rate-repository';
-import type { CalcEvent, RateTier } from '@/domain/schemas/calculation';
+import type { CalcEvent } from '@/domain/schemas/calculation';
 import { calculateGainsForSymbol } from '@/domain/services/cgt-calculator';
 import { DomainError } from '@/shared/errors/app-error';
 
-import type { SuccessfulPortfolioCalculation } from '@/application/calculation/calculation-types';
+import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
 import { buildCalcAcquisitionFromShareAcquisition } from '@/application/calculation/convert-acquisition-fx';
 import { buildCalcDisposalFromShareDisposal } from '@/application/calculation/convert-disposal-fx';
 
@@ -23,40 +23,33 @@ function compareCalcEvents(a: CalcEvent, b: CalcEvent): number {
   return a.kind === 'acquisition' ? -1 : 1;
 }
 
-export async function runCalculationForSymbol(params: {
-  readonly portfolioRepository: PortfolioRepository;
+export async function runCalculationForHoldingSymbol(params: {
+  readonly holdingRepository: HoldingRepository;
   readonly acquisitionRepository: ShareAcquisitionRepository;
   readonly disposalRepository: ShareDisposalRepository;
   readonly fxRateRepository: FxRateRepository;
   readonly input: {
-    readonly portfolioId: string;
+    readonly holdingId: string;
     readonly userId: string;
-    readonly symbol: string;
-    readonly rateTier: RateTier;
-    readonly broughtForwardLosses: number;
   };
-}): Promise<SuccessfulPortfolioCalculation> {
-  const {
-    portfolioRepository,
-    acquisitionRepository,
-    disposalRepository,
-    fxRateRepository,
-    input,
-  } = params;
+}): Promise<SuccessfulHoldingCalculation> {
+  const { holdingRepository, acquisitionRepository, disposalRepository, fxRateRepository, input } =
+    params;
 
-  const portfolio = await portfolioRepository.findByIdForUser(input.portfolioId, input.userId);
-  if (portfolio === null) {
-    throw new DomainError('Portfolio not found');
+  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
+  if (holding === null) {
+    throw new DomainError('Holding not found');
   }
 
+  const symbol = holding.symbol;
+
   const [acquisitions, disposals] = await Promise.all([
-    acquisitionRepository.listByPortfolioForUser(input.portfolioId, input.userId),
-    disposalRepository.listByPortfolioForUser(input.portfolioId, input.userId),
+    acquisitionRepository.listByHoldingForUser(input.holdingId, input.userId),
+    disposalRepository.listByHoldingForUser(input.holdingId, input.userId),
   ]);
 
-  const symbol = input.symbol.trim();
   const events: CalcEvent[] = [];
-  const fxByAcquisitionId: SuccessfulPortfolioCalculation['fxByAcquisitionId'] = {};
+  const fxByAcquisitionId: SuccessfulHoldingCalculation['fxByAcquisitionId'] = {};
 
   for (const acquisition of acquisitions) {
     if (acquisition.symbol !== symbol) {
@@ -90,8 +83,6 @@ export async function runCalculationForSymbol(params: {
   const output = calculateGainsForSymbol({
     symbol,
     events,
-    rateTier: input.rateTier,
-    broughtForwardLosses: input.broughtForwardLosses,
   });
 
   return {

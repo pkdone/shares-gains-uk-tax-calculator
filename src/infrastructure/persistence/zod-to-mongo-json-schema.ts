@@ -8,7 +8,7 @@ import {
 } from '@/infrastructure/persistence/json-schema-for-mongodb';
 
 export type ZodToMongoOptions = {
-  /** Top-level fields stored as BSON ObjectId (e.g. `_id`, `portfolioId`). */
+  /** Top-level fields stored as BSON ObjectId (e.g. `_id`, `holdingId`). */
   readonly objectIdFields?: readonly string[];
 };
 

@@ -14,7 +14,7 @@ describe('buildCalcAcquisitionFromShareAcquisition', () => {
   it('converts manual USD using XUDLUSS', async () => {
     const acquisition: ShareAcquisition = {
       id: 'a1',
-      portfolioId: 'p1',
+      holdingId: 'h1',
       userId: 'u1',
       economicsKind: 'manual_usd',
       symbol: 'X',
@@ -38,7 +38,7 @@ describe('buildCalcAcquisitionFromShareAcquisition', () => {
   it('converts import USD using XUDLUSS', async () => {
     const acquisition: ShareAcquisition = {
       id: 'a2',
-      portfolioId: 'p1',
+      holdingId: 'h1',
       userId: 'u1',
       economicsKind: 'import_usd',
       symbol: 'X',

@@ -1,0 +1,188 @@
+'use client';
+
+import { useCallback, useRef, useState } from 'react';
+
+import { AcquisitionForm } from '@/app/holdings/[holdingId]/acquisition-form';
+import { DisposalForm } from '@/app/holdings/[holdingId]/disposal-form';
+import { EtradeImportSection } from '@/app/holdings/[holdingId]/etrade-import-section';
+
+type HoldingLedgerActionsProps = {
+  readonly holdingId: string;
+  readonly holdingSymbol: string;
+};
+
+type ModalId = 'acquisition' | 'disposal' | 'import';
+
+export function HoldingLedgerActions({
+  holdingId,
+  holdingSymbol,
+}: HoldingLedgerActionsProps): React.ReactElement {
+  const acquisitionDialogRef = useRef<HTMLDialogElement>(null);
+  const disposalDialogRef = useRef<HTMLDialogElement>(null);
+  const importDialogRef = useRef<HTMLDialogElement>(null);
+
+  const closeAll = useCallback((): void => {
+    acquisitionDialogRef.current?.close();
+    disposalDialogRef.current?.close();
+    importDialogRef.current?.close();
+  }, []);
+
+  const openModal = useCallback(
+    (id: ModalId): void => {
+      closeAll();
+      if (id === 'acquisition') {
+        acquisitionDialogRef.current?.showModal();
+      } else if (id === 'disposal') {
+        disposalDialogRef.current?.showModal();
+      } else {
+        importDialogRef.current?.showModal();
+      }
+    },
+    [closeAll],
+  );
+
+  const closeAcquisitionModal = useCallback((): void => {
+    acquisitionDialogRef.current?.close();
+  }, []);
+
+  const closeDisposalModal = useCallback((): void => {
+    disposalDialogRef.current?.close();
+  }, []);
+
+  const closeImportModal = useCallback((): void => {
+    importDialogRef.current?.close();
+  }, []);
+
+  const [etradeImportSectionKey, setEtradeImportSectionKey] = useState(0);
+
+  const onImportCommitSuccess = useCallback((): void => {
+    setEtradeImportSectionKey((k) => k + 1);
+    closeImportModal();
+  }, [closeImportModal]);
+
+  const onBackdropPointerDown = useCallback((event: React.PointerEvent<HTMLDialogElement>): void => {
+    if (event.target === event.currentTarget) {
+      event.currentTarget.close();
+    }
+  }, []);
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+          onClick={() => {
+            openModal('import');
+          }}
+        >
+          Import RSUs
+        </button>
+        <button
+          type="button"
+          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+          onClick={() => {
+            openModal('acquisition');
+          }}
+        >
+          Add acquisition
+        </button>
+        <button
+          type="button"
+          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+          onClick={() => {
+            openModal('disposal');
+          }}
+        >
+          Add disposal
+        </button>
+      </div>
+
+      <dialog
+        ref={acquisitionDialogRef}
+        className="w-full max-w-lg rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        onPointerDown={onBackdropPointerDown}
+        aria-labelledby="holding-modal-acquisition-title"
+      >
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="holding-modal-acquisition-title" className="text-lg font-medium text-neutral-900">
+              Add acquisition ({holdingSymbol})
+            </h2>
+            <button
+              type="button"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
+              onClick={closeAcquisitionModal}
+            >
+              Close
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-neutral-600">USD amounts; sterling conversion is on the calculation page.</p>
+        </div>
+        <div className="px-4 py-4">
+          <AcquisitionForm
+            holdingId={holdingId}
+            holdingSymbol={holdingSymbol}
+            onAfterSuccess={closeAcquisitionModal}
+          />
+        </div>
+      </dialog>
+
+      <dialog
+        ref={disposalDialogRef}
+        className="w-full max-w-lg rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        onPointerDown={onBackdropPointerDown}
+        aria-labelledby="holding-modal-disposal-title"
+      >
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="holding-modal-disposal-title" className="text-lg font-medium text-neutral-900">
+              Add disposal ({holdingSymbol})
+            </h2>
+            <button
+              type="button"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
+              onClick={closeDisposalModal}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <div className="px-4 py-4">
+          <DisposalForm holdingId={holdingId} holdingSymbol={holdingSymbol} onAfterSuccess={closeDisposalModal} />
+        </div>
+      </dialog>
+
+      <dialog
+        ref={importDialogRef}
+        className="w-full max-w-4xl rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        onPointerDown={onBackdropPointerDown}
+        aria-labelledby="holding-modal-import-title"
+      >
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="holding-modal-import-title" className="text-lg font-medium text-neutral-900">
+              Import RSU vesting ({holdingSymbol})
+            </h2>
+            <button
+              type="button"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
+              onClick={closeImportModal}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <div className="max-h-[min(80vh,720px)] overflow-y-auto px-4 py-4">
+          <EtradeImportSection
+            key={etradeImportSectionKey}
+            holdingId={holdingId}
+            holdingSymbol={holdingSymbol}
+            layout="plain"
+            onCommitSuccess={onImportCommitSuccess}
+          />
+        </div>
+      </dialog>
+    </>
+  );
+}

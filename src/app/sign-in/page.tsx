@@ -9,7 +9,7 @@ export default function SignInPage(): React.ReactElement {
       <p className="text-sm font-medium text-[var(--color-accent)]">Sign in</p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">Welcome back</h1>
       <p className="mt-2 text-sm text-neutral-600">
-        Use the email and password you registered with. You must verify your email before accessing portfolios.
+        Use the email and password you registered with. You must verify your email before accessing holdings.
       </p>
       <div className="mt-8">
         <Suspense fallback={<p className="text-sm text-neutral-500">Loading…</p>}>

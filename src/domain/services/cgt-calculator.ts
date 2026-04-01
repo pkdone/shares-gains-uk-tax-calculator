@@ -54,11 +54,7 @@ export function calculateGainsForSymbol(input: CalcInput): CalcOutput {
 
   const { poolSnapshots, disposalResults } = computeMatchingOutput(events);
 
-  const taxYearSummaries = computeAnnualSummaries({
-    disposalResults,
-    rateTier: parsed.rateTier,
-    openingBroughtForwardLossesGbp: parsed.broughtForwardLosses,
-  });
+  const taxYearSummaries = computeAnnualSummaries({ disposalResults });
 
   return {
     symbol: parsed.symbol,
