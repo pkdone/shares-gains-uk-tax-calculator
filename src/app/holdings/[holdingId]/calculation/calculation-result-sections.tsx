@@ -1,4 +1,7 @@
+import type { ReactElement } from 'react';
+
 import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
+import { buildCalculationTransactionTableModel } from '@/application/calculation/build-calculation-transaction-table';
 import type { MatchingSource } from '@/domain/schemas/calculation';
 
 const money = new Intl.NumberFormat('en-GB', {
@@ -23,12 +26,14 @@ type CalculationResultSectionsProps = {
 
 export function CalculationResultSections({
   result,
-}: CalculationResultSectionsProps): React.ReactElement {
+}: CalculationResultSectionsProps): ReactElement {
+  const groups = buildCalculationTransactionTableModel(result);
+
   return (
     <div id="calculation-results" className="mt-10 scroll-mt-6 space-y-10">
       <section>
         <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
-        <ul className="mt-2 list-disc pl-5 text-sm text-neutral-700">
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-neutral-700">
           {result.warnings.map((w) => (
             <li key={w}>{w}</li>
           ))}
@@ -36,77 +41,164 @@ export function CalculationResultSections({
       </section>
 
       <section>
-        <h2 className="text-lg font-medium text-neutral-900">Pool roll-forward</h2>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-neutral-50 text-neutral-700">
-              <tr>
-                <th className="px-3 py-2 font-medium">Step</th>
-                <th className="px-3 py-2 font-medium">Date</th>
-                <th className="px-3 py-2 font-medium">Shares</th>
-                <th className="px-3 py-2 font-medium">Pool cost (£)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100 bg-white">
-              {result.output.poolSnapshots.map((row) => (
-                <tr key={`${row.description}|${row.eventDate}|${row.shares}|${row.costGbp}`}>
-                  <td className="px-3 py-2 text-neutral-800">{row.description}</td>
-                  <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                  <td className="px-3 py-2 tabular-nums">{row.shares}</td>
-                  <td className="px-3 py-2 tabular-nums">£{money.format(row.costGbp)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        <h2 className="text-lg font-medium text-neutral-900">Transaction and pool history</h2>
+        <p className="mt-2 max-w-3xl text-xs text-neutral-600">
+          Ledger lines show each recorded entry in sterling. Where the CGT engine combines entries on the same date, a
+          CGT summary row shows identification, allowable cost, gain or loss, and pool position after that date’s
+          processing.
+        </p>
 
-      <section>
-        <h2 className="text-lg font-medium text-neutral-900">Disposals</h2>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-neutral-50 text-neutral-700">
-              <tr>
-                <th className="px-3 py-2 font-medium">Date</th>
-                <th className="px-3 py-2 font-medium">Tax year</th>
-                <th className="px-3 py-2 font-medium">Qty</th>
-                <th className="px-3 py-2 font-medium">Proceeds (£)</th>
-                <th className="px-3 py-2 font-medium">Fees (£)</th>
-                <th className="px-3 py-2 font-medium">Matching breakdown</th>
-                <th className="px-3 py-2 font-medium">Allowable cost (£)</th>
-                <th className="px-3 py-2 font-medium">Gain/loss (£)</th>
-                <th className="px-3 py-2 font-medium">Rounded (£)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100 bg-white">
-              {result.output.disposalResults.map((row) => (
-                <tr key={`${row.eventDate}-${row.quantity}-${row.grossProceedsGbp}`}>
-                  <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                  <td className="px-3 py-2">{row.taxYear}</td>
-                  <td className="px-3 py-2 tabular-nums">{row.quantity}</td>
-                  <td className="px-3 py-2 tabular-nums">£{money.format(row.grossProceedsGbp)}</td>
-                  <td className="px-3 py-2 tabular-nums">£{money.format(row.disposalFeesGbp)}</td>
-                  <td className="px-3 py-2 text-neutral-800">
-                    <ul className="list-inside list-disc space-y-1 text-xs">
-                      {row.matchingBreakdown.map((t) => (
-                        <li key={`${t.source}-${t.quantity}-${t.allowableCostGbp}`}>
-                          {formatMatchingSourceLabel(t.source)}: {t.quantity} sh @ £
-                          {money.format(t.allowableCostGbp)} allowable
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td className="px-3 py-2 tabular-nums">£{money.format(row.allowableCostGbp)}</td>
-                  <td className="px-3 py-2 tabular-nums">£{money.format(row.gainOrLossGbp)}</td>
-                  <td className="px-3 py-2 tabular-nums">{row.roundedGainOrLossGbp}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {result.output.disposalResults.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-600">No disposals for this symbol.</p>
-        ) : null}
+        {groups.length === 0 ? (
+          <p className="mt-3 text-sm text-neutral-600">No events.</p>
+        ) : (
+          <div className="mt-4 space-y-8">
+            {groups.map((group) => (
+              <div key={group.taxYearLabel}>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+                  Tax year {group.taxYearLabel}
+                </h3>
+                <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-neutral-50 text-neutral-700">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Row</th>
+                        <th className="px-3 py-2 font-medium">Date</th>
+                        <th className="px-3 py-2 font-medium">Qty</th>
+                        <th className="px-3 py-2 font-medium">Gross (£)</th>
+                        <th className="px-3 py-2 font-medium">Fees (£)</th>
+                        <th className="px-3 py-2 font-medium">Total / net (£)</th>
+                        <th className="px-3 py-2 font-medium">Allowable cost (£)</th>
+                        <th className="px-3 py-2 font-medium">Gain/loss (£)</th>
+                        <th className="px-3 py-2 font-medium">Rounded (£)</th>
+                        <th className="px-3 py-2 font-medium">Pool shares</th>
+                        <th className="px-3 py-2 font-medium">Pool cost (£)</th>
+                        <th className="px-3 py-2 font-medium">Matching</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100 bg-white">
+                      {group.rows.map((row) => {
+                        if (row.rowKind === 'ledger-acquisition') {
+                          const { sterling } = row;
+                          return (
+                            <tr key={`acq-${row.acquisitionId}`}>
+                              <td className="px-3 py-2 text-neutral-800">Acquisition</td>
+                              <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
+                              <td className="px-3 py-2 tabular-nums">{row.quantity}</td>
+                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.grossConsiderationGbp)}</td>
+                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.feesGbp)}</td>
+                              <td className="px-3 py-2 tabular-nums font-medium">
+                                £{money.format(sterling.totalCostGbp)}
+                              </td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                            </tr>
+                          );
+                        }
+
+                        if (row.rowKind === 'ledger-disposal') {
+                          const { sterling } = row;
+                          const net = sterling.grossProceedsGbp - sterling.feesGbp;
+                          return (
+                            <tr key={`disp-${row.disposalId}`}>
+                              <td className="px-3 py-2 text-neutral-800">Disposal</td>
+                              <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
+                              <td className="px-3 py-2 tabular-nums">{row.quantity}</td>
+                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.grossProceedsGbp)}</td>
+                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.feesGbp)}</td>
+                              <td className="px-3 py-2 tabular-nums font-medium">£{money.format(net)}</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                            </tr>
+                          );
+                        }
+
+                        if (row.rowKind === 'acquisition-aggregate-summary') {
+                          return (
+                            <tr
+                              key={`acq-sum-${row.eventDate}`}
+                              className="bg-neutral-50/80"
+                            >
+                              <td className="px-3 py-2 font-medium text-neutral-900">
+                                CGT — combined acquisitions
+                              </td>
+                              <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
+                              <td className="px-3 py-2 tabular-nums">{row.totalQuantity}</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 tabular-nums font-medium">
+                                £{money.format(row.totalCostGbp)}
+                              </td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 text-neutral-400">—</td>
+                              <td className="px-3 py-2 tabular-nums">{row.poolSharesAfter}</td>
+                              <td className="px-3 py-2 tabular-nums">£{money.format(row.poolCostGbpAfter)}</td>
+                              <td className="px-3 py-2 text-xs text-neutral-600">
+                                Pool after adding unmatched portion to Section 104 (same-day combined)
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        const r = row.result;
+                        return (
+                          <tr
+                            key={`cgt-${r.eventDate}`}
+                            className="bg-neutral-50/80"
+                          >
+                            <td className="px-3 py-2 font-medium text-neutral-900">CGT summary</td>
+                            <td className="px-3 py-2 tabular-nums">{r.eventDate}</td>
+                            <td className="px-3 py-2 tabular-nums">{r.quantity}</td>
+                            <td className="px-3 py-2 tabular-nums">£{money.format(r.grossProceedsGbp)}</td>
+                            <td className="px-3 py-2 tabular-nums">£{money.format(r.disposalFeesGbp)}</td>
+                            <td className="px-3 py-2 tabular-nums font-medium">
+                              £{money.format(r.grossProceedsGbp - r.disposalFeesGbp)}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums">£{money.format(r.allowableCostGbp)}</td>
+                            <td className="px-3 py-2 tabular-nums">£{money.format(r.gainOrLossGbp)}</td>
+                            <td className="px-3 py-2 tabular-nums">{r.roundedGainOrLossGbp}</td>
+                            <td className="px-3 py-2 tabular-nums">{r.poolSharesAfter}</td>
+                            <td className="px-3 py-2 tabular-nums">£{money.format(r.poolCostGbpAfter)}</td>
+                            <td className="px-3 py-2 align-top text-neutral-800">
+                              <table className="w-full min-w-[12rem] border-collapse text-xs">
+                                <thead>
+                                  <tr className="border-b border-neutral-200 text-neutral-600">
+                                    <th className="py-1 pr-2 text-left font-medium">Source</th>
+                                    <th className="py-1 pr-2 text-right font-medium">Qty</th>
+                                    <th className="py-1 text-right font-medium">Allowable (£)</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {r.matchingBreakdown.map((t) => (
+                                    <tr key={`${t.source}-${t.quantity}-${t.allowableCostGbp}`}>
+                                      <td className="py-1 pr-2">{formatMatchingSourceLabel(t.source)}</td>
+                                      <td className="py-1 pr-2 text-right tabular-nums">{t.quantity}</td>
+                                      <td className="py-1 text-right tabular-nums">
+                                        £{money.format(t.allowableCostGbp)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>

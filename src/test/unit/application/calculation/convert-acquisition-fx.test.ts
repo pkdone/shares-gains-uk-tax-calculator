@@ -33,6 +33,9 @@ describe('buildCalcAcquisitionFromShareAcquisition', () => {
 
     expect(r.fx).toBeUndefined();
     expect(r.data.totalCostGbp).toBe(84);
+    expect(r.sterling.totalCostGbp).toBe(84);
+    expect(r.sterling.grossConsiderationGbp).toBe(80);
+    expect(r.sterling.feesGbp).toBe(4);
   });
 
   it('converts import USD using XUDLUSS', async () => {
@@ -57,5 +60,6 @@ describe('buildCalcAcquisitionFromShareAcquisition', () => {
 
     expect(r.fx?.usedFallback).toBe(false);
     expect(r.data.totalCostGbp).toBe(100);
+    expect(r.sterling.totalCostGbp).toBe(100);
   });
 });

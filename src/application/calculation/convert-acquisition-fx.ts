@@ -4,12 +4,16 @@ import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import { resolveUsdPerGbpFromLookup } from '@/domain/services/fx-lookup';
 import { roundMoney2dp } from '@/domain/services/section-104-pool';
 
-import type { FxAppliedToAcquisition } from '@/application/calculation/calculation-types';
+import type { AcquisitionSterlingLine, FxAppliedToAcquisition } from '@/application/calculation/calculation-types';
 
 export async function buildCalcAcquisitionFromShareAcquisition(params: {
   readonly acquisition: ShareAcquisition;
   readonly fxRateRepository: FxRateRepository;
-}): Promise<{ readonly data: CalcAcquisition; readonly fx?: FxAppliedToAcquisition }> {
+}): Promise<{
+  readonly data: CalcAcquisition;
+  readonly sterling: AcquisitionSterlingLine;
+  readonly fx?: FxAppliedToAcquisition;
+}> {
   const { acquisition, fxRateRepository } = params;
 
   const rateRow = await fxRateRepository.findLatestOnOrBefore(acquisition.eventDate);
@@ -28,6 +32,12 @@ export async function buildCalcAcquisitionFromShareAcquisition(params: {
     totalCostGbp,
   };
 
+  const sterling: AcquisitionSterlingLine = {
+    grossConsiderationGbp: grossGbp,
+    feesGbp,
+    totalCostGbp,
+  };
+
   if (acquisition.economicsKind === 'import_usd') {
     const fx: FxAppliedToAcquisition = {
       acquisitionId: acquisition.id,
@@ -36,8 +46,8 @@ export async function buildCalcAcquisitionFromShareAcquisition(params: {
       rateDateUsed: resolution.rateDateUsed,
       usedFallback: resolution.usedFallback,
     };
-    return { data, fx };
+    return { data, sterling, fx };
   }
 
-  return { data };
+  return { data, sterling };
 }

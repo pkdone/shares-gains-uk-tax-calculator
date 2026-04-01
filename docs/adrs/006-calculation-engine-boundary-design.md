@@ -71,6 +71,10 @@ Milestone 4 delivers **GBP-only** pool mechanics and **pool-only** matching. Sam
 
 The **end-user calculation** for a holding no longer applies **rate tier**, **brought-forward losses**, **AEA**, or **CGT due** in the engine path used for that screen. **`CalcInput`** is now **`symbol` + `events` only**. **`computeAnnualSummaries`** aggregates **per–tax-year total gains, total losses, and net (gains − losses)** from disposal lines for **this symbol only** — **capital gains and losses (chargeable gains mechanics) per holding**, not overall personal CGT liability. Full HMRC loss netting / AEA / rate rules remain documented above for reference; **`cgt-config`** supports tests and any future “tax owed” feature. The **holding UI** does **not** show 2024–25 main-rate change messaging (removed 2026-03-31).
 
+## Amendment (2026-04-01): Calculation UI timeline vs engine output
+
+The **holding calculation** screen builds a **transaction and pool history** view in the **application** layer: it combines **`CalcOutput`** (same as today) with **per–ledger-line** sterling conversions and **sorted ledger lines** from repositories. The domain engine remains **`calculateGainsForSymbol` → `CalcOutput`**; the unified table does **not** duplicate matching math. **Material warnings** (e.g. multiple lines on one date, same-day acquisition+disposal, 30-day matching, FX fallback) are composed in application code and shown alongside static interpretability copy. **FX metadata for disposals** (rate date, XUDLUSS, fallback) is captured when converting USD disposals to GBP for `CalcInput`, parallel to `import_usd` acquisitions.
+
 ## Related
 
 - `docs/PRD.md` — Appendices 1 and 4; `docs/references/hs284-example-3-2024-notes.md`.

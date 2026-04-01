@@ -88,5 +88,9 @@ describe('runCalculationForHoldingSymbol', () => {
     expect(result.output.disposalResults.length).toBe(1);
     expect(result.output.symbol).toBe('LOB');
     expect(Object.keys(result.fxByAcquisitionId).length).toBe(0);
+    expect(result.ledgerLines).toHaveLength(2);
+    expect(Object.keys(result.fxByDisposalId).length).toBe(1);
+    expect(result.fxByDisposalId.d1?.usdPerGbp).toBe(1.25);
+    expect(result.warnings.length).toBeGreaterThan(0);
   });
 });

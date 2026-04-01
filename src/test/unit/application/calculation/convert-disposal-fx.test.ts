@@ -32,5 +32,9 @@ describe('buildCalcDisposalFromShareDisposal', () => {
 
     expect(r.data.grossProceedsGbp).toBe(100);
     expect(r.data.feesGbp).toBe(4);
+    expect(r.sterling.grossProceedsGbp).toBe(100);
+    expect(r.sterling.feesGbp).toBe(4);
+    expect(r.fx.disposalId).toBe('d1');
+    expect(r.fx.usedFallback).toBe(false);
   });
 });
