@@ -24,8 +24,12 @@ Stakeholders chose to align the **organising entity** with **one stock symbol**:
 - PRD §8.1 and `IMPLEMENTATION_PLAN.md` stakeholder tables updated; historical “multiple tickers per portfolio” is superseded.
 - ADR-003 updated: repository ids use `holdingId` for event collections.
 
+## Amendment (2026-03-31): Holding calculation scope
+
+The calculation and computation pack show **matching, pool roll-forward, disposals, and simple per–tax-year gain/loss totals for this holding only**. They do **not** include user-selectable CGT rate tier, brought-forward losses (not holding-scoped), annual exempt amount, or CGT tax due. The **disposals CSV** export and **`bf` / `rateTier` query parameters** were removed. See simplified `computeAnnualSummaries` in `cgt-annual-summary.ts`.
+
 ## Related
 
 - `docs/PRD.md` §8.1  
 - `docs/IMPLEMENTATION_PLAN.md` §3.2, §3.4, §8.1  
-- ADR-005 (import pipeline), ADR-007 (auth / tenant id)
+- ADR-005 (import pipeline), ADR-007 (auth / tenant id), ADR-006 (engine boundary — annual summary shape simplified for product scope)

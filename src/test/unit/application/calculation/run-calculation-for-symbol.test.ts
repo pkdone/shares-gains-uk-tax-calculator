@@ -82,8 +82,6 @@ describe('runCalculationForHoldingSymbol', () => {
       input: {
         holdingId: 'h1',
         userId: 'u1',
-        rateTier: 'higher',
-        broughtForwardLosses: 0,
       },
     });
 

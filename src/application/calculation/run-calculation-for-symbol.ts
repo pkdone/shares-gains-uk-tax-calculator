@@ -2,7 +2,7 @@ import type { HoldingRepository } from '@/domain/repositories/holding-repository
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
 import type { FxRateRepository } from '@/domain/repositories/fx-rate-repository';
-import type { CalcEvent, RateTier } from '@/domain/schemas/calculation';
+import type { CalcEvent } from '@/domain/schemas/calculation';
 import { calculateGainsForSymbol } from '@/domain/services/cgt-calculator';
 import { DomainError } from '@/shared/errors/app-error';
 
@@ -31,8 +31,6 @@ export async function runCalculationForHoldingSymbol(params: {
   readonly input: {
     readonly holdingId: string;
     readonly userId: string;
-    readonly rateTier: RateTier;
-    readonly broughtForwardLosses: number;
   };
 }): Promise<SuccessfulHoldingCalculation> {
   const { holdingRepository, acquisitionRepository, disposalRepository, fxRateRepository, input } =
@@ -85,8 +83,6 @@ export async function runCalculationForHoldingSymbol(params: {
   const output = calculateGainsForSymbol({
     symbol,
     events,
-    rateTier: input.rateTier,
-    broughtForwardLosses: input.broughtForwardLosses,
   });
 
   return {

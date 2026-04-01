@@ -1,9 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
 import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
-import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
 import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
@@ -11,10 +9,7 @@ import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mong
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
-import {
-  CalculationResultSections,
-  rateTierToLabel,
-} from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
+import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 
 const holdingRepository = new MongoHoldingRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
@@ -23,19 +18,12 @@ const fxRateRepository = new MongoFxRateRepository();
 
 type ComputationPackPageProps = {
   readonly params: Promise<{ holdingId: string }>;
-  readonly searchParams: Promise<{
-    readonly symbol?: string;
-    readonly rateTier?: string;
-    readonly bf?: string;
-  }>;
 };
 
 export default async function ComputationPackPage({
   params,
-  searchParams,
 }: ComputationPackPageProps): Promise<React.ReactElement> {
   const { holdingId } = await params;
-  const sp = await searchParams;
 
   const userId = await requireVerifiedUserId();
 
@@ -44,24 +32,16 @@ export default async function ComputationPackPage({
     notFound();
   }
 
-  const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
-  const bfParsed = Number.parseFloat(sp.bf ?? '0');
-  const broughtForwardLosses = resolveBroughtForwardFromQuery({
-    hasBfQuery,
-    queryBfParsed: bfParsed,
-  });
-
-  const symbolFromQuery = typeof sp.symbol === 'string' && sp.symbol.trim().length > 0 ? sp.symbol.trim() : '';
-  const symbol =
-    symbolFromQuery.length > 0 ? symbolFromQuery.toUpperCase() : holding.symbol;
-
-  const tierParsed = rateTierSchema.safeParse(sp.rateTier ?? 'additional');
-  const rateTier = tierParsed.success ? tierParsed.data : 'additional';
+  const [acquisitions, disposals] = await Promise.all([
+    acquisitionRepository.listByHoldingForUser(holdingId, userId),
+    disposalRepository.listByHoldingForUser(holdingId, userId),
+  ]);
+  const hasLedgerData = acquisitions.length > 0 || disposals.length > 0;
 
   let calcError: string | null = null;
   let result: Awaited<ReturnType<typeof runCalculationForHoldingSymbol>> | null = null;
 
-  if (symbol === holding.symbol) {
+  if (hasLedgerData) {
     try {
       result = await runCalculationForHoldingSymbol({
         holdingRepository,
@@ -71,15 +51,11 @@ export default async function ComputationPackPage({
         input: {
           holdingId,
           userId,
-          rateTier,
-          broughtForwardLosses,
         },
       });
     } catch (err) {
       calcError = err instanceof DomainError ? err.message : 'Calculation failed';
     }
-  } else {
-    calcError = 'Symbol does not match this holding.';
   }
 
   return (
@@ -118,10 +94,12 @@ export default async function ComputationPackPage({
 
       <div className="mt-6 hidden print:block">
         <h1 className="text-xl font-semibold">Computation pack — {holding.symbol}</h1>
-        <p className="mt-1 text-sm text-neutral-800">
-          Symbol {symbol} · Brought-forward losses £{broughtForwardLosses.toFixed(2)}
-        </p>
+        <p className="mt-1 text-sm text-neutral-800">This holding only — not your full tax position for any year.</p>
       </div>
+
+      {hasLedgerData ? null : (
+        <p className="mt-8 text-sm text-neutral-600 no-print">Nothing to print — add ledger data first.</p>
+      )}
 
       {calcError ? (
         <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
@@ -130,7 +108,7 @@ export default async function ComputationPackPage({
       ) : null}
 
       {result !== null && calcError === null ? (
-        <CalculationResultSections result={result} rateTierLabel={rateTierToLabel(rateTier)} />
+        <CalculationResultSections result={result} />
       ) : null}
     </main>
   );

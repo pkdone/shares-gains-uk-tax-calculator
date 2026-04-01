@@ -5,8 +5,6 @@ describe('calculateGainsForSymbol', () => {
   it('reproduces HS284 Example 3 (penny precision) with annual summary for 2023-24', () => {
     const result = calculateGainsForSymbol({
       symbol: 'LOBSTER',
-      rateTier: 'higher',
-      broughtForwardLosses: 0,
       events: [
         {
           kind: 'acquisition',
@@ -72,18 +70,15 @@ describe('calculateGainsForSymbol', () => {
 
     const ty = result.taxYearSummaries.find((s) => s.taxYear === '2023-24');
     expect(ty).toBeDefined();
-    expect(ty?.taxableGainGbp).toBe(0);
-    expect(ty?.cgtDueGbp).toBe(0);
-    expect(ty?.aeaGbp).toBe(6000);
-    expect(ty?.netGainsAfterLossesGbp).toBe(629.66);
+    expect(ty?.totalGainsGbp).toBe(629.66);
+    expect(ty?.totalLossesGbp).toBe(0);
+    expect(ty?.netGainsGbp).toBe(629.66);
   });
 
   it('throws when events are not sorted by date', () => {
     expect(() =>
       calculateGainsForSymbol({
         symbol: 'X',
-        rateTier: 'higher',
-        broughtForwardLosses: 0,
         events: [
           {
             kind: 'disposal',
@@ -110,8 +105,6 @@ describe('calculateGainsForSymbol', () => {
   it('returns empty summaries when there are no disposals', () => {
     const result = calculateGainsForSymbol({
       symbol: 'X',
-      rateTier: 'higher',
-      broughtForwardLosses: 0,
       events: [
         {
           kind: 'acquisition',
@@ -131,8 +124,6 @@ describe('calculateGainsForSymbol', () => {
   it('accepts empty events list', () => {
     const result = calculateGainsForSymbol({
       symbol: 'X',
-      rateTier: 'higher',
-      broughtForwardLosses: 0,
       events: [],
     });
 
@@ -143,8 +134,6 @@ describe('calculateGainsForSymbol', () => {
   it('uses same-day matching when acquisition and disposal share a date', () => {
     const result = calculateGainsForSymbol({
       symbol: 'X',
-      rateTier: 'higher',
-      broughtForwardLosses: 0,
       events: [
         {
           kind: 'acquisition',
@@ -165,8 +154,6 @@ describe('calculateGainsForSymbol', () => {
   it('uses 30-day then pool when disposal precedes a forward acquisition', () => {
     const result = calculateGainsForSymbol({
       symbol: 'X',
-      rateTier: 'higher',
-      broughtForwardLosses: 0,
       events: [
         {
           kind: 'acquisition',

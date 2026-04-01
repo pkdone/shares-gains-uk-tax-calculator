@@ -2,9 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { resolveBroughtForwardFromQuery } from '@/application/calculation/resolve-brought-forward';
 import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
-import { rateTierSchema } from '@/domain/schemas/calculation';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
 import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
@@ -12,10 +10,7 @@ import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mong
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
-import {
-  CalculationResultSections,
-  rateTierToLabel,
-} from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
+import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 import { CalculationControls } from '@/app/holdings/[holdingId]/calculation/calculation-controls';
 import { FxAppliedDialog } from '@/app/holdings/[holdingId]/calculation/fx-applied-dialog';
 import { ScrollToCalculationResults } from '@/app/holdings/[holdingId]/calculation/scroll-to-calculation-results';
@@ -27,19 +22,12 @@ const fxRateRepository = new MongoFxRateRepository();
 
 type CalculationPageProps = {
   readonly params: Promise<{ holdingId: string }>;
-  readonly searchParams: Promise<{
-    readonly symbol?: string;
-    readonly rateTier?: string;
-    readonly bf?: string;
-  }>;
 };
 
 export default async function HoldingCalculationPage({
   params,
-  searchParams,
 }: CalculationPageProps): Promise<React.ReactElement> {
   const { holdingId } = await params;
-  const sp = await searchParams;
 
   const userId = await requireVerifiedUserId();
 
@@ -54,24 +42,10 @@ export default async function HoldingCalculationPage({
   ]);
   const hasLedgerData = acquisitions.length > 0 || disposals.length > 0;
 
-  const hasBfQuery = typeof sp.bf === 'string' && sp.bf.trim() !== '';
-  const bfParsed = Number.parseFloat(sp.bf ?? '0');
-  const broughtForwardLosses = resolveBroughtForwardFromQuery({
-    hasBfQuery,
-    queryBfParsed: bfParsed,
-  });
-
-  const symbolFromQuery = typeof sp.symbol === 'string' && sp.symbol.trim().length > 0 ? sp.symbol.trim() : '';
-  const symbol =
-    symbolFromQuery.length > 0 ? symbolFromQuery.toUpperCase() : holding.symbol;
-
-  const tierParsed = rateTierSchema.safeParse(sp.rateTier ?? 'additional');
-  const rateTier = tierParsed.success ? tierParsed.data : 'additional';
-
   let calcError: string | null = null;
   let result: Awaited<ReturnType<typeof runCalculationForHoldingSymbol>> | null = null;
 
-  if (hasLedgerData && symbol === holding.symbol) {
+  if (hasLedgerData) {
     try {
       result = await runCalculationForHoldingSymbol({
         holdingRepository,
@@ -81,23 +55,12 @@ export default async function HoldingCalculationPage({
         input: {
           holdingId,
           userId,
-          rateTier,
-          broughtForwardLosses,
         },
       });
     } catch (err) {
       calcError = err instanceof DomainError ? err.message : 'Calculation failed';
     }
-  } else if (hasLedgerData && symbol !== holding.symbol) {
-    calcError = 'Symbol does not match this holding.';
   }
-
-  const exportQuery = new URLSearchParams();
-  exportQuery.set('symbol', holding.symbol);
-  exportQuery.set('rateTier', rateTier);
-  exportQuery.set('bf', String(broughtForwardLosses));
-
-  const exportSuffix = exportQuery.toString();
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
@@ -144,13 +107,7 @@ export default async function HoldingCalculationPage({
       {hasLedgerData ? (
         <>
           <div className="mt-8 no-print">
-            <CalculationControls
-              key={`${symbol}|${rateTier}|${broughtForwardLosses}`}
-              holdingId={holdingId}
-              holdingSymbol={holding.symbol}
-              currentRateTier={rateTier}
-              currentBf={broughtForwardLosses}
-            />
+            <CalculationControls />
           </div>
 
           <Suspense fallback={null}>
@@ -168,20 +125,13 @@ export default async function HoldingCalculationPage({
               <div className="mt-6 flex flex-wrap gap-4 text-sm no-print">
                 <Link
                   className="text-[var(--color-accent)] underline"
-                  href={`/holdings/${holdingId}/computation-pack?${exportSuffix}`}
+                  href={`/holdings/${holdingId}/computation-pack`}
                 >
                   Open computation pack (print)
                 </Link>
-                <a
-                  className="text-[var(--color-accent)] underline"
-                  href={`/holdings/${holdingId}/disposals-export?${exportSuffix}`}
-                  download
-                >
-                  Download disposals CSV
-                </a>
                 <FxAppliedDialog rows={Object.values(result.fxByAcquisitionId)} />
               </div>
-              <CalculationResultSections result={result} rateTierLabel={rateTierToLabel(rateTier)} />
+              <CalculationResultSections result={result} />
             </>
           ) : null}
         </>

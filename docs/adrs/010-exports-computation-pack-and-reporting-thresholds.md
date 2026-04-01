@@ -18,7 +18,7 @@ Milestone 7 requires outputs suitable for Self Assessment record keeping, portfo
 
 ### CSV export
 
-- **GET** route `/holdings/[holdingId]/disposals-export` returns `text/csv` with one row per disposal for the holding symbol and current rate tier / brought-forward inputs (aligned with the calculation query string). Columns include symbol, dates, tax year, proceeds, fees, allowable cost, gain/loss, rounded gain, and a semicolon-separated matching breakdown.
+- **Superseded (2026-03-31):** The disposals CSV route was **removed**; use ledger and calculation views instead.
 
 ### Reporting thresholds
 

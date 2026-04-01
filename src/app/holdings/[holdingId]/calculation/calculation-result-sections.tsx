@@ -1,5 +1,5 @@
 import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
-import type { MatchingSource, RateTier } from '@/domain/schemas/calculation';
+import type { MatchingSource } from '@/domain/schemas/calculation';
 
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
@@ -17,33 +17,15 @@ function formatMatchingSourceLabel(source: MatchingSource): string {
   }
 }
 
-export function rateTierToLabel(tier: RateTier): string {
-  switch (tier) {
-    case 'basic':
-      return 'Basic-rate';
-    case 'higher':
-      return 'Higher-rate';
-    case 'additional':
-      return 'Additional-rate';
-  }
-}
-
 type CalculationResultSectionsProps = {
   readonly result: SuccessfulHoldingCalculation;
-  readonly rateTierLabel: string;
 };
 
 export function CalculationResultSections({
   result,
-  rateTierLabel,
 }: CalculationResultSectionsProps): React.ReactElement {
   return (
     <div id="calculation-results" className="mt-10 scroll-mt-6 space-y-10">
-      <p className="text-sm text-neutral-700">
-        <span className="font-medium">CGT band assumption:</span> {rateTierLabel} taxpayer (you selected this
-        tier; the app does not compute your income tax band).
-      </p>
-
       <section>
         <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
         <ul className="mt-2 list-disc pl-5 text-sm text-neutral-700">
@@ -128,7 +110,11 @@ export function CalculationResultSections({
       </section>
 
       <section>
-        <h2 className="text-lg font-medium text-neutral-900">Tax year summaries</h2>
+        <h2 className="text-lg font-medium text-neutral-900">Tax year summaries (this holding only)</h2>
+        <p className="mt-1 text-xs text-neutral-600">
+          Net figures sum gains and losses from disposals in this app for this symbol. They are not your full Self
+          Assessment position for the year.
+        </p>
         <div className="mt-3 space-y-6">
           {result.output.taxYearSummaries.map((y) => (
             <div
@@ -139,8 +125,7 @@ export function CalculationResultSections({
               {y.taxYear === '2024-25' ? (
                 <p className="mt-2 text-xs text-amber-900">
                   Main CGT rates for shares changed on 30 October 2024. Disposals on or after that date use the
-                  new rates in this tool. HMRC published adjustment guidance for 2024–25 Self Assessment where
-                  the return did not apply the split automatically.
+                  new rates in HMRC guidance. This table does not compute tax due.
                 </p>
               ) : null}
               <dl className="mt-2 grid gap-1 sm:grid-cols-2">
@@ -152,39 +137,11 @@ export function CalculationResultSections({
                   <dt className="text-neutral-500">Total losses</dt>
                   <dd className="tabular-nums">£{money.format(y.totalLossesGbp)}</dd>
                 </div>
-                <div>
-                  <dt className="text-neutral-500">Net after losses</dt>
-                  <dd className="tabular-nums">£{money.format(y.netGainsAfterLossesGbp)}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">AEA</dt>
-                  <dd className="tabular-nums">£{money.format(y.aeaGbp)}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">Taxable gain</dt>
-                  <dd className="tabular-nums">£{money.format(y.taxableGainGbp)}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">CGT due</dt>
-                  <dd className="tabular-nums">£{money.format(y.cgtDueGbp)}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">Losses carried forward</dt>
-                  <dd className="tabular-nums">£{money.format(y.lossesCarriedForwardGbp)}</dd>
+                <div className="sm:col-span-2">
+                  <dt className="text-neutral-500">Net (gains − losses)</dt>
+                  <dd className="tabular-nums">£{money.format(y.netGainsGbp)}</dd>
                 </div>
               </dl>
-              {y.rateBreakdown.length > 0 ? (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-neutral-500">Rate breakdown</p>
-                  <ul className="mt-1 space-y-1 text-xs">
-                    {y.rateBreakdown.map((r) => (
-                      <li key={`${y.taxYear}-${r.ratePct}-${r.gainsGbp}-${r.taxGbp}`}>
-                        {r.ratePct}% on £{money.format(r.gainsGbp)} → tax £{money.format(r.taxGbp)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
             </div>
           ))}
         </div>

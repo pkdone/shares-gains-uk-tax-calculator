@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { dateOnlyStringSchema } from '@/domain/schemas/date-only';
 
-/** User-declared CGT rate band (income tax band proxy for share CGT rates). */
+/** Used by {@link getShareCgtRatePercent} in cgt-config (config/tests only; not user input on calculation UI). */
 export const rateTierSchema = z.enum(['basic', 'higher', 'additional']);
 
 export type RateTier = z.infer<typeof rateTierSchema>;
@@ -42,9 +42,6 @@ export const calcInputSchema = z.object({
   symbol: z.string().trim().min(1).max(32),
   /** Chronologically ordered; may be empty (no-op calculation). */
   events: z.array(calcEventSchema),
-  rateTier: rateTierSchema,
-  /** Opening brought-forward losses (GBP) before the first tax year in the stream. */
-  broughtForwardLosses: z.number().nonnegative().finite(),
 });
 
 export type CalcInput = z.infer<typeof calcInputSchema>;
@@ -87,26 +84,18 @@ export const poolSnapshotSchema = z.object({
 
 export type PoolSnapshot = z.infer<typeof poolSnapshotSchema>;
 
-export const rateBreakdownRowSchema = z.object({
-  ratePct: z.number().nonnegative().finite(),
-  gainsGbp: z.number().nonnegative().finite(),
-  taxGbp: z.number().nonnegative().finite(),
-});
-
-export type RateBreakdownRow = z.infer<typeof rateBreakdownRowSchema>;
-
+/**
+ * Per UK tax year, gains/losses for this symbol only (from disposal gain/loss lines).
+ * Not annual exempt amount, not tax due, not brought-forward losses from outside the app.
+ */
 export const taxYearSummarySchema = z.object({
   taxYear: z.string().min(1),
+  /** Sum of positive disposal gains in the year. */
   totalGainsGbp: z.number().nonnegative().finite(),
+  /** Sum of disposal losses in the year (absolute amounts). */
   totalLossesGbp: z.number().nonnegative().finite(),
-  currentYearLossesAppliedGbp: z.number().nonnegative().finite(),
-  broughtForwardLossesAppliedGbp: z.number().nonnegative().finite(),
-  netGainsAfterLossesGbp: z.number().finite(),
-  aeaGbp: z.number().nonnegative().finite(),
-  taxableGainGbp: z.number().nonnegative().finite(),
-  cgtDueGbp: z.number().nonnegative().finite(),
-  lossesCarriedForwardGbp: z.number().nonnegative().finite(),
-  rateBreakdown: z.array(rateBreakdownRowSchema),
+  /** Net gain or loss for the year (gains minus losses within the year). */
+  netGainsGbp: z.number().finite(),
 });
 
 export type TaxYearSummary = z.infer<typeof taxYearSummarySchema>;
