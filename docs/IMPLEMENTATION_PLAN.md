@@ -821,7 +821,7 @@ The codebase now uses **`/holdings`** routes, **one symbol per holding**, and a 
 
 #### Scope delivered (current)
 
-- RSU timing explanations on the calculation page; disclaimers
+- Matching (same-day / 30-day) explanations on the calculation page; disclaimers
 - Computation pack (print) for **one holding**, aligned with calculation output
 - Docker and security posture as in README
 - ADR-010 exists; amendment notes in ADR-010 and ADR-011

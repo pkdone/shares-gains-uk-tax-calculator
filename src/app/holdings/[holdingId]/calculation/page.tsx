@@ -86,21 +86,25 @@ export default async function HoldingCalculationPage({
       </p>
 
       <section className="mt-8 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm no-print">
-        <h2 className="font-semibold text-neutral-900">RSU timing (plain English)</h2>
+        <h2 className="font-semibold text-neutral-900">Matching acquisitions and disposals</h2>
+        <p className="mt-1 text-neutral-600">
+          These rules apply to every acquisition and disposal for this holding (e.g. vesting, buys, sells)—not only
+          RSUs.
+        </p>
         <ul className="mt-2 list-disc space-y-2 pl-5 text-neutral-800">
           <li>
-            <strong>Same-day vest and sell:</strong> the disposal is matched first against shares acquired on the
-            same day (HMRC same-day rule), before the Section 104 pool.
+            <strong>Same day:</strong> a disposal is matched first against shares acquired on the same day (HMRC
+            same-day rule), before the Section 104 pool.
           </li>
           <li>
-            <strong>Sell, then vest within 30 days:</strong> the disposal can match shares acquired in the 30
-            days <em>after</em> the disposal (bed and breakfast / 30-day rule), which can differ from selling
-            pool shares.
+            <strong>Disposal, then acquisition within 30 days:</strong> the disposal can match shares acquired in
+            the 30 days <em>after</em> the disposal (bed and breakfast / 30-day rule), which can differ from
+            selling only from the pool.
           </li>
           <li>
-            <strong>Vest, then sell within 30 days:</strong> the 30-day rule matches <em>acquisitions after</em>{' '}
-            a disposal. A vest before your sale does not automatically fall into that 30-day bucket for that
-            sale.
+            <strong>Acquisitions before the disposal:</strong> the 30-day rule matches <em>acquisitions after</em> a
+            disposal. An acquisition that occurred before the disposal does not fall into that 30-day-after bucket
+            for that sale.
           </li>
         </ul>
       </section>
