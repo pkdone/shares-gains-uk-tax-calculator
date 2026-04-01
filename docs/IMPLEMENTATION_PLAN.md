@@ -716,7 +716,7 @@ Milestone 4 delivered 2026-03-30; see **Status** and **Validated** above. ADR-00
 
 - `fx_rates` MongoDB collection; `npm run fetch:fx-rates` script; FX rate repository and domain lookup (fallback to most recent prior published rate; flag when used)
 - Application-layer `runCalculationForHoldingSymbol` (`run-calculation-for-symbol.ts`): build `CalcInput` from acquisitions/disposals + FX for `import_usd`
-- Route `/holdings/[holdingId]/calculation` — pool roll-forward, disposals, simplified tax year totals, **View FX applied**; **no** tier/BF query params *(2026-03-31)*
+- Route `/holdings/[holdingId]/calculation` — **transaction and pool history** (ledger lines in GBP, tax-year groups, CGT summary rows, matching subtables), simplified tax year totals, **View FX applied** (acquisitions and disposals); **no** tier/BF query params *(2026-03-31; table UX 2026-04-01)*
 - Unit and integration tests for FX lookup, BoE response parsing, conversion wiring, FX repository
 - **ADR-008:** FX rate infrastructure and conversion design
 
