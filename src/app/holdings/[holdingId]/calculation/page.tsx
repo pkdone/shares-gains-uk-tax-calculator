@@ -126,7 +126,10 @@ export default async function HoldingCalculationPage({
                 >
                   Open computation pack (print)
                 </Link>
-                <FxAppliedDialog rows={Object.values(result.fxByAcquisitionId)} />
+                <FxAppliedDialog
+                  acquisitionRows={Object.values(result.fxByAcquisitionId)}
+                  disposalRows={Object.values(result.fxByDisposalId)}
+                />
               </div>
               <CalculationResultSections result={result} />
             </>
