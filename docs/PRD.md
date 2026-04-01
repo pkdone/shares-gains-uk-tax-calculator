@@ -13,6 +13,8 @@ Shares Gains UK Tax Calculator is a production-grade self-service web applicatio
 
 The application is focused on end users who need to import transaction history, understand their share events, and calculate UK capital gains tax outcomes in a clear and structured way.
 
+**Current scope:** users work in **holdings** (one stock symbol each). The **calculation** explains gains mechanics, matching, pool roll-forward, and per–tax-year gain/loss totals **for that holding** — not a full Self Assessment position (see **§8.1**).
+
 This is not a generic public tax calculator and not an internal departmental CRUD workbench. It is a specialised end-user product for a narrow but realistic financial workflow.
 
 The application must:
@@ -163,6 +165,7 @@ The application should support a user returning to saved work rather than treati
 - **Multi-user:** the data model includes `userId` on persisted documents from the start. **Authentication** uses Better Auth with MongoDB-backed sessions; the persisted `userId` matches the signed-in user id (see ADR-007).
 - **Saved work:** users create and open holdings (named by uppercase symbol); acquisitions, disposals, and imports attach to that holding. The ledger is organised by **UK tax year** (6 April–5 April).
 - **Draft vs final vs archived:** not prescribed for early milestones; may be introduced when workflows need explicit locking or reporting packs. Until then, persisted holding data is the source of truth the user can edit and revisit.
+- **Capital gains calculation (per holding):** The **calculation** and **computation pack (print)** views show Section 104 pool roll-forward, per-disposal matching (same-day, 30-day, pool), gains/losses in GBP, FX applied for `import_usd` rows, and **per–UK-tax-year totals** (total gains, total losses, net) **for this holding only** — not the user’s full Self Assessment position across other holdings or assets. The app does **not** collect **brought-forward losses** (they are not holding-scoped), does **not** apply **annual exempt amount** or compute **CGT tax due**, and does **not** offer a **CGT rate tier** control or **disposals CSV** download. Users who need those figures must combine this tool’s outputs with other records manually or use professional advice.
 
 ### 8.2 Import and transaction data handling
 
@@ -478,10 +481,10 @@ HMRC’s “work out if you need to pay” guidance states that from the 2023–
 
 The Autumn Statement 2022 policy paper explicitly states the measure fixes the CGT proceeds reporting limit at £50,000, and explains that prior law required CGT pages where total consideration exceeded four times the AEA.
 Implication for product design:
-The app should include a “Do I need to report?” section per tax year:
+A future product iteration could include a “Do I need to report?” section using HMRC proceeds thresholds — **not implemented** in the current holding-scoped app (see §8.1). Reference rules:
 
-* 2016–17 to 2022–23: use the “4× AEA proceeds” concept (as described in the policy background)
-* 2023–24 onwards: use the £50,000 proceeds threshold (plus gains \> AEA)
+* 2016–17 to 2022–23: the “4× AEA proceeds” concept (as described in the policy background)
+* 2023–24 onwards: the £50,000 proceeds threshold (plus gains \> AEA) where relevant
 
 
 ## APPENDIX 2: Data sources and import strategy
@@ -530,13 +533,15 @@ Import approach (PRD requirement) Because real-world exports vary by account typ
 
 ## APPENDIX 3: User experience and outputs
 
+**Scope note (2026-03-31):** This appendix describes a **full product vision** and HMRC-aligned outputs for long-term planning. The **current** app implements a **subset**: one **holding** per symbol, ledger and imports per holding, and a **holding-level** calculation/computation pack as described in **§8.1** (no portfolio-wide “Do I need to report?”, no user-facing BF/tier, no disposals CSV). Where the text below implies SA108-complete tax or exports, treat it as **deferred / optional** unless §8.1 states otherwise.
+
 ### Core workflow
 
-The product must guide the user through a predictable sequence:
+The product should guide the user through a predictable sequence. **Current implementation** covers manual/import data per holding, ledger by tax year, FX from Bank of England for sterling conversion, and calculation/pack for **that holding**; broader assumptions and exports may be added later.
 
-1. Set scope and assumptions
+1. Set scope and assumptions *(full vision; not all steps are UI-gated in the current app)*
 * confirm UK tax years covered (2016–17 onward)
-* confirm “Higher-rate taxpayer assumption”
+* *(deferred)* confirm “Higher-rate taxpayer assumption” for tax-due modelling — **not** used in the current holding calculation UI
 * confirm asset scope: US shares acquired via RSU vesting
 * confirmation that FX uses Bank of England daily spot rates
 2. Import data
@@ -556,13 +561,7 @@ For each disposal, the output must show:
 * gain/loss in GBP
 * updated Section 104 pool position after the disposal
 5. Annual summary
-For each tax year, show:
-* total gains, total losses
-* net gains after losses
-* annual exempt amount applied (including “apply to highest-rate gains” logic)
-* losses brought forward used (and remaining carried forward, if any)
-* computed CGT due (using the “higher-rate” rate per applicable date window)
-* show whether the user is likely required to report based on proceeds/gains rules for that year (including the £50,000 threshold from 2023–24 onward). 
+**Current app (per holding):** for each tax year with disposals in this holding, show total gains, total losses, and net (gains − losses) **for this holding only** — not AEA, BF, CGT due, or reporting obligation. **Full vision (deferred):** annual exempt amount, brought-forward usage, CGT due, tiered rates, and “Do I need to report?” style thresholds would require a **user-wide** or manual workflow, not a single holding in isolation. 
 
 ### Key “RSU timing nuance” explanations (must be in-product)
 
@@ -574,15 +573,7 @@ The app should explicitly explain these patterns, because they will confuse user
 
 ### Outputs and export formats
 
-Outputs must be designed to be useful for Self Assessment record keeping and for answering HMRC questions. At minimum:
-
-* “Computation pack” PDF (or print view) including:
-* transaction ledger
-* exchange rates used
-* per-disposal computations
-* Section 104 pool roll-forward schedule (showing pool shares and pool cost after each operative event, mirroring HS284’s approach)
-* CSV export of all computed disposals including matched-share source (same-day / 30-day / pool)
-* A year summary view aligned with the concepts in SA108 (without trying to auto-fill SA108 fields blindly)
+Outputs should support Self Assessment record keeping where the product can do so responsibly. **Current app:** **computation pack** (browser print / save as PDF) mirroring the **holding** calculation page — pool roll-forward, disposals, per–tax-year gain/loss totals for **this holding**, and visibility of FX applied for imported USD rows. **Not in current app:** CSV export of disposals, user-wide SA108-aligned summaries, or automatic “tax due” figures. **Full vision (deferred):** optional CSV, richer annual summaries, and reporting-threshold UX if product scope expands.
 
 For 2024–25, the product must explicitly flag that the main CGT rate changed on 30 October 2024 and that HMRC created an adjustment approach because Self Assessment did not automatically handle the new main rates in that year.
 
@@ -600,10 +591,10 @@ A disposal and acquisition on the same day must match first against that day’s
 Later acquisitions within 30 days after a disposal must be matched in priority after same-day matching.
 * FX handling:
 Prohibit “compute gain in USD then convert once”; instead, store sterling equivalents per transaction date, consistent with HMRC guidance.
-* Loss utilisation rules:
+* Loss utilisation rules *(HMRC reference; full engine tests may cover BF/AEA; **holding UI** does not apply BF or AEA — see §8.1)*:
 Current-year losses before brought-forward; brought-forward losses only down to AEA (not below).
-* 2024–25 rate change:
-Disposals before and after 30 Oct 2024 in the same tax year must use the correct rates and surface the “rate change year” explanation. 
+* 2024–25 rate change *(relevant if the product later computes CGT due; **holding UI** shows informational copy only)*:
+Disposals before and after 30 Oct 2024 in the same tax year use different main rates; the calculation page notes the policy change but does not compute personal tax. 
 
 ### Major risks and how to mitigates them
 
@@ -616,7 +607,7 @@ You will not reliably get one universal CSV schema. The mapping-based importer a
 **Users silently falling outside assumptions**
 
 * Not a UK resident at relevant times: 30-day rule has residence-linked conditions in HMRC guidance; the PRD should require an onboarding “residence confirmation” with a warning that the calculator is not for mixed-residence cases.
-* Users not actually higher-rate for CGT banding: the PRD should require the UI to label results as “higher-rate assumption”, and the export should include that assumption.
+* Users not actually higher-rate for CGT banding: if the product later adds tax-due modelling, label tier assumptions clearly. The **current** app does not ask for a rate tier on the holding calculation screen (see §8.1).
 
 **Corporate actions and reorganisations**
 HS284 explicitly flags share reorganisations and takeovers as exceptions where events may not be treated as acquisitions. That is out of scope for v1, but the roadmap should include it.

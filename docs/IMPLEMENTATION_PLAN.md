@@ -70,7 +70,7 @@ The following real-world export files inform the import pipeline design. They ar
 
 - [x] **Multi-user application.** Data model includes `userId` on every document from day one. **Authentication** is implemented with **Better Auth** (MongoDB adapter, cookie sessions, email/password; see ADR-007). Historical Milestones 1–2 used a **stub user** (`STUB_USER_ID` + `seed:users`); that path has been **removed** — tenant `userId` is the signed-in Better Auth user id.
 - [x] **Top-level domain object: Holding.** A holding is **one stock symbol** per user (uppercase ticker). It is the primary organising entity for that line of stock. It belongs to a user and can span multiple tax years. Tax-year views are derived from holding data, not separate top-level entities.
-- [x] **CGT rate tier: user-selectable.** Support basic (10%/18%), higher (20%/24%), and additional (same as higher for CGT purposes) rate tiers. Default to "additional" in the UI. The app does not compute the user's income tax band — the user declares it.
+- [x] **CGT rate tier (historical):** Previously planned as user-selectable in the calculation UI. **Superseded (2026-03-31):** the holding **calculation** and **computation pack** do **not** show a tier control or compute CGT tax due; `cgt-config` / `RateTier` remain for tests and any future tax feature. See §8.1 in PRD and ADR-006 amendment.
 - [x] **Sell-to-cover at vest: not modelled as disposals.** When RSUs vest and shares are sold to cover PAYE/NI, only the net shares received are tracked as acquisitions. The withheld shares are treated as never received.
 - [x] **Import formats: XLSX and CSV** (and later, potentially parsed PDF). The E\*Trade "ByBenefitType" export (XLSX) is the first target for acquisition/vesting import. Sale/disposal data will require a separate source (e.g. trade confirmations or "Gains & Losses" report) because the Orders PDF lacks execution prices.
 - [x] **FX rates: on-demand download script.** Provide a script to fetch Bank of England daily USD/GBP spot rates (XUDLUSS series) and seed them into MongoDB. Run once to initialise; re-run to update.
@@ -94,7 +94,7 @@ The following real-world export files inform the import pipeline design. They ar
 
 - [x] **One symbol per holding:** Each holding is a single ticker; Section 104 pooling applies **per symbol** for that holding (superseded 2026-03-31: previously “multiple tickers per portfolio”).
 - [x] **Authentication provider:** **Better Auth** embedded in the Next.js app, MongoDB-backed sessions, email/password with required verification — documented in **ADR-007** (`docs/adrs/007-authentication-better-auth.md`).
-- [x] **Brought-forward losses:** **Milestone 4** implements the **calculation rules** with **test inputs** (including zero / explicit brought-forward in tests). **User-facing entry** of brought-forward amounts is **Milestone 7** (see Milestone 4 stakeholder decisions and Section 8.1).
+- [x] **Brought-forward losses:** Domain tests historically exercised BF/AEA rules. **Superseded (2026-03-31):** no user-facing brought-forward field — losses are not holding-scoped; see PRD §8.1. `computeAnnualSummaries` in production path aggregates per–tax-year gains/losses/net for the holding’s disposals only.
 
 ### 3.5 Authentication delivery (2026-03-31)
 
@@ -616,14 +616,14 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 #### Stakeholder decisions (2026-03-28)
 
 - **One symbol per holding:** One Section 104 pool **per holding** (see Section 8.1, #22).
-- **Brought-forward losses:** Engine and tests implement the **rules** (including brought-forward down to AEA); **no UI to capture** prior-year loss pools in M4 — use test fixtures and explicit inputs; full user input **Milestone 7** (see Section 8.1, #24); M5 calculation page may expose a numeric field only.
+- **Brought-forward losses:** *(historical)* Engine/tests once covered BF/AEA rules. **Current (2026-03-31):** holding calculation uses simplified annual summaries (gains/losses/net per tax year for this holding only); no BF UI. See PRD §8.1.
 - **Authentication:** Irrelevant to M4 calculation scope; **Better Auth** added post-M7 delivery (see Section 3.5, ADR-007).
 
 #### Stakeholder / planning decisions (2026-03-30)
 
 - **Penny precision:** Pool cost and allowable cost on disposal tracked to **2 decimal places**; SA108-style **whole-pound** rounded gain/loss per disposal (`Math.round`).
-- **Single-pass multi-year:** `calculateGainsForSymbol` processes all events in one invocation; tax-year summaries run after disposals with **automatic loss carry-forward** between years.
-- **HS284 test depth:** HS284 Example 3 **plus** annual summary (AEA, CGT rate breakdown); both May 2023 and Feb 2024 disposals fall in tax year **2023-24** (UTC date-only).
+- **Single-pass multi-year:** `calculateGainsForSymbol` processes all events in one invocation; tax-year summaries are **per-year aggregates** of disposal gains/losses for the holding (no BF/AEA/tax due in UI path).
+- **HS284 test depth:** HS284 Example 3 for pool/disposal arithmetic; tax-year line in tests updated for simplified summaries (see `cgt-calculator.test.ts`).
 
 #### Tasks
 
@@ -637,20 +637,20 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 
 **Domain — schemas**
 
-- [x] Canonical Zod schemas + types: `src/domain/schemas/calculation.ts` (`CalcInput`, `CalcOutput`, `DisposalResult`, `PoolSnapshot`, `TaxYearSummary`, `RateTier`)
+- [x] Canonical Zod schemas + types: `src/domain/schemas/calculation.ts` (`CalcInput` = symbol + events; `CalcOutput`; `DisposalResult`; `PoolSnapshot`; `TaxYearSummary` — simplified; `RateTier` retained for `cgt-config` / tests)
 
 **Domain — services**
 
 - [x] `src/domain/services/cgt-config.ts` — AEA by tax year (PRD Appendix 1), main CGT rates before/on-after **2024-10-30**, `getShareCgtRatePercent`
 - [x] `src/domain/services/section-104-pool.ts` — Section 104 pool (2dp), full disposal uses residual pool cost
-- [x] `src/domain/services/cgt-annual-summary.ts` — same-year net, BF capped to AEA rule, AEA applied **post-first** in **2024-25**, multi-year loss pool
+- [x] `src/domain/services/cgt-annual-summary.ts` — *(superseded implementation)* now **per–tax-year** total gains, losses, and net from disposal lines for this symbol (see ADR-006 amendment)
 - [x] `src/domain/services/cgt-calculator.ts` — `calculateGainsForSymbol`: sort/tie-break events, pool + disposals + summaries; **no** DB/UI
 
 **Tests** (`src/test/unit/domain/services/`)
 
 - [x] `cgt-config.test.ts` — AEA lookup, rate boundary 29 Oct vs 30 Oct 2024
 - [x] `section-104-pool.test.ts` — HS284-style fraction, full disposal, over-disposal error
-- [x] `cgt-annual-summary.test.ts` — BF to AEA, loss year, **2024-25** split rates, multi-year carry-forward
+- [x] `cgt-annual-summary.test.ts` — aggregation of gains/losses per tax year (simplified summaries)
 - [x] `cgt-calculator.test.ts` — HS284 Example 3 (penny precision + **2023-24** summary), unsorted events error, empty / no-disposal cases
 
 #### Likely files (delivered)
@@ -676,10 +676,8 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 - Calculation input/output contracts (domain schemas)
 - Per-disposal breakdown: matching source (pool only in this milestone), allowable cost, gain/loss
 - Pool roll-forward schedule: pool shares and pool cost after each event
-- Tax-year summary: gains, losses, BF, AEA, taxable gain, CGT due, rate breakdown
-- Annual exempt amount (AEA) application
-- Loss netting: current-year losses before brought-forward; brought-forward only down to AEA
-- CGT rate computation: user-selected tier (basic/higher/additional), including the **2024-25** tax-year split (pre/post **30 Oct 2024** on the **2024-25** label)
+- Tax-year summary *(historical milestone text)*: full BF/AEA/tax pipeline was planned; **current code** exposes simplified per-year totals for the holding UI (PRD §8.1)
+- *(Deferred from holding UI:)* AEA application, BF, CGT due, rate tier — not shown on `/holdings/.../calculation`
 - Calculation service in `src/domain/services/` — pure logic, no DB or UI dependencies
 - Unit tests for calculation rules; HS284 + annual summary + **2024-25** split-rate test
 - **Deferred to a later milestone:** same-day matching, 30-day matching, FX conversion; application-layer wiring from repositories to `calculateGainsForSymbol`
@@ -688,14 +686,14 @@ Milestone 3 delivered 2026-03-28; see **Status** and **Validated** above. ADR-00
 
 - [x] HS284 Example 3 pool arithmetic reproduced exactly (penny precision); SA108 rounded gains match PDF whole pounds (£329, £300)
 - [x] per-disposal breakdowns and pool roll-forward are correct and inspectable
-- [x] AEA, loss netting, rate-tier logic, and **2024-25** split rates are covered by tests
+- [x] Core pool and disposal tests pass; annual summary shape simplified for product (see ADR-006 amendment)
 - [x] calculation service is independently testable (no DB or UI coupling)
 - [x] ADR-006 complete
 - [x] `npm run validate` passes
 
 #### Completion record
 
-Milestone 4 delivered 2026-03-30; see **Status** and **Validated** above. ADR-006 records contracts, penny precision, and M4/M5 boundary (pool-only; `import_usd` unchanged per ADR-005).
+Milestone 4 delivered 2026-03-30; see **Status** and **Validated** above. ADR-006 records contracts and was **amended 2026-03-31** for holding-scoped UI (simplified `TaxYearSummary`). ADR-006 amendment describes divergence from the original “full SA” annual summary text in this milestone.
 
 ---
 
@@ -710,8 +708,8 @@ Milestone 4 delivered 2026-03-30; see **Status** and **Validated** above. ADR-00
 #### Scope
 
 - `fx_rates` MongoDB collection; `npm run fetch:fx-rates` script; FX rate repository and domain lookup (fallback to most recent prior published rate; flag when used)
-- Application-layer `runCalculationForSymbol`: build `CalcInput` from acquisitions/disposals + FX for `import_usd`
-- Route `/holdings/[holdingId]/calculation` with rate tier, brought-forward losses query form; tables for FX applied, pool roll-forward, disposals, tax year summaries
+- Application-layer `runCalculationForHoldingSymbol` (`run-calculation-for-symbol.ts`): build `CalcInput` from acquisitions/disposals + FX for `import_usd`
+- Route `/holdings/[holdingId]/calculation` — pool roll-forward, disposals, simplified tax year totals, **View FX applied**; **no** tier/BF query params *(2026-03-31)*
 - Unit and integration tests for FX lookup, BoE response parsing, conversion wiring, FX repository
 - **ADR-008:** FX rate infrastructure and conversion design
 
@@ -801,101 +799,35 @@ Milestone 6 delivered 2026-03-30; see **Status** and **Validated** above. Sell-s
 
 **Goal:** make the system credible for real user-facing use.
 
-**Status:** Complete  
-**Completed:** 2026-03-30  
-**Validated:** `npm run validate` on 2026-03-30
+**Status:** Complete (with **scope amendments 2026-03-31**)  
+**Completed:** 2026-03-30 (original); **revised product scope** documented 2026-03-31  
+**Validated:** `npm run validate` when run against a configured environment
 
-#### Stakeholder / planning decisions (2026-03-30)
+#### Amendment (2026-03-31): holdings, simplified calculation, removed artefacts
 
-- **Computation pack:** **Print-optimised HTML** only in M7; users use browser Print / Save as PDF; no server-side PDF library.
-- **Brought-forward losses:** **Persisted in MongoDB** per portfolio (`portfolio_calculation_prefs`); calculation uses stored value by default; query param may override for deep links (see ADR-010).
-- **Reporting thresholds:** Portfolio-wide **sum of disposal proceeds** per UK tax year for 4×AEA / £50k rules; **Self Assessment** registration is a **user-declared** checkbox for the 2023–24+ £50,000 proceeds rule. **Chargeable gains** “likely report” signals use **per-symbol** summaries summed with an explicit disclaimer (each symbol applies AEA in the engine separately; not a substitute for professional combined advice).
-- **Sell-side import research** (Gains & Losses / confirmations) remains a **pre–M7 checkpoint**; disposal CSV import is **not** required to close M7 trust/exports/BF work.
+The codebase now uses **`/holdings`** routes, **one symbol per holding**, and a **holding-level** calculation that does **not** include: user-selectable CGT tier, brought-forward losses input, persisted `portfolio_calculation_prefs`, disposals **CSV** export, `resolve-brought-forward.ts`, or portfolio-wide “Do I need to report?” UI. **Computation pack** is a **print view** at `/holdings/[holdingId]/computation-pack` mirroring the main calculation. See **PRD §8.1**, **ADR-010** (partial), **ADR-011**, **ADR-006** amendment.
 
-#### Scope (summary)
+#### Original stakeholder / planning decisions (2026-03-30) — superseded where contradicted above
 
-- "Do I need to report?" section per tax year (PRD Appendix 1 thresholds)
-- Reporting threshold logic: 4×AEA proceeds (pre-2023-24), £50,000 (2023-24 onward) with SA flag where relevant
-- RSU timing explanations (same-day vest+sell, 30-day scenarios) — in-product plain-English guidance
-- 2024-25 rate change flag and explanation
-- Computation pack: **print view** with transaction ledger, FX rates, per-disposal computations, pool roll-forward
-- CSV export of computed disposals with matching source
-- Data quality warnings: missing FX, incomplete holdings, unresolved items
-- Assumption labelling: selected CGT rate tier visible on outputs
-- "Not professional tax advice" disclaimer
-- Refined Docker assets
-- Security review: env var handling, no secrets in logs, sensitive data treatment
-- Updated README and operational docs
+- **Computation pack:** Print-optimised HTML; browser Print / Save as PDF — **still accurate**.
+- **Brought-forward / prefs / CSV / reporting UI:** Delivered in an earlier revision; **removed** from managed schema and app (2026-03-31). ADR-010 text partially superseded.
 
-#### Tasks
+#### Scope delivered (current)
 
-**ADR**
+- RSU timing explanations on the calculation page; disclaimers
+- Computation pack (print) for **one holding**, aligned with calculation output
+- Docker and security posture as in README
+- ADR-010 exists; amendment notes in ADR-010 and ADR-011
 
-- [x] **ADR-010:** Exports, computation pack, reporting thresholds (`docs/adrs/010-exports-computation-pack-and-reporting-thresholds.md`)
+#### Exit criteria (revised)
 
-**Domain**
-
-- [x] `src/domain/services/reporting-thresholds.ts` — proceeds thresholds (4×AEA vs £50k), `assessReportingNeed` with SA flag; unit tests
-- [x] `src/domain/schemas/portfolio-calculation-prefs.ts` — canonical Zod for brought-forward persistence
-
-**Persistence**
-
-- [x] `portfolio_calculation_prefs` collection; `npm run db:init`; persistence schema derived from domain
-- [x] `PortfolioCalculationPrefsRepository` (domain) + Mongo implementation
-
-**Application**
-
-- [x] Load/save prefs; `runCalculationForSymbol` uses persisted BF unless query override (`resolve-brought-forward.ts`)
-- [x] `getPortfolioReportingOverview` — aggregate proceeds by tax year; combine per-symbol calc summaries for UI
-
-**Interfaces**
-
-- [x] Calculation page: BF persisted; optional `bf` query override
-- [x] Portfolio or calculation area: "Do I need to report?", SA checkbox, RSU guidance blocks, 2024–25 rate-change copy, disclaimers, data-quality warnings
-- [x] Print computation pack route (`/portfolios/[id]/computation-pack`) with `@media print` / `.no-print`
-- [x] CSV route for disposals export (`/portfolios/[id]/disposals-export`)
-- [x] Layout/footer: tax disclaimer; rate tier visible (`calculation-result-sections`, root layout footer)
-
-**Ops**
-
-- [x] Docker README alignment; security notes (README + container image non-root user)
-
-#### Likely files (Milestone 7)
-
-| File | Action |
-|------|--------|
-| `docs/adrs/010-exports-computation-pack-and-reporting-thresholds.md` | create |
-| `docs/IMPLEMENTATION_PLAN.md` | update (this milestone) |
-| `src/domain/services/reporting-thresholds.ts` | create |
-| `src/test/unit/domain/services/reporting-thresholds.test.ts` | create |
-| `src/domain/schemas/portfolio-calculation-prefs.ts` | create |
-| `src/domain/repositories/portfolio-calculation-prefs-repository.ts` | create |
-| `src/infrastructure/persistence/schemas/portfolio-calculation-prefs-record.ts` | create |
-| `src/infrastructure/repositories/mongo-portfolio-calculation-prefs-repository.ts` | create |
-| `src/infrastructure/persistence/schema-registry.ts` | modify |
-| `src/infrastructure/persistence/ensure-collections.ts` | modify |
-| `scripts/db-init.ts` | modify (log new collection) |
-| `src/application/portfolio/*` | create (reporting overview, prefs) |
-| `src/app/portfolios/[portfolioId]/calculation/*` | modify |
-| `src/app/portfolios/[portfolioId]/computation-pack/*` | create |
-| `src/app/portfolios/[portfolioId]/disposals-export/route.ts` | create |
-| `src/application/calculation/resolve-brought-forward.ts` | create |
-| `src/app/portfolios/[portfolioId]/calculation/actions.ts` | create |
-| `src/app/portfolios/[portfolioId]/calculation/calculation-result-sections.tsx` | create |
-
-#### Exit criteria
-
-- [x] outputs are useful for Self Assessment record keeping
-- [x] deployment assets are production-credible
-- [x] material assumptions are surfaced in UI and exports
-- [x] brought-forward losses persisted and used by default in calculation
-- [x] reporting threshold UI and print/CSV exports implemented
-- [x] ADR-010 complete
-- [x] `npm run validate` passes
+- [x] Holding-level calculation and computation pack are coherent and disclaim holding-only scope
+- [x] No dependency on removed collections for core flows (`db:init` matches repo)
+- [x] `npm run validate` passes in a correctly configured environment
 
 #### Completion record
 
-Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-010 records print-only computation pack, CSV export, reporting thresholds, and BF/SA persistence. Run **`npm run db:init`** on each target database to add **`portfolio_calculation_prefs`**.
+Original M7 completion: 2026-03-30. **2026-03-31:** Product and docs aligned to **holding-scoped** calculation; reporting-threshold / BF / CSV paths **removed** from the implementation described in this plan’s historical task lists.
 
 ---
 
@@ -911,7 +843,7 @@ Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-01
 | 4 | Import format first | E\*Trade "ByBenefitType" XLSX for acquisitions |
 | 5 | Minimum end-to-end workflow | Manual add acquisition + disposal + ledger (M2) |
 | 6 | Calculation scope for first engine | Section 104 pool, GBP-only, HS284 Example 3 (M4) |
-| 7 | CGT rate assumption | User-selectable tier (basic/higher/additional), default additional |
+| 7 | CGT rate assumption | **Superseded (2026-03-31):** holding calculation UI does not collect tier or compute tax due; `cgt-config` retained for tests/future use |
 | 8 | Sell-to-cover treatment | Not modelled as disposals; net shares only |
 | 9 | FX rate source mechanism | On-demand download script, seeded into MongoDB |
 | 10 | Local MongoDB | Not supported; Atlas required for all environments |
@@ -928,12 +860,12 @@ Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-01
 | 21 | M4 vs `import_usd` acquisitions | M4 pool engine is **GBP-only**. **`import_usd`** rows are converted to sterling in the **application layer** (M5) via BoE XUDLUSS before calling the engine; ledger may still list USD for traceability (see ADR-005, ADR-008). |
 | 22 | Multiple tickers in one holding | **Superseded (2026-03-31):** one ticker per holding; use multiple holdings for multiple symbols. Historical: multiple tickers per portfolio with per-symbol pools (2026-03-28). |
 | 23 | Authentication provider | **Better Auth** + MongoDB adapter + cookie sessions; **ADR-007** records provider, sessions, and replacement of stub user (updated 2026-03-31). |
-| 24 | Brought-forward losses — user input vs engine | **Milestone 4:** implement loss netting rules in the **calculation engine** and unit tests using **explicit test inputs** (including zero / hardcoded brought-forward where needed). **User-facing input** of brought-forward loss pools is **deferred to Milestone 7** (stakeholder decision, 2026-03-28). |
+| 24 | Brought-forward losses — user input vs engine | **Superseded (2026-03-31):** no BF input in app — not holding-scoped; user combines manually. Engine tests may still reference BF concepts in isolation; production `computeAnnualSummaries` is simplified (PRD §8.1). |
 
 ### 8.2 Still open
 
-- **Sell-side import research** (Gains & Losses / confirmations) remains a **pre–Milestone 7** checkpoint for **disposal import** scope; it does not block Milestone 7 trust/exports/BF delivery (see Milestone 7 stakeholder decisions).
-- **Multi-holding CGT vs per-symbol engine:** Milestone 7 “Do I need to report?” (where present) used **aggregated proceeds** across symbols plus **per-symbol** taxable summaries with an explicit disclaimer until a combined multi-symbol annual model exists (see ADR-010).
+- **Sell-side import research** (Gains & Losses / confirmations) remains a checkpoint for **disposal import** scope.
+- **User-wide CGT / reporting UX:** If the product later adds “Do I need to report?”, AEA across all gains, or BF entry, that is **out of scope** for the current single-holding calculation (see PRD §8.1; ADR-010 amendment).
 
 ---
 
@@ -956,7 +888,8 @@ Milestone 7 delivered 2026-03-30; see **Status** and **Validated** above. ADR-01
 | ADR-006: Calculation engine boundary design | M4 | Input/output contracts, pure-function design, separation from persistence and UI. |
 | ADR-008: FX rate infrastructure and conversion | M5 | BoE XUDLUSS storage, lookup, fallback, application-layer GBP conversion for `import_usd`. |
 | ADR-009: Share matching algorithm | M6 | HMRC order (same-day, 30-day, Section 104), CG51560 aggregation, `matchingBreakdown` schema. |
-| ADR-010: Exports, computation pack, reporting thresholds | M7 | Print-only pack, CSV shape, proceeds aggregation, SA checkbox, BF persistence. |
+| ADR-010: Exports, computation pack, reporting thresholds | M7 | Print-only pack; **amended** — CSV/BF/prefs removed from app (2026-03-31). |
+| ADR-011: Holdings — one symbol per holding | **Done** — `docs/adrs/011-holdings-one-symbol-per-holding.md` | Routes `/holdings`, symbol normalisation, import filtering, calculation scope. |
 | ADR-007: Authentication and user model | **Done** — `docs/adrs/007-authentication-better-auth.md` | Better Auth, MongoDB sessions, `userId` = Better Auth user id; stub user path removed (no migration — greenfield / DB refresh). |
 
 ---
@@ -983,8 +916,8 @@ Per PRD Appendix 4, the calculation engine must pass:
 - [x] **Same-day matching:** disposal and acquisition on the same day match first (M6)
 - [x] **30-day rule directionality:** acquisitions within 30 days *after* disposal matched in priority (M6)
 - [x] **FX handling:** per-transaction GBP conversion, not "compute USD gain then convert" (M5)
-- [x] **Loss utilisation:** current-year before brought-forward; brought-forward only down to AEA (M4)
-- [x] **2024-25 rate change:** correct rates before/after 30 Oct 2024 in same tax year (M4 — tax year **2024-25** split)
+- [x] **Loss utilisation:** *(HMRC reference / historical engine tests)* — holding UI does not apply BF or AEA (PRD §8.1)
+- [x] **2024-25 rate change:** informational copy on outputs; no tier-based tax computation in holding UI
 
 ---
 
@@ -993,7 +926,7 @@ Per PRD Appendix 4, the calculation engine must pass:
 - **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations **before Milestone 7** (disposal import scope).
 - **Import format brittleness:** The XLSX format is hierarchical, sparse, and uses mixed date formats. E\*Trade may change the export layout without notice. Mitigate with defensive parsing, clear validation errors, and a mapping approach.
 - **Tax domain complexity escalation:** Same-day and 30-day matching interact with each other and with the pool in non-obvious ways. Mitigate by deferring matching rules to M6 (after pool mechanics and FX wiring are solid) and testing each rule independently.
-- **CGT rate tier simplification:** The app asks the user to declare their tier rather than computing it. This is a deliberate simplification but may confuse users who don't know their band. Mitigate with clear in-product guidance.
+- **CGT liability:** The holding calculation does **not** compute personal CGT due or tier. Mitigate with clear copy (PRD §8.1) if future features add tax estimates.
 - **Non-RSU data in imports:** The sample data includes Stock Options and ESPP events. These are permanently out of scope; the import pipeline must filter them out cleanly and inform the user what was excluded.
 - **Premature over-modelling vs under-modelling:** Mitigate by building thin vertical slices and refactoring confidently (no backwards-compatibility constraint in early milestones).
 
@@ -1007,7 +940,7 @@ Per PRD Appendix 4, the calculation engine must pass:
 - Docker is the container deployment target captured in this repository; other hosting is a product/ops decision.
 - Strict linting, validation, and testing are required from Milestone 1.
 - Backwards compatibility is not a goal during early milestones.
-- The user declares their CGT rate tier; the app does not compute income tax bands.
+- The holding calculation does not ask for CGT rate tier or compute income tax bands (2026-03-31).
 - RSUs are the only equity compensation type in scope. Stock Options and ESPP are permanently out of scope; the import pipeline must filter them out.
 
 ---
