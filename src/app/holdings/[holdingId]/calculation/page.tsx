@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 
 import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
@@ -11,9 +10,7 @@ import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
-import { CalculationControls } from '@/app/holdings/[holdingId]/calculation/calculation-controls';
 import { FxAppliedDialog } from '@/app/holdings/[holdingId]/calculation/fx-applied-dialog';
-import { ScrollToCalculationResults } from '@/app/holdings/[holdingId]/calculation/scroll-to-calculation-results';
 
 const holdingRepository = new MongoHoldingRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
@@ -110,23 +107,15 @@ export default async function HoldingCalculationPage({
 
       {hasLedgerData ? (
         <>
-          <div className="mt-8 no-print">
-            <CalculationControls />
-          </div>
-
-          <Suspense fallback={null}>
-            <ScrollToCalculationResults />
-          </Suspense>
-
           {calcError ? (
-            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 no-print">
+            <div className="mt-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 no-print">
               {calcError}
             </div>
           ) : null}
 
           {result !== null && calcError === null ? (
             <>
-              <div className="mt-6 flex flex-wrap gap-4 text-sm no-print">
+              <div className="mt-8 flex flex-wrap gap-4 text-sm no-print">
                 <Link
                   className="text-[var(--color-accent)] underline"
                   href={`/holdings/${holdingId}/computation-pack`}
