@@ -91,3 +91,7 @@ export const deleteLedgerEntryFormSchema = z.object({
   kind: ledgerEntryKindSchema,
   entryId: z.string().trim().min(1),
 });
+
+export const deleteHoldingFormSchema = z.object({
+  holdingId: z.string().trim().min(1),
+});

@@ -35,4 +35,9 @@ export interface ShareAcquisitionRepository {
    * Deletes one acquisition scoped to holding and user. Returns true if a document was removed.
    */
   deleteByIdForHoldingUser(holdingId: string, userId: string, id: string): Promise<boolean>;
+
+  /**
+   * Removes all acquisitions for this holding and user (e.g. when deleting the holding).
+   */
+  deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number>;
 }

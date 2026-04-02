@@ -67,4 +67,19 @@ export class MongoHoldingRepository implements HoldingRepository {
       throw new PersistenceError('Failed to list holdings', { cause: err });
     }
   }
+
+  async deleteByIdForUser(holdingId: string, userId: string): Promise<boolean> {
+    if (!ObjectId.isValid(holdingId)) {
+      return false;
+    }
+
+    try {
+      const client = await getMongoClient();
+      const coll = client.db().collection<WithId<HoldingDocument>>(COLLECTION_HOLDINGS);
+      const res = await coll.deleteOne({ _id: new ObjectId(holdingId), userId });
+      return res.deletedCount === 1;
+    } catch (err) {
+      throw new PersistenceError('Failed to delete holding', { cause: err });
+    }
+  }
 }

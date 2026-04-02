@@ -6,12 +6,14 @@ import { redirect } from 'next/navigation';
 import { addAcquisition } from '@/application/ledger/add-acquisition';
 import { addDisposal } from '@/application/ledger/add-disposal';
 import { deleteLedgerEntry } from '@/application/ledger/delete-ledger-entry';
+import { deleteHolding } from '@/application/holding/delete-holding';
 import { createHolding } from '@/application/holding/create-holding';
 import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
 import {
   createHoldingFormSchema,
+  deleteHoldingFormSchema,
   deleteLedgerEntryFormSchema,
   formDataString,
   parseAcquisitionForm,
@@ -173,6 +175,42 @@ export async function deleteLedgerEntryAction(
     return { error: err instanceof Error ? err.message : 'Failed to delete entry' };
   }
 
+  revalidatePath(`/holdings/${holdingId}`);
+  return undefined;
+}
+
+export async function deleteHoldingAction(
+  _prevState: FormActionState | undefined,
+  formData: FormData,
+): Promise<FormActionState | undefined> {
+  const parsed = deleteHoldingFormSchema.safeParse({
+    holdingId: formData.get('holdingId'),
+  });
+
+  if (!parsed.success) {
+    const first =
+      parsed.error.flatten().formErrors[0] ??
+      Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
+    return { error: first ?? 'Invalid request' };
+  }
+
+  const { holdingId } = parsed.data;
+  const userId = await requireVerifiedUserId();
+
+  try {
+    await deleteHolding(holdingRepo, acquisitionRepo, disposalRepo, {
+      holdingId,
+      userId,
+    });
+  } catch (err) {
+    if (err instanceof DomainError) {
+      return { error: err.message };
+    }
+    return { error: err instanceof Error ? err.message : 'Failed to delete holding' };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/holdings');
   revalidatePath(`/holdings/${holdingId}`);
   return undefined;
 }

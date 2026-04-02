@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { CreateHoldingForm } from '@/app/holdings/create-holding-form';
+import { HoldingDeleteButton } from '@/app/holdings/holding-delete-button';
 import { SignOutButton } from '@/app/sign-out-button';
 import type { Holding } from '@/domain/schemas/holding';
 
@@ -42,12 +43,15 @@ export function HoldingsPageContent({ holdings }: HoldingsPageContentProps): Rea
           <ul className="mt-3 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
             {holdings.map((h) => (
               <li key={h.id}>
-                <Link
-                  href={`/holdings/${h.id}`}
-                  className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
-                >
-                  {h.symbol}
-                </Link>
+                <div className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-neutral-50">
+                  <Link
+                    href={`/holdings/${h.id}`}
+                    className="min-w-0 flex-1 text-sm font-medium text-neutral-900"
+                  >
+                    {h.symbol}
+                  </Link>
+                  <HoldingDeleteButton holdingId={h.id} symbol={h.symbol} />
+                </div>
               </li>
             ))}
           </ul>
