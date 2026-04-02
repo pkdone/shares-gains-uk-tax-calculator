@@ -82,7 +82,7 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
   return (
     <main className="mx-auto max-w-7xl px-6 py-12">
       <nav className="text-sm text-neutral-600">
-        <Link href="/holdings" className="text-[var(--color-accent)] hover:underline">
+        <Link href="/" className="text-[var(--color-accent)] hover:underline">
           Holdings
         </Link>
         <span className="mx-2 text-neutral-400">/</span>

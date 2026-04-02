@@ -56,6 +56,7 @@ export async function createHoldingAction(
     return { error: err instanceof Error ? err.message : 'Failed to create holding' };
   }
 
+  revalidatePath('/');
   revalidatePath('/holdings');
   revalidatePath(`/holdings/${holding.id}`);
   redirect(`/holdings/${holding.id}`);

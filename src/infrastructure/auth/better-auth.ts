@@ -63,7 +63,7 @@ export async function getAuth(): Promise<Auth> {
           undefined,
           3600,
         );
-        const callbackURL = encodeURIComponent('/holdings');
+        const callbackURL = encodeURIComponent('/');
         const url = `${env.BETTER_AUTH_URL}/verify-email?token=${token}&callbackURL=${callbackURL}`;
         await sendAuthEmail({
           to: user.email,
