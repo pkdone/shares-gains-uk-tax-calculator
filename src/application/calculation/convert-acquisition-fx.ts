@@ -12,7 +12,7 @@ export async function buildCalcAcquisitionFromShareAcquisition(params: {
 }): Promise<{
   readonly data: CalcAcquisition;
   readonly sterling: AcquisitionSterlingLine;
-  readonly fx?: FxAppliedToAcquisition;
+  readonly fx: FxAppliedToAcquisition;
 }> {
   const { acquisition, fxRateRepository } = params;
 
@@ -38,16 +38,13 @@ export async function buildCalcAcquisitionFromShareAcquisition(params: {
     totalCostGbp,
   };
 
-  if (acquisition.economicsKind === 'import_usd') {
-    const fx: FxAppliedToAcquisition = {
-      acquisitionId: acquisition.id,
-      eventDate: acquisition.eventDate,
-      usdPerGbp: resolution.usdPerGbp,
-      rateDateUsed: resolution.rateDateUsed,
-      usedFallback: resolution.usedFallback,
-    };
-    return { data, sterling, fx };
-  }
+  const fx: FxAppliedToAcquisition = {
+    acquisitionId: acquisition.id,
+    eventDate: acquisition.eventDate,
+    usdPerGbp: resolution.usdPerGbp,
+    rateDateUsed: resolution.rateDateUsed,
+    usedFallback: resolution.usedFallback,
+  };
 
-  return { data, sterling };
+  return { data, sterling, fx };
 }

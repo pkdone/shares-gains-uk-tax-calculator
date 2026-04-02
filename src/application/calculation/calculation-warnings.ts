@@ -7,7 +7,7 @@ import type { CalcOutput } from '@/domain/schemas/calculation';
 
 const STATIC_TABLE_INTERPRETATION_WARNINGS: readonly string[] = [
   'Rows are in date order for readability. Matching does not follow this visual order: each disposal is matched under HMRC rules (same day, then acquisitions within 30 days after the disposal, then the Section 104 pool).',
-  'Amounts in this table are in sterling using this app’s exchange-rate rules (see FX applied). They may not match your broker’s figures or intraday rates.',
+  'Sterling amounts in this table use this app’s exchange-rate rules (see FX applied); USD columns are for reference. Figures may not match your broker’s or intraday rates.',
   'Blank cells mean the field does not apply to that row (for example, gain on an acquisition line), not zero.',
   'Section 104 pool totals after processing for a date appear on the CGT summary row for each disposal date, and on the acquisition aggregate summary when multiple acquisitions fall on the same date without a disposal on that date.',
 ];

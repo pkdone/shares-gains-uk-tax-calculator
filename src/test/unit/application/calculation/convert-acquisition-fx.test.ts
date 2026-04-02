@@ -31,7 +31,8 @@ describe('buildCalcAcquisitionFromShareAcquisition', () => {
       fxRateRepository: mockFxRepo({ date: '2024-01-01', usdPerGbp: 1.25 }),
     });
 
-    expect(r.fx).toBeUndefined();
+    expect(r.fx?.usedFallback).toBe(false);
+    expect(r.fx?.usdPerGbp).toBe(1.25);
     expect(r.data.totalCostGbp).toBe(84);
     expect(r.sterling.totalCostGbp).toBe(84);
     expect(r.sterling.grossConsiderationGbp).toBe(80);

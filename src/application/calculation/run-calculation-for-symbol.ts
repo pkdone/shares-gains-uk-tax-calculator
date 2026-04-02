@@ -86,9 +86,7 @@ export async function runCalculationForHoldingSymbol(params: {
     events.push({ kind: 'acquisition', data: built.data });
     sterlingByAcquisitionId[acquisition.id] = built.sterling;
     ledgerLines.push({ kind: 'ACQUISITION', data: acquisition });
-    if (built.fx !== undefined) {
-      fxByAcquisitionId[built.fx.acquisitionId] = built.fx;
-    }
+    fxByAcquisitionId[built.fx.acquisitionId] = built.fx;
   }
 
   for (const disposal of disposals) {

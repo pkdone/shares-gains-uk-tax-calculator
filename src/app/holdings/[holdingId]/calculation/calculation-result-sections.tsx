@@ -1,13 +1,48 @@
 import type { ReactElement } from 'react';
 
 import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
-import { buildCalculationTransactionTableModel } from '@/application/calculation/build-calculation-transaction-table';
+import {
+  buildCalculationTransactionTableModel,
+  type CalculationTransactionAcquisitionAggregateSummaryRow,
+  type CalculationTransactionCgtDisposalSummaryRow,
+  type CalculationTransactionDateBlock,
+  type CalculationTransactionLedgerAcquisitionRow,
+  type CalculationTransactionLedgerDisposalRow,
+  type CalculationTransactionOutcomeRow,
+} from '@/application/calculation/build-calculation-transaction-table';
 import type { MatchingSource } from '@/domain/schemas/calculation';
 
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+
+const usdMoney = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function fxRateCellClassName(params: {
+  readonly fxRate: number | undefined;
+  readonly fxUsedFallback: boolean | undefined;
+}): string {
+  const { fxRate, fxUsedFallback } = params;
+  if (fxRate === undefined) {
+    return 'text-neutral-800';
+  }
+
+  if (fxUsedFallback === false) {
+    return 'text-green-700';
+  }
+
+  if (fxUsedFallback === true) {
+    return 'text-orange-600';
+  }
+
+  return 'text-neutral-800';
+}
 
 function formatMatchingSourceLabel(source: MatchingSource): string {
   switch (source) {
@@ -18,6 +53,288 @@ function formatMatchingSourceLabel(source: MatchingSource): string {
     case 'section-104-pool':
       return 'Section 104 pool';
   }
+}
+
+function formatAvgCostPerShareGbp(poolShares: number, poolCostGbp: number): string {
+  if (poolShares <= 0 || !Number.isFinite(poolCostGbp)) {
+    return '—';
+  }
+
+  return `£${money.format(poolCostGbp / poolShares)}`;
+}
+
+function acquisitionMatchingNote(row: CalculationTransactionAcquisitionAggregateSummaryRow): string {
+  if (row.acquisitionLineCount > 1) {
+    return 'Pool after adding unmatched portion to Section 104 (same-day combined)';
+  }
+
+  return 'Pool after adding unmatched portion to Section 104';
+}
+
+function LedgerTableRows({
+  rows,
+}: {
+  readonly rows: readonly (
+    | CalculationTransactionLedgerAcquisitionRow
+    | CalculationTransactionLedgerDisposalRow
+  )[];
+}): ReactElement {
+  return (
+    <>
+      {rows.map((row) => {
+        if (row.rowKind === 'ledger-acquisition') {
+          const { sterling } = row;
+          return (
+            <tr key={`acq-${row.acquisitionId}`}>
+              <td className="px-2 py-1.5 text-neutral-800 sm:px-3 sm:py-2">Acquisition</td>
+              <td className="px-2 py-1.5 tabular-nums sm:px-3">{row.eventDate}</td>
+              <td className="px-2 py-1.5 tabular-nums sm:px-3">{row.quantity}</td>
+              <td className="px-2 py-1.5 tabular-nums sm:px-3">{usdMoney.format(row.pricePerShareUsd)}</td>
+              <td className="px-2 py-1.5 tabular-nums sm:px-3">{usdMoney.format(row.combinedUsd)}</td>
+              <td
+                className={`px-2 py-1.5 tabular-nums sm:px-3 ${fxRateCellClassName({
+                  fxRate: row.fxRate,
+                  fxUsedFallback: row.fxUsedFallback,
+                })}`}
+              >
+                {row.fxRate === undefined ? '—' : row.fxRate.toFixed(4)}
+              </td>
+              <td className="px-2 py-1.5 tabular-nums font-medium sm:px-3">
+                £{money.format(sterling.totalCostGbp)}
+              </td>
+            </tr>
+          );
+        }
+
+        const { sterling } = row;
+        const netGbp = sterling.grossProceedsGbp - sterling.feesGbp;
+        const disposalCell = 'px-2 py-1.5 tabular-nums text-red-800 sm:px-3';
+        const disposalCellType = 'px-2 py-1.5 text-red-800 sm:px-3 sm:py-2';
+        return (
+          <tr key={`disp-${row.disposalId}`}>
+            <td className={disposalCellType}>Disposal</td>
+            <td className={disposalCell}>{row.eventDate}</td>
+            <td className={disposalCell}>{row.quantity}</td>
+            <td className={disposalCell}>{usdMoney.format(row.pricePerShareUsd)}</td>
+            <td className={disposalCell}>{usdMoney.format(row.combinedUsd)}</td>
+            <td
+              className={`px-2 py-1.5 tabular-nums sm:px-3 ${fxRateCellClassName({
+                fxRate: row.fxRate,
+                fxUsedFallback: row.fxUsedFallback,
+              })}`}
+            >
+              {row.fxRate === undefined ? '—' : row.fxRate.toFixed(4)}
+            </td>
+            <td className="px-2 py-1.5 tabular-nums font-medium text-red-800 sm:px-3">£{money.format(netGbp)}</td>
+          </tr>
+        );
+      })}
+    </>
+  );
+}
+
+function AcquisitionOutcomeSection({
+  row,
+}: {
+  readonly row: CalculationTransactionAcquisitionAggregateSummaryRow;
+}): ReactElement {
+  const poolShares = row.poolSharesAfter;
+  const poolCost = row.poolCostGbpAfter;
+  const hasPool = poolShares !== undefined && poolCost !== undefined;
+
+  return (
+    <div className="rounded-md border border-neutral-200/80 bg-white/80 px-3 py-2">
+      <h4 className="text-xs font-semibold text-neutral-800">CGT acquisition summary</h4>
+      <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <dt className="text-xs text-neutral-500">Shares (total)</dt>
+          <dd className="tabular-nums font-medium text-neutral-900">{row.totalQuantity}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-neutral-500">Total cost (£)</dt>
+          <dd className="tabular-nums font-medium text-neutral-900">£{money.format(row.totalCostGbp)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-neutral-500">Pool shares</dt>
+          <dd className="tabular-nums font-medium text-neutral-900">
+            {hasPool ? poolShares : '—'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-neutral-500">Pool cost (£)</dt>
+          <dd className="tabular-nums font-medium text-neutral-900">
+            {hasPool ? `£${money.format(poolCost)}` : '—'}
+          </dd>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-1">
+          <dt className="text-xs text-neutral-500">Avg cost/share (£)</dt>
+          <dd className="tabular-nums font-medium text-neutral-900">
+            {hasPool && poolShares !== undefined && poolCost !== undefined
+              ? formatAvgCostPerShareGbp(poolShares, poolCost)
+              : '—'}
+          </dd>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-3">
+          <dt className="text-xs text-neutral-500">Matching</dt>
+          <dd className="text-xs text-neutral-600">{acquisitionMatchingNote(row)}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function CgtDisposalOutcomeSection({
+  row,
+}: {
+  readonly row: CalculationTransactionCgtDisposalSummaryRow;
+}): ReactElement {
+  const r = row.result;
+  const summaryPricePerShare = r.grossProceedsGbp / r.quantity;
+  const netProceeds = r.grossProceedsGbp - r.disposalFeesGbp;
+
+  return (
+    <div className="rounded-md border border-red-200/90 bg-red-50/40 px-3 py-2 text-red-900">
+      <h4 className="text-xs font-semibold text-red-900">CGT disposal summary</h4>
+      <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <dt className="text-xs text-red-700/90">Shares (disposed)</dt>
+          <dd className="tabular-nums font-medium text-red-900">{r.quantity}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Price/share (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">£{money.format(summaryPricePerShare)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Gross (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.grossProceedsGbp)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Fees (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.disposalFeesGbp)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Net proceeds (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">£{money.format(netProceeds)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Allowable cost (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.allowableCostGbp)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Gain/loss (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.gainOrLossGbp)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Pool shares</dt>
+          <dd className="tabular-nums font-medium text-red-900">{r.poolSharesAfter}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Pool cost (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.poolCostGbpAfter)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-red-700/90">Avg cost/share (£)</dt>
+          <dd className="tabular-nums font-medium text-red-900">
+            {formatAvgCostPerShareGbp(r.poolSharesAfter, r.poolCostGbpAfter)}
+          </dd>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-4">
+          <dt className="text-xs text-red-700/90">Matching</dt>
+          <dd className="mt-1">
+            <table className="w-full max-w-md border-collapse text-xs text-red-900">
+              <thead>
+                <tr className="border-b border-red-200 text-red-800">
+                  <th className="py-1.5 pr-3 text-left font-medium">Source</th>
+                  <th className="py-1.5 pr-3 text-right font-medium">Shares</th>
+                  <th className="py-1.5 text-right font-medium">Allowable (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {r.matchingBreakdown.map((t) => (
+                  <tr key={`${t.source}-${t.quantity}-${t.allowableCostGbp}`}>
+                    <td className="py-1.5 pr-3">{formatMatchingSourceLabel(t.source)}</td>
+                    <td className="py-1.5 pr-3 text-right tabular-nums">{t.quantity}</td>
+                    <td className="py-1.5 text-right tabular-nums">£{money.format(t.allowableCostGbp)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function OutcomeSections({
+  outcomes,
+}: {
+  readonly outcomes: readonly CalculationTransactionOutcomeRow[];
+}): ReactElement {
+  const elements: ReactElement[] = [];
+  for (const outcome of outcomes) {
+    if (outcome.rowKind === 'acquisition-aggregate-summary') {
+      elements.push(
+        <AcquisitionOutcomeSection
+          key={`acq-out-${outcome.eventDate}-${outcome.totalQuantity}-${outcome.totalCostGbp}`}
+          row={outcome}
+        />,
+      );
+      continue;
+    }
+
+    if (outcome.rowKind === 'cgt-disposal-summary') {
+      elements.push(
+        <CgtDisposalOutcomeSection
+          key={`cgt-out-${outcome.result.eventDate}-${outcome.result.quantity}-${outcome.result.allowableCostGbp}`}
+          row={outcome}
+        />,
+      );
+    }
+  }
+
+  return <div className="space-y-3">{elements}</div>;
+}
+
+function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBlock }): ReactElement {
+  return (
+    <div className="break-inside-avoid rounded-lg border border-neutral-200 border-l-4 border-l-neutral-400 bg-neutral-50/30">
+      <div className="border-b border-neutral-100 bg-neutral-50/80 px-3 py-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Date</span>{' '}
+        <span className="text-sm font-medium text-neutral-900">{block.eventDate}</span>
+      </div>
+      <div className="space-y-4 px-3 py-3">
+        <div>
+          <p className="mb-2 text-xs font-medium text-neutral-600">
+            Ledger (USD reference; CGT amounts in sterling)
+          </p>
+          <div className="w-full overflow-x-auto">
+            <table className="w-full max-w-full text-left text-sm">
+              <thead className="bg-neutral-100/80 text-neutral-700">
+                <tr>
+                  <th className="px-2 py-2 font-medium sm:px-3">Type</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">Date</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">Shares</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">Price/share ($)</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">Cost / net ($)</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">FX rate</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">Cost / net (£)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100 bg-white">
+                <LedgerTableRows rows={block.ledgerRows} />
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-medium text-neutral-600">Outcomes</p>
+          <OutcomeSections outcomes={block.outcomes} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 type CalculationResultSectionsProps = {
@@ -32,168 +349,24 @@ export function CalculationResultSections({
   return (
     <div id="calculation-results" className="mt-10 scroll-mt-6 space-y-10">
       <section>
-        <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-neutral-700">
-          {result.warnings.map((w) => (
-            <li key={w}>{w}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h2 className="text-lg font-medium text-neutral-900">Transaction and pool history</h2>
-        <p className="mt-2 max-w-3xl text-xs text-neutral-600">
-          Ledger lines show each recorded entry in sterling. Where the CGT engine combines entries on the same date, a
-          CGT summary row shows identification, allowable cost, gain or loss, and pool position after that date’s
-          processing.
-        </p>
+        <h2 className="text-lg font-medium text-neutral-900">Results by tax year and date</h2>
 
         {groups.length === 0 ? (
           <p className="mt-3 text-sm text-neutral-600">No events.</p>
         ) : (
-          <div className="mt-4 space-y-8">
+          <div className="mt-4 space-y-12">
             {groups.map((group) => (
-              <div key={group.taxYearLabel}>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+              <div
+                key={group.taxYearLabel}
+                className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-4 shadow-sm ring-1 ring-neutral-200/60 sm:p-5"
+              >
+                <h3 className="border-b border-neutral-200/80 pb-3 text-sm font-semibold uppercase tracking-wide text-neutral-700">
                   Tax year {group.taxYearLabel}
                 </h3>
-                <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="bg-neutral-50 text-neutral-700">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">Row</th>
-                        <th className="px-3 py-2 font-medium">Date</th>
-                        <th className="px-3 py-2 font-medium">Qty</th>
-                        <th className="px-3 py-2 font-medium">Gross (£)</th>
-                        <th className="px-3 py-2 font-medium">Fees (£)</th>
-                        <th className="px-3 py-2 font-medium">Total / net (£)</th>
-                        <th className="px-3 py-2 font-medium">Allowable cost (£)</th>
-                        <th className="px-3 py-2 font-medium">Gain/loss (£)</th>
-                        <th className="px-3 py-2 font-medium">Rounded (£)</th>
-                        <th className="px-3 py-2 font-medium">Pool shares</th>
-                        <th className="px-3 py-2 font-medium">Pool cost (£)</th>
-                        <th className="px-3 py-2 font-medium">Matching</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 bg-white">
-                      {group.rows.map((row) => {
-                        if (row.rowKind === 'ledger-acquisition') {
-                          const { sterling } = row;
-                          return (
-                            <tr key={`acq-${row.acquisitionId}`}>
-                              <td className="px-3 py-2 text-neutral-800">Acquisition</td>
-                              <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                              <td className="px-3 py-2 tabular-nums">{row.quantity}</td>
-                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.grossConsiderationGbp)}</td>
-                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.feesGbp)}</td>
-                              <td className="px-3 py-2 tabular-nums font-medium">
-                                £{money.format(sterling.totalCostGbp)}
-                              </td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                            </tr>
-                          );
-                        }
-
-                        if (row.rowKind === 'ledger-disposal') {
-                          const { sterling } = row;
-                          const net = sterling.grossProceedsGbp - sterling.feesGbp;
-                          return (
-                            <tr key={`disp-${row.disposalId}`}>
-                              <td className="px-3 py-2 text-neutral-800">Disposal</td>
-                              <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                              <td className="px-3 py-2 tabular-nums">{row.quantity}</td>
-                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.grossProceedsGbp)}</td>
-                              <td className="px-3 py-2 tabular-nums">£{money.format(sterling.feesGbp)}</td>
-                              <td className="px-3 py-2 tabular-nums font-medium">£{money.format(net)}</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                            </tr>
-                          );
-                        }
-
-                        if (row.rowKind === 'acquisition-aggregate-summary') {
-                          return (
-                            <tr
-                              key={`acq-sum-${row.eventDate}`}
-                              className="bg-neutral-50/80"
-                            >
-                              <td className="px-3 py-2 font-medium text-neutral-900">
-                                CGT — combined acquisitions
-                              </td>
-                              <td className="px-3 py-2 tabular-nums">{row.eventDate}</td>
-                              <td className="px-3 py-2 tabular-nums">{row.totalQuantity}</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 tabular-nums font-medium">
-                                £{money.format(row.totalCostGbp)}
-                              </td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 text-neutral-400">—</td>
-                              <td className="px-3 py-2 tabular-nums">{row.poolSharesAfter}</td>
-                              <td className="px-3 py-2 tabular-nums">£{money.format(row.poolCostGbpAfter)}</td>
-                              <td className="px-3 py-2 text-xs text-neutral-600">
-                                Pool after adding unmatched portion to Section 104 (same-day combined)
-                              </td>
-                            </tr>
-                          );
-                        }
-
-                        const r = row.result;
-                        return (
-                          <tr
-                            key={`cgt-${r.eventDate}`}
-                            className="bg-neutral-50/80"
-                          >
-                            <td className="px-3 py-2 font-medium text-neutral-900">CGT summary</td>
-                            <td className="px-3 py-2 tabular-nums">{r.eventDate}</td>
-                            <td className="px-3 py-2 tabular-nums">{r.quantity}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(r.grossProceedsGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(r.disposalFeesGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums font-medium">
-                              £{money.format(r.grossProceedsGbp - r.disposalFeesGbp)}
-                            </td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(r.allowableCostGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(r.gainOrLossGbp)}</td>
-                            <td className="px-3 py-2 tabular-nums">{r.roundedGainOrLossGbp}</td>
-                            <td className="px-3 py-2 tabular-nums">{r.poolSharesAfter}</td>
-                            <td className="px-3 py-2 tabular-nums">£{money.format(r.poolCostGbpAfter)}</td>
-                            <td className="px-3 py-2 align-top text-neutral-800">
-                              <table className="w-full min-w-[12rem] border-collapse text-xs">
-                                <thead>
-                                  <tr className="border-b border-neutral-200 text-neutral-600">
-                                    <th className="py-1 pr-2 text-left font-medium">Source</th>
-                                    <th className="py-1 pr-2 text-right font-medium">Qty</th>
-                                    <th className="py-1 text-right font-medium">Allowable (£)</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {r.matchingBreakdown.map((t) => (
-                                    <tr key={`${t.source}-${t.quantity}-${t.allowableCostGbp}`}>
-                                      <td className="py-1 pr-2">{formatMatchingSourceLabel(t.source)}</td>
-                                      <td className="py-1 pr-2 text-right tabular-nums">{t.quantity}</td>
-                                      <td className="py-1 text-right tabular-nums">
-                                        £{money.format(t.allowableCostGbp)}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="mt-4 max-w-full space-y-4">
+                  {group.dateBlocks.map((block) => (
+                    <DateBlockCard key={block.eventDate} block={block} />
+                  ))}
                 </div>
               </div>
             ))}
@@ -202,39 +375,12 @@ export function CalculationResultSections({
       </section>
 
       <section>
-        <h2 className="text-lg font-medium text-neutral-900">Tax year summaries (this holding only)</h2>
-        <p className="mt-1 text-xs text-neutral-600">
-          Net figures are capital gains and losses (chargeable gains mechanics) for this holding only. Your final CGT
-          liability may differ if you have other disposals, allowable losses brought forward, reliefs, or a different
-          CGT rate position for the tax year.
-        </p>
-        <div className="mt-3 space-y-6">
-          {result.output.taxYearSummaries.map((y) => (
-            <div
-              key={y.taxYear}
-              className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm"
-            >
-              <h3 className="font-semibold text-neutral-900">{y.taxYear}</h3>
-              <dl className="mt-2 grid gap-1 sm:grid-cols-2">
-                <div>
-                  <dt className="text-neutral-500">Total gains</dt>
-                  <dd className="tabular-nums">£{money.format(y.totalGainsGbp)}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">Total losses</dt>
-                  <dd className="tabular-nums">£{money.format(y.totalLossesGbp)}</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-neutral-500">Net (gains − losses)</dt>
-                  <dd className="tabular-nums">£{money.format(y.netGainsGbp)}</dd>
-                </div>
-              </dl>
-            </div>
+        <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-neutral-700">
+          {result.warnings.map((w) => (
+            <li key={w}>{w}</li>
           ))}
-        </div>
-        {result.output.taxYearSummaries.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-600">No tax year summaries (no disposals).</p>
-        ) : null}
+        </ul>
       </section>
     </div>
   );

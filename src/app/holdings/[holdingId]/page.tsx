@@ -62,6 +62,23 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
     { holdingId, userId },
   );
 
+  let totalAcquisitionsUsd = 0;
+  let totalDisposalsUsd = 0;
+  for (const line of ledger.orderedLines) {
+    if (line.kind === 'ACQUISITION') {
+      totalAcquisitionsUsd += totalAcquisitionCostUsd(
+        line.data.considerationUsd,
+        line.data.feesUsd,
+      );
+    } else {
+      totalDisposalsUsd += netDisposalProceedsUsd(
+        line.data.grossProceedsUsd,
+        line.data.feesUsd,
+      );
+    }
+  }
+  const differenceUsd = totalAcquisitionsUsd - totalDisposalsUsd;
+
   return (
     <main className="mx-auto max-w-7xl px-6 py-12">
       <nav className="text-sm text-neutral-600">
@@ -167,17 +184,15 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
                             />
                           </tr>
                         ) : (
-                          <tr key={line.data.id}>
-                            <td className="px-3 py-2 text-neutral-800">Disposal</td>
-                            <td className="px-3 py-2 tabular-nums text-neutral-800">{line.data.eventDate}</td>
-                            <td className="px-3 py-2 text-neutral-600">
-                              <em className="italic">(manual)</em>
-                            </td>
-                            <td className="px-3 py-2 text-neutral-500">—</td>
-                            <td className="px-3 py-2 text-neutral-500">—</td>
-                            <td className="px-3 py-2 text-neutral-500">—</td>
+                          <tr key={line.data.id} className="text-red-800">
+                            <td className="px-3 py-2">Disposal</td>
+                            <td className="px-3 py-2 tabular-nums">{line.data.eventDate}</td>
+                            <td className="px-3 py-2 text-red-700/80">—</td>
+                            <td className="px-3 py-2 text-red-700/80">—</td>
+                            <td className="px-3 py-2 text-red-700/80">—</td>
+                            <td className="px-3 py-2 text-red-700/80">—</td>
                             <td className="px-3 py-2 tabular-nums">{line.data.quantity}</td>
-                            <td className="px-3 py-2 tabular-nums text-neutral-700">
+                            <td className="px-3 py-2 tabular-nums">
                               $
                               {priceUsd.format(
                                 pricePerShare(line.data.grossProceedsUsd, line.data.quantity),
@@ -204,6 +219,29 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
                 </div>
               </div>
             ))}
+            <div className="mt-8 rounded-xl border border-neutral-200/90 bg-gradient-to-b from-neutral-50 to-white px-4 py-3 shadow-sm ring-1 ring-neutral-200/50">
+              <h3 className="text-sm font-semibold text-neutral-900">Ledger totals (USD)</h3>
+              <dl className="mt-2 max-w-lg divide-y divide-neutral-100 text-sm">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
+                  <dt className="text-neutral-600">Total acquisitions</dt>
+                  <dd className="tabular-nums font-semibold text-neutral-900">
+                    ${money.format(totalAcquisitionsUsd)}
+                  </dd>
+                </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
+                  <dt className="text-neutral-600">Total disposals (net)</dt>
+                  <dd className="tabular-nums font-semibold text-red-800">
+                    ${money.format(totalDisposalsUsd)}
+                  </dd>
+                </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
+                  <dt className="font-medium text-neutral-800">Difference</dt>
+                  <dd className="tabular-nums font-semibold text-neutral-900">
+                    ${money.format(differenceUsd)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </div>
         )}
       </section>
