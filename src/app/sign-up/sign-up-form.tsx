@@ -22,7 +22,7 @@ export function SignUpForm(): React.ReactElement {
         name,
         email,
         password,
-        callbackURL: `${envPublic.APP_URL}/holdings`,
+        callbackURL: `${envPublic.APP_URL}/`,
       });
       if (err) {
         setError(err.message ?? 'Sign up failed');

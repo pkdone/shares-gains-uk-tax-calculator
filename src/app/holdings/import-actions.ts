@@ -126,6 +126,8 @@ export async function commitEtradeImportAction(
     return { error: err instanceof Error ? err.message : 'Import failed' };
   }
 
+  revalidatePath('/');
+  revalidatePath('/holdings');
   revalidatePath(`/holdings/${holdingId}`);
   return { ok: true };
 }

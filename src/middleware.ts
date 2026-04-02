@@ -1,7 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const PROTECTED_PREFIXES = ['/holdings'];
+function isProtectedPath(pathname: string): boolean {
+  return pathname === '/' || pathname.startsWith('/holdings');
+}
 
 /** Matches Better Auth default cookie name (`better-auth.session_token`). */
 const SESSION_COOKIE = 'better-auth.session_token';
@@ -9,7 +11,7 @@ const SESSION_COOKIE = 'better-auth.session_token';
 export function middleware(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
 
-  if (!PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -30,5 +32,5 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/holdings/:path*'],
+  matcher: ['/', '/holdings', '/holdings/:path*'],
 };
