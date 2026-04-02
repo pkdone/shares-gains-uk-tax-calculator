@@ -1,6 +1,5 @@
 import type { CalcEvent, CalcInput, CalcOutput } from '@/domain/schemas/calculation';
 import { calcInputSchema } from '@/domain/schemas/calculation';
-import { computeAnnualSummaries } from '@/domain/services/cgt-annual-summary';
 import { computeMatchingOutput } from '@/domain/services/share-matching';
 import { DomainError } from '@/shared/errors/app-error';
 
@@ -37,7 +36,7 @@ function assertSortedEvents(events: readonly CalcEvent[]): CalcEvent[] {
 }
 
 /**
- * Same-day, 30-day, and Section 104 pool matching + annual CGT summaries for one symbol (GBP-only).
+ * Same-day, 30-day, and Section 104 pool matching for one symbol (GBP-only).
  */
 export function calculateGainsForSymbol(input: CalcInput): CalcOutput {
   const parsed = calcInputSchema.parse(input);
@@ -48,18 +47,14 @@ export function calculateGainsForSymbol(input: CalcInput): CalcOutput {
       symbol: parsed.symbol,
       poolSnapshots: [],
       disposalResults: [],
-      taxYearSummaries: [],
     };
   }
 
   const { poolSnapshots, disposalResults } = computeMatchingOutput(events);
 
-  const taxYearSummaries = computeAnnualSummaries({ disposalResults });
-
   return {
     symbol: parsed.symbol,
     poolSnapshots,
     disposalResults,
-    taxYearSummaries: [...taxYearSummaries],
   };
 }

@@ -10,7 +10,8 @@ import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
-import { FxAppliedDialog } from '@/app/holdings/[holdingId]/calculation/fx-applied-dialog';
+import { FxRateLedgerColumnDisclosure } from '@/app/holdings/[holdingId]/calculation/fx-rate-ledger-column-disclosure';
+import { MatchingAcquisitionsDisclosure } from '@/app/holdings/[holdingId]/calculation/matching-acquisitions-disclosure';
 
 const holdingRepository = new MongoHoldingRepository();
 const acquisitionRepository = new MongoShareAcquisitionRepository();
@@ -77,37 +78,20 @@ export default async function HoldingCalculationPage({
       </nav>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">Capital gains calculation</h1>
-      <p className="mt-2 max-w-3xl text-sm text-neutral-700">
-        This app calculates capital gains and losses for the holdings you record here — not your overall CGT liability
-        for a tax year.
-      </p>
-      <p className="mt-2 text-xs text-amber-800">
-        This application does not provide professional tax advice and could be wrong.
+      <p className="mt-2 max-w-3xl text-xs text-amber-800">
+        Calculates capital gains and losses for the holdings you’ve recorded and does not show your overall CGT
+        liability for a tax year. This application does not provide professional tax advice and could be wrong.
       </p>
 
-      <section className="mt-8 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm no-print">
-        <h2 className="font-semibold text-neutral-900">Matching acquisitions and disposals</h2>
-        <p className="mt-1 text-neutral-600">
-          These rules apply to every acquisition and disposal for this holding (e.g. vesting, buys, sells)—not only
-          RSUs.
-        </p>
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-neutral-800">
-          <li>
-            <strong>Same day:</strong> a disposal is matched first against shares acquired on the same day (HMRC
-            same-day rule), before the Section 104 pool.
-          </li>
-          <li>
-            <strong>Disposal, then acquisition within 30 days:</strong> the disposal can match shares acquired in
-            the 30 days <em>after</em> the disposal (bed and breakfast / 30-day rule), which can differ from
-            selling only from the pool.
-          </li>
-          <li>
-            <strong>Acquisitions before the disposal:</strong> the 30-day rule matches <em>acquisitions after</em> a
-            disposal. An acquisition that occurred before the disposal does not fall into that 30-day-after bucket
-            for that sale.
-          </li>
-        </ul>
-      </section>
+      <MatchingAcquisitionsDisclosure />
+      <FxRateLedgerColumnDisclosure
+        acquisitionRows={
+          result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
+        }
+        disposalRows={
+          result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
+        }
+      />
 
       {hasLedgerData ? (
         <>
@@ -118,21 +102,7 @@ export default async function HoldingCalculationPage({
           ) : null}
 
           {result !== null && calcError === null ? (
-            <>
-              <div className="mt-8 flex flex-wrap gap-4 text-sm no-print">
-                <Link
-                  className="text-[var(--color-accent)] underline"
-                  href={`/holdings/${holdingId}/computation-pack`}
-                >
-                  Open computation pack (print)
-                </Link>
-                <FxAppliedDialog
-                  acquisitionRows={Object.values(result.fxByAcquisitionId)}
-                  disposalRows={Object.values(result.fxByDisposalId)}
-                />
-              </div>
-              <CalculationResultSections result={result} />
-            </>
+            <CalculationResultSections result={result} />
           ) : null}
         </>
       ) : (

@@ -1,46 +1,28 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { forwardRef, useCallback } from 'react';
 
 import type { FxAppliedToAcquisition, FxAppliedToDisposal } from '@/application/calculation/calculation-types';
 
-type FxAppliedDialogProps = {
+export type FxAppliedModalProps = {
   readonly acquisitionRows: readonly FxAppliedToAcquisition[];
   readonly disposalRows: readonly FxAppliedToDisposal[];
 };
 
-export function FxAppliedDialog({
-  acquisitionRows,
-  disposalRows,
-}: FxAppliedDialogProps): React.ReactElement {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+/**
+ * Modal listing BoE XUDLUSS rates used for USD→GBP conversions. Open with `ref.current?.showModal()`.
+ */
+export const FxAppliedModal = forwardRef<HTMLDialogElement, FxAppliedModalProps>(
+  function FxAppliedModal({ acquisitionRows, disposalRows }, ref): React.ReactElement {
+    const onBackdropPointerDown = useCallback((event: React.PointerEvent<HTMLDialogElement>): void => {
+      if (event.target === event.currentTarget) {
+        event.currentTarget.close();
+      }
+    }, []);
 
-  const open = useCallback((): void => {
-    dialogRef.current?.showModal();
-  }, []);
-
-  const close = useCallback((): void => {
-    dialogRef.current?.close();
-  }, []);
-
-  const onBackdropPointerDown = useCallback((event: React.PointerEvent<HTMLDialogElement>): void => {
-    if (event.target === event.currentTarget) {
-      event.currentTarget.close();
-    }
-  }, []);
-
-  return (
-    <>
-      <button
-        type="button"
-        className="text-[var(--color-accent)] underline"
-        onClick={open}
-      >
-        View FX applied (USD)
-      </button>
-
+    return (
       <dialog
-        ref={dialogRef}
+        ref={ref}
         className="w-[min(100vw-2rem,56rem)] max-w-none rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
         onPointerDown={onBackdropPointerDown}
         aria-labelledby="fx-applied-dialog-title"
@@ -53,7 +35,9 @@ export function FxAppliedDialog({
             <button
               type="button"
               className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-              onClick={close}
+              onClick={(e) => {
+                e.currentTarget.closest('dialog')?.close();
+              }}
             >
               Close
             </button>
@@ -123,6 +107,6 @@ export function FxAppliedDialog({
           </div>
         </div>
       </dialog>
-    </>
-  );
-}
+    );
+  },
+);

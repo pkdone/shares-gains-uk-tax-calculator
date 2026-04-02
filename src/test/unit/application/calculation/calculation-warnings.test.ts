@@ -7,7 +7,6 @@ function emptyOutput(overrides: Partial<CalcOutput> = {}): CalcOutput {
     symbol: 'X',
     poolSnapshots: [],
     disposalResults: [],
-    taxYearSummaries: [],
     ...overrides,
   };
 }

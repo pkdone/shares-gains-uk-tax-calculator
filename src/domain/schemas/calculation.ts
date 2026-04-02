@@ -84,28 +84,10 @@ export const poolSnapshotSchema = z.object({
 
 export type PoolSnapshot = z.infer<typeof poolSnapshotSchema>;
 
-/**
- * Per UK tax year, gains/losses for this symbol only (from disposal gain/loss lines).
- * Holding-level capital gains and losses — not overall personal CGT liability, AEA, tax due, or
- * brought-forward losses (those would be user-wide / “tax owed” concerns).
- */
-export const taxYearSummarySchema = z.object({
-  taxYear: z.string().min(1),
-  /** Sum of positive disposal gains in the year. */
-  totalGainsGbp: z.number().nonnegative().finite(),
-  /** Sum of disposal losses in the year (absolute amounts). */
-  totalLossesGbp: z.number().nonnegative().finite(),
-  /** Net gain or loss for the year (gains minus losses within the year). */
-  netGainsGbp: z.number().finite(),
-});
-
-export type TaxYearSummary = z.infer<typeof taxYearSummarySchema>;
-
 export const calcOutputSchema = z.object({
   symbol: z.string().min(1),
   poolSnapshots: z.array(poolSnapshotSchema),
   disposalResults: z.array(disposalResultSchema),
-  taxYearSummaries: z.array(taxYearSummarySchema),
 });
 
 export type CalcOutput = z.infer<typeof calcOutputSchema>;

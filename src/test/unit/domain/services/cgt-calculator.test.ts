@@ -2,7 +2,7 @@ import { calculateGainsForSymbol } from '@/domain/services/cgt-calculator';
 import { DomainError } from '@/shared/errors/app-error';
 
 describe('calculateGainsForSymbol', () => {
-  it('reproduces HS284 Example 3 (penny precision) with annual summary for 2023-24', () => {
+  it('reproduces HS284 Example 3 (penny precision) for 2023-24 disposals', () => {
     const result = calculateGainsForSymbol({
       symbol: 'LOBSTER',
       events: [
@@ -67,12 +67,6 @@ describe('calculateGainsForSymbol', () => {
     // Remaining pool: 3349.33 - 1674.67 allowable = 1674.66 (2dp)
     expect(d2?.poolCostGbpAfter).toBe(1674.66);
     expect(d2?.taxYear).toBe('2023-24');
-
-    const ty = result.taxYearSummaries.find((s) => s.taxYear === '2023-24');
-    expect(ty).toBeDefined();
-    expect(ty?.totalGainsGbp).toBe(629.66);
-    expect(ty?.totalLossesGbp).toBe(0);
-    expect(ty?.netGainsGbp).toBe(629.66);
   });
 
   it('throws when events are not sorted by date', () => {
@@ -118,7 +112,6 @@ describe('calculateGainsForSymbol', () => {
     });
 
     expect(result.disposalResults).toHaveLength(0);
-    expect(result.taxYearSummaries).toHaveLength(0);
   });
 
   it('accepts empty events list', () => {
@@ -128,7 +121,7 @@ describe('calculateGainsForSymbol', () => {
     });
 
     expect(result.poolSnapshots).toHaveLength(0);
-    expect(result.taxYearSummaries).toHaveLength(0);
+    expect(result.disposalResults).toHaveLength(0);
   });
 
   it('uses same-day matching when acquisition and disposal share a date', () => {
