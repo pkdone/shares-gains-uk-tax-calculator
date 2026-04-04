@@ -14,4 +14,9 @@ export interface ShareDisposalRepository {
    * Deletes one disposal scoped to holding and user. Returns true if a document was removed.
    */
   deleteByIdForHoldingUser(holdingId: string, userId: string, id: string): Promise<boolean>;
+
+  /**
+   * Removes all disposals for this holding and user (e.g. when deleting the holding).
+   */
+  deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number>;
 }

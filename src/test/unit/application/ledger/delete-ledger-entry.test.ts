@@ -18,6 +18,7 @@ describe('deleteLedgerEntry', () => {
     create: jest.fn(),
     findByIdForUser: jest.fn().mockResolvedValue(holding),
     listByUser: jest.fn(),
+    deleteByIdForUser: jest.fn(),
   };
 
   it('throws when holding is not found', async () => {
@@ -25,6 +26,7 @@ describe('deleteLedgerEntry', () => {
     const holdingRepo: HoldingRepository = {
       ...holdingRepository,
       findByIdForUser,
+      deleteByIdForUser: jest.fn(),
     };
     const deleteAcquisition = jest.fn();
     const deleteDisposal = jest.fn();
@@ -34,11 +36,13 @@ describe('deleteLedgerEntry', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
+      deleteAllForHoldingUser: jest.fn(),
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
+      deleteAllForHoldingUser: jest.fn(),
     };
 
     await expect(
@@ -70,11 +74,13 @@ describe('deleteLedgerEntry', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn().mockResolvedValue(false),
+      deleteAllForHoldingUser: jest.fn(),
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
+      deleteAllForHoldingUser: jest.fn(),
     };
 
     await expect(
@@ -97,11 +103,13 @@ describe('deleteLedgerEntry', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
+      deleteAllForHoldingUser: jest.fn(),
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn().mockResolvedValue(false),
+      deleteAllForHoldingUser: jest.fn(),
     };
 
     await expect(
@@ -125,11 +133,13 @@ describe('deleteLedgerEntry', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
+      deleteAllForHoldingUser: jest.fn(),
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
+      deleteAllForHoldingUser: jest.fn(),
     };
 
     await deleteLedgerEntry(holdingRepository, acquisitionRepo, disposalRepo, {
@@ -152,11 +162,13 @@ describe('deleteLedgerEntry', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
+      deleteAllForHoldingUser: jest.fn(),
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
+      deleteAllForHoldingUser: jest.fn(),
     };
 
     await deleteLedgerEntry(holdingRepository, acquisitionRepo, disposalRepo, {

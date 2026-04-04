@@ -20,6 +20,7 @@ describe('runCalculationForHoldingSymbol', () => {
     create: jest.fn(),
     findByIdForUser: jest.fn().mockResolvedValue(holding),
     listByUser: jest.fn(),
+    deleteByIdForUser: jest.fn(),
   };
 
   const acquisitions: ShareAcquisition[] = [
@@ -59,12 +60,14 @@ describe('runCalculationForHoldingSymbol', () => {
     upsertImportUsdBatch: jest.fn(),
     listByHoldingForUser: jest.fn().mockResolvedValue(acquisitions),
     deleteByIdForHoldingUser: jest.fn(),
+    deleteAllForHoldingUser: jest.fn(),
   };
 
   const disposalRepository: ShareDisposalRepository = {
     insert: jest.fn(),
     listByHoldingForUser: jest.fn().mockResolvedValue(disposals),
     deleteByIdForHoldingUser: jest.fn(),
+    deleteAllForHoldingUser: jest.fn(),
   };
 
   const fxRateRepository: FxRateRepository = {

@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 
+import { deleteHolding } from '@/application/holding/delete-holding';
 import { DomainError } from '@/shared/errors/app-error';
 import { disconnectMongoClient, getMongoClient } from '@/infrastructure/persistence/mongodb-client';
 import {
@@ -74,6 +75,44 @@ describe('manual ledger repositories', () => {
     await db.collection(COLLECTION_ACQUISITIONS).deleteMany({ holdingId: hid });
     await db.collection(COLLECTION_DISPOSALS).deleteMany({ holdingId: hid });
     await db.collection(COLLECTION_HOLDINGS).deleteOne({ _id: hid });
+  });
+
+  it('deleteHolding removes acquisitions, disposals, and the holding document', async () => {
+    const holdingRepo = new MongoHoldingRepository();
+    const acquisitionRepo = new MongoShareAcquisitionRepository();
+    const disposalRepo = new MongoShareDisposalRepository();
+
+    const sym = `K${Date.now().toString(36).toUpperCase()}`.slice(0, 32);
+    const holding = await holdingRepo.create({ userId, symbol: sym });
+
+    await acquisitionRepo.insert({
+      holdingId: holding.id,
+      userId,
+      economicsKind: 'manual_usd',
+      symbol: sym,
+      eventDate: '2024-07-01',
+      quantity: 3,
+      considerationUsd: 30,
+      feesUsd: 0,
+    });
+    await disposalRepo.insert({
+      holdingId: holding.id,
+      userId,
+      symbol: sym,
+      eventDate: '2025-02-01',
+      quantity: 1,
+      grossProceedsUsd: 12,
+      feesUsd: 0,
+    });
+
+    await deleteHolding(holdingRepo, acquisitionRepo, disposalRepo, {
+      holdingId: holding.id,
+      userId,
+    });
+
+    expect(await acquisitionRepo.listByHoldingForUser(holding.id, userId)).toHaveLength(0);
+    expect(await disposalRepo.listByHoldingForUser(holding.id, userId)).toHaveLength(0);
+    expect(await holdingRepo.findByIdForUser(holding.id, userId)).toBeNull();
   });
 
   it('rejects duplicate holding symbol for the same user', async () => {
