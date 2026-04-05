@@ -85,7 +85,12 @@ function runPhase1(acqRemaining: Map<string, AcqAgg>, dispByDate: Map<string, Di
       const take = Math.min(Q, same.qty);
       const cost =
         take === same.qty ? same.cost : roundMoney2dp((same.cost * take) / same.qty);
-      tranches.push({ source: 'same-day', quantity: take, allowableCostGbp: cost });
+      tranches.push({
+        source: 'same-day',
+        quantity: take,
+        allowableCostGbp: cost,
+        acquisitionDate: d,
+      });
       same.qty -= take;
       same.cost = roundMoney2dp(same.cost - cost);
       if (same.qty <= 0) {
@@ -111,7 +116,12 @@ function runPhase1(acqRemaining: Map<string, AcqAgg>, dispByDate: Map<string, Di
         const take = Math.min(Q, st.qty);
         const cost =
           take === st.qty ? st.cost : roundMoney2dp((st.cost * take) / st.qty);
-        tranches.push({ source: 'thirty-day', quantity: take, allowableCostGbp: cost });
+        tranches.push({
+          source: 'thirty-day',
+          quantity: take,
+          allowableCostGbp: cost,
+          acquisitionDate: dt,
+        });
         st.qty -= take;
         st.cost = roundMoney2dp(st.cost - cost);
         if (st.qty <= 0) {

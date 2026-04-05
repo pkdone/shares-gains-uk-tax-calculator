@@ -1,3 +1,7 @@
+import {
+  aggregateAcquisitionMatchingAttribution,
+  type AcquisitionMatchingAttribution,
+} from '@/application/calculation/acquisition-matching-attribution';
 import type {
   AcquisitionSterlingLine,
   CalculationLedgerLine,
@@ -5,6 +9,7 @@ import type {
   SuccessfulHoldingCalculation,
 } from '@/application/calculation/calculation-types';
 import type { DisposalResult } from '@/domain/schemas/calculation';
+import { roundMoney2dp } from '@/domain/services/section-104-pool';
 import { ukTaxYearLabelFromDateOnly } from '@/domain/services/uk-tax-year';
 
 export type CalculationTransactionLedgerAcquisitionRow = {
@@ -59,6 +64,8 @@ export type CalculationTransactionAcquisitionAggregateSummaryRow = {
   /** Present when the engine recorded an Section 104 pool snapshot after adding unmatched acquisitions. */
   readonly poolSharesAfter?: number;
   readonly poolCostGbpAfter?: number;
+  /** Same-day / 30-day identification vs pool net; omitted when nothing was matched off this date. */
+  readonly acquisitionMatching?: AcquisitionMatchingAttribution;
 };
 
 export type CalculationTransactionLedgerRow =
@@ -246,17 +253,26 @@ export function buildCalculationTransactionTableModel(
         totalCost += st.totalCostGbp;
       }
 
+      const totalCostGbp = roundMoney2dp(totalCost);
+      const acquisitionMatching = aggregateAcquisitionMatchingAttribution({
+        acquisitionDate: date,
+        grossQuantity: totalQty,
+        grossCostGbp: totalCostGbp,
+        disposalResults: calc.output.disposalResults,
+      });
+
       const pool = poolSnapshotAfterAcquisitionForDate({ eventDate: date, output: calc.output });
       outcomes.push({
         rowKind: 'acquisition-aggregate-summary',
         taxYearLabel,
         eventDate: date,
         totalQuantity: totalQty,
-        totalCostGbp: totalCost,
+        totalCostGbp,
         acquisitionLineCount: acquisitionLines.length,
         ...(pool === null
           ? {}
           : { poolSharesAfter: pool.poolSharesAfter, poolCostGbpAfter: pool.poolCostGbpAfter }),
+        ...(acquisitionMatching === null ? {} : { acquisitionMatching }),
       });
     }
 

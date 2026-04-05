@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 
+import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
 import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
 import {
   buildCalculationTransactionTableModel,
@@ -72,6 +73,74 @@ function acquisitionMatchingFallbackNote(row: CalculationTransactionAcquisitionA
   }
 
   return netToPool;
+}
+
+function sortedThirtyDayByDisposal(m: AcquisitionMatchingAttribution) {
+  return [...m.thirtyDayByDisposal].sort((a, b) => a.disposalDate.localeCompare(b.disposalDate));
+}
+
+function AcquisitionMatchingDetail(params: {
+  readonly m: AcquisitionMatchingAttribution;
+  readonly eventDate: string;
+}): ReactElement {
+  const { m, eventDate } = params;
+  const thirtyRows = sortedThirtyDayByDisposal(m);
+
+  return (
+    <div className="space-y-3 text-neutral-800">
+      {m.sameDayQuantity > 0 ? (
+        <div>
+          <p className="text-xs font-semibold text-neutral-900">Same-day identification</p>
+          <p className="mt-1 text-xs text-neutral-600">
+            Matched to disposal(s) on <span className="font-medium text-neutral-800">{eventDate}</span>:{' '}
+            <span className="tabular-nums">{m.sameDayQuantity}</span> shares, £{money.format(m.sameDayCostGbp)}{' '}
+            allowable cost. These shares do not increase the Section 104 pool (they are identified against that
+            disposal).
+          </p>
+        </div>
+      ) : null}
+      {m.thirtyDayQuantity > 0 ? (
+        <div>
+          <p className="text-xs font-semibold text-neutral-900">30-day identification</p>
+          <p className="mt-1 text-xs text-neutral-600">
+            Matched to earlier disposal(s) under the bed-and-breakfast (30-day) rule. Those shares and their acquisition
+            cost are treated as sold by those disposals, so they do not increase the pool.
+          </p>
+          <table className="mt-2 w-full max-w-lg border-collapse border border-neutral-200 bg-white text-xs">
+            <thead>
+              <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-neutral-800">
+                <th className="py-1.5 pl-2 pr-3 font-medium">Earlier disposal date</th>
+                <th className="py-1.5 pr-3 text-right font-medium">Shares taken</th>
+                <th className="py-1.5 pr-2 text-right font-medium">Allowable (£)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {thirtyRows.map((r) => (
+                <tr key={`${r.disposalDate}-${r.quantity}-${r.allowableCostGbp}`} className="border-b border-neutral-100">
+                  <td className="py-1.5 pl-2 pr-3 tabular-nums">{r.disposalDate}</td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">{r.quantity}</td>
+                  <td className="py-1.5 pr-2 text-right tabular-nums">£{money.format(r.allowableCostGbp)}</td>
+                </tr>
+              ))}
+              <tr className="bg-neutral-50/90 font-medium text-neutral-900">
+                <td className="py-1.5 pl-2 pr-3">Total (30-day)</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{m.thirtyDayQuantity}</td>
+                <td className="py-1.5 pr-2 text-right tabular-nums">£{money.format(m.thirtyDayCostGbp)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      <div>
+        <p className="text-xs font-semibold text-neutral-900">Net increase to Section 104 pool</p>
+        <p className="mt-1 text-xs text-neutral-600">
+          Unmatched portion after identification:{' '}
+          <span className="tabular-nums font-medium text-neutral-900">{m.netToPoolQuantity}</span> shares, £
+          {money.format(m.netToPoolCostGbp)}. This is what the pool totals above include from this date.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function LedgerTableRows({
@@ -179,7 +248,13 @@ function AcquisitionOutcomeSection({
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
           <dt className="text-xs text-neutral-500">Matching</dt>
-          <dd className="text-xs text-neutral-600">{acquisitionMatchingFallbackNote(row)}</dd>
+          <dd className="text-xs text-neutral-600">
+            {row.acquisitionMatching === undefined ? (
+              acquisitionMatchingFallbackNote(row)
+            ) : (
+              <AcquisitionMatchingDetail m={row.acquisitionMatching} eventDate={row.eventDate} />
+            )}
+          </dd>
         </div>
       </dl>
     </div>
@@ -244,18 +319,24 @@ function CgtDisposalOutcomeSection({
         <div className="sm:col-span-2 lg:col-span-4">
           <dt className="text-xs text-red-700/90">Matching</dt>
           <dd className="mt-1">
-            <table className="w-full max-w-md border-collapse text-xs text-red-900">
+            <table className="w-full max-w-2xl border-collapse text-xs text-red-900">
               <thead>
                 <tr className="border-b border-red-200 text-red-800">
                   <th className="py-1.5 pr-3 text-left font-medium">Source</th>
+                  <th className="py-1.5 pr-3 text-left font-medium">Acq. lot date</th>
                   <th className="py-1.5 pr-3 text-right font-medium">Shares</th>
                   <th className="py-1.5 text-right font-medium">Allowable (£)</th>
                 </tr>
               </thead>
               <tbody>
                 {r.matchingBreakdown.map((t) => (
-                  <tr key={`${t.source}-${t.quantity}-${t.allowableCostGbp}`}>
+                  <tr
+                    key={`${t.source}-${t.acquisitionDate ?? 'pool'}-${t.quantity}-${t.allowableCostGbp}`}
+                  >
                     <td className="py-1.5 pr-3">{formatMatchingSourceLabel(t.source)}</td>
+                    <td className="py-1.5 pr-3 tabular-nums text-red-800/90">
+                      {t.acquisitionDate ?? '—'}
+                    </td>
                     <td className="py-1.5 pr-3 text-right tabular-nums">{t.quantity}</td>
                     <td className="py-1.5 text-right tabular-nums">£{money.format(t.allowableCostGbp)}</td>
                   </tr>

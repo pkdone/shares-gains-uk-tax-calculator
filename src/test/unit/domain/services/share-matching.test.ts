@@ -34,7 +34,7 @@ describe('computeMatchingOutput', () => {
     const { disposalResults, poolSnapshots } = computeMatchingOutput(events);
     expect(disposalResults).toHaveLength(1);
     expect(disposalResults[0]?.matchingBreakdown).toEqual([
-      { source: 'same-day', quantity: 50, allowableCostGbp: 500 },
+      { source: 'same-day', quantity: 50, allowableCostGbp: 500, acquisitionDate: '2020-01-01' },
     ]);
     expect(disposalResults[0]?.gainOrLossGbp).toBe(100);
     expect(poolSnapshots.some((s) => s.description.includes('unmatched'))).toBe(true);
@@ -49,7 +49,9 @@ describe('computeMatchingOutput', () => {
     const { disposalResults } = computeMatchingOutput(events);
     expect(disposalResults).toHaveLength(1);
     const br = disposalResults[0]?.matchingBreakdown ?? [];
-    expect(br.some((t) => t.source === 'thirty-day' && t.quantity === 50)).toBe(true);
+    const thirty = br.find((t) => t.source === 'thirty-day');
+    expect(thirty?.quantity).toBe(50);
+    expect(thirty?.acquisitionDate).toBe('2020-01-10');
     expect(br.some((t) => t.source === 'section-104-pool' && t.quantity === 50)).toBe(true);
     expect(disposalResults[0]?.gainOrLossGbp).toBe(100);
   });
@@ -66,7 +68,9 @@ describe('computeMatchingOutput', () => {
     const d1 = disposalResults[0]?.matchingBreakdown.find((t) => t.source === 'thirty-day');
     const d2 = disposalResults[1]?.matchingBreakdown.find((t) => t.source === 'thirty-day');
     expect(d1?.quantity).toBe(30);
+    expect(d1?.acquisitionDate).toBe('2020-01-10');
     expect(d2?.quantity).toBe(10);
+    expect(d2?.acquisitionDate).toBe('2020-01-10');
   });
 
   it('throws when disposal cannot be matched (no pool, no same-day, no 30-day)', () => {
