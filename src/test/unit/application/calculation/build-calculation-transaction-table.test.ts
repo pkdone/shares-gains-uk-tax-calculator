@@ -110,6 +110,8 @@ describe('buildCalculationTransactionTableModel', () => {
 
     const acqYear = groups.find((g) => g.taxYearLabel === '2019-20');
     const dispYear = groups.find((g) => g.taxYearLabel === '2020-21');
+    expect(acqYear?.totalNetRealisedGainOrLossGbp).toBe(0);
+    expect(dispYear?.totalNetRealisedGainOrLossGbp).toBe(100);
     expect(acqYear?.dateBlocks).toHaveLength(1);
     expect(dispYear?.dateBlocks).toHaveLength(1);
 
@@ -364,5 +366,87 @@ describe('buildCalculationTransactionTableModel', () => {
       'acquisition-aggregate-summary',
       'cgt-disposal-summary',
     ]);
+  });
+
+  it('sums net realised gains/losses for all disposals in a tax year', () => {
+    const calc: SuccessfulHoldingCalculation = {
+      output: {
+        symbol: 'X',
+        poolSnapshots: [
+          {
+            description: 'Acquisition added to Section 104 pool (unmatched portion)',
+            eventDate: '2020-01-01',
+            shares: 100,
+            costGbp: 1000,
+          },
+        ],
+        disposalResults: [
+          {
+            eventDate: '2020-06-01',
+            taxYear: '2020-21',
+            quantity: 10,
+            grossProceedsGbp: 200,
+            disposalFeesGbp: 0,
+            matchingBreakdown: [
+              { source: 'section-104-pool', quantity: 10, allowableCostGbp: 100 },
+            ],
+            allowableCostGbp: 100,
+            gainOrLossGbp: 100,
+            roundedGainOrLossGbp: 100,
+            poolSharesAfter: 90,
+            poolCostGbpAfter: 900,
+          },
+          {
+            eventDate: '2020-09-01',
+            taxYear: '2020-21',
+            quantity: 5,
+            grossProceedsGbp: 50,
+            disposalFeesGbp: 0,
+            matchingBreakdown: [
+              { source: 'section-104-pool', quantity: 5, allowableCostGbp: 50 },
+            ],
+            allowableCostGbp: 50,
+            gainOrLossGbp: -25,
+            roundedGainOrLossGbp: -25,
+            poolSharesAfter: 85,
+            poolCostGbpAfter: 850,
+          },
+        ],
+      },
+      ledgerLines: [
+        makeAcquisitionLedgerLine({ id: 'acq1', eventDate: '2020-01-01', quantity: 100 }),
+        makeDisposalLedgerLine({ id: 'disp1', eventDate: '2020-06-01', quantity: 10 }),
+        makeDisposalLedgerLine({ id: 'disp2', eventDate: '2020-09-01', quantity: 5 }),
+      ],
+      sterlingByAcquisitionId: {
+        acq1: { grossConsiderationGbp: 1000, feesGbp: 0, totalCostGbp: 1000 },
+      },
+      sterlingByDisposalId: {
+        disp1: { grossProceedsGbp: 200, feesGbp: 0 },
+        disp2: { grossProceedsGbp: 50, feesGbp: 0 },
+      },
+      fxByAcquisitionId: {},
+      fxByDisposalId: {
+        disp1: {
+          disposalId: 'disp1',
+          eventDate: '2020-06-01',
+          usdPerGbp: 1,
+          rateDateUsed: '2020-06-01',
+          usedFallback: false,
+        },
+        disp2: {
+          disposalId: 'disp2',
+          eventDate: '2020-09-01',
+          usdPerGbp: 1,
+          rateDateUsed: '2020-09-01',
+          usedFallback: false,
+        },
+      },
+      warnings: [],
+    };
+
+    const groups = buildCalculationTransactionTableModel(calc);
+    const year2020 = groups.find((g) => g.taxYearLabel === '2020-21');
+    expect(year2020?.totalNetRealisedGainOrLossGbp).toBe(75);
   });
 });

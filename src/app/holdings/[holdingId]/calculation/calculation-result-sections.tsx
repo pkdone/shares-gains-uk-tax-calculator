@@ -64,6 +64,18 @@ function formatAvgCostPerShareGbp(poolShares: number, poolCostGbp: number): stri
   return `£${money.format(poolCostGbp / poolShares)}`;
 }
 
+function taxYearNetGainLossTextClassName(netGbp: number): string {
+  if (netGbp > 0) {
+    return 'text-green-800';
+  }
+
+  if (netGbp < 0) {
+    return 'text-red-800';
+  }
+
+  return 'text-neutral-800';
+}
+
 function acquisitionMatchingFallbackNote(row: CalculationTransactionAcquisitionAggregateSummaryRow): string {
   const q = row.totalQuantity;
   const costLabel = money.format(row.totalCostGbp);
@@ -442,11 +454,23 @@ export function CalculationResultSections({
             {groups.map((group) => (
               <div
                 key={group.taxYearLabel}
-                className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-4 shadow-sm ring-1 ring-neutral-200/60 sm:p-5"
+                className="rounded-xl border border-neutral-200/80 bg-neutral-100 p-4 shadow-sm sm:p-5"
               >
-                <h3 className="border-b border-neutral-200/80 pb-3 text-sm font-semibold uppercase tracking-wide text-neutral-700">
-                  Tax year {group.taxYearLabel}
-                </h3>
+                <div className="border-b border-neutral-200/90 pb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-700">
+                    Tax year {group.taxYearLabel}
+                  </h3>
+                  <p className="mt-2 text-sm text-neutral-700">
+                    <span className="text-neutral-600">Net realised gain/loss (this holding, GBP): </span>
+                    <span
+                      className={`font-semibold tabular-nums ${taxYearNetGainLossTextClassName(
+                        group.totalNetRealisedGainOrLossGbp,
+                      )}`}
+                    >
+                      £{money.format(group.totalNetRealisedGainOrLossGbp)}
+                    </span>
+                  </p>
+                </div>
                 <div className="mt-4 max-w-full space-y-4">
                   {group.dateBlocks.map((block) => (
                     <DateBlockCard key={block.eventDate} block={block} />
