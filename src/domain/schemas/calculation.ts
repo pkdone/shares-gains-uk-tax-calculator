@@ -54,6 +54,11 @@ export const matchingTrancheSchema = z.object({
   source: matchingSourceSchema,
   quantity: z.number().positive().finite(),
   allowableCostGbp: z.number().finite(),
+  /**
+   * Acquisition lot date this tranche was identified against (same-day and 30-day only).
+   * Omitted for Section 104 pool tranches.
+   */
+  acquisitionDate: dateOnlyStringSchema.optional(),
 });
 
 export type MatchingTranche = z.infer<typeof matchingTrancheSchema>;
