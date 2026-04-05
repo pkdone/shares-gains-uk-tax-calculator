@@ -90,6 +90,11 @@ export type CalculationTransactionDateBlock = {
 export type CalculationTransactionTableGroup = {
   readonly taxYearLabel: string;
   readonly dateBlocks: readonly CalculationTransactionDateBlock[];
+  /**
+   * Sum of {@link DisposalResult.gainOrLossGbp} for disposals in this tax year (this holding only).
+   * Acquisition-only years are zero.
+   */
+  readonly totalNetRealisedGainOrLossGbp: number;
 };
 
 function compareLedgerLines(a: CalculationLedgerLine, b: CalculationLedgerLine): number {
@@ -302,8 +307,21 @@ export function buildCalculationTransactionTableModel(
   }
 
   const sortedYearLabels = [...blocksByYear.keys()].sort((a, b) => a.localeCompare(b));
-  return sortedYearLabels.map((taxYearLabel) => ({
-    taxYearLabel,
-    dateBlocks: blocksByYear.get(taxYearLabel) ?? [],
-  }));
+  return sortedYearLabels.map((taxYearLabel) => {
+    const dateBlocks = blocksByYear.get(taxYearLabel) ?? [];
+    let totalNet = 0;
+    for (const block of dateBlocks) {
+      for (const outcome of block.outcomes) {
+        if (outcome.rowKind === 'cgt-disposal-summary') {
+          totalNet += outcome.result.gainOrLossGbp;
+        }
+      }
+    }
+
+    return {
+      taxYearLabel,
+      dateBlocks,
+      totalNetRealisedGainOrLossGbp: roundMoney2dp(totalNet),
+    };
+  });
 }
