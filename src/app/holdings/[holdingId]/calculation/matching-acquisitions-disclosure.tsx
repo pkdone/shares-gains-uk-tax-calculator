@@ -50,6 +50,13 @@ export function MatchingAcquisitionsDisclosure(): ReactElement {
               outcome under the ledger is the position <em>after</em> that step.
             </p>
             <p className="mt-3 text-neutral-800">
+              <strong>Date order vs matching order:</strong> the table is sorted by calendar date for readability. The
+              engine does <em>not</em> process disposals in that visual order. For each disposal it applies HMRC
+              identification in a fixed sequence: same-day acquisitions, then acquisitions in the 30 calendar days{' '}
+              <em>after</em> that disposal, then the Section 104 pool—regardless of where those acquisition dates appear
+              in the list.
+            </p>
+            <p className="mt-3 text-neutral-800">
               <strong>Matching</strong> means HMRC <strong>identification</strong>: for each disposal, which lots of
               shares the disposal is treated as selling against. The order is:
             </p>

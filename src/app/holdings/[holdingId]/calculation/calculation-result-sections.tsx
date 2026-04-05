@@ -458,14 +458,16 @@ export function CalculationResultSections({
         )}
       </section>
 
-      <section>
-        <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-neutral-700">
-          {result.warnings.map((w) => (
-            <li key={w}>{w}</li>
-          ))}
-        </ul>
-      </section>
+      {result.warnings.length > 0 ? (
+        <section>
+          <h2 className="text-lg font-medium text-neutral-900">Warnings</h2>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-neutral-700">
+            {result.warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

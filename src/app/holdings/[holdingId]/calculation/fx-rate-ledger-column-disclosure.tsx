@@ -63,6 +63,11 @@ export function FxRateLedgerColumnDisclosure({
           >
             <FxRateLedgerLegendBody />
             <p className="mt-3 text-sm text-neutral-700">
+              <strong>Sterling vs USD:</strong> CGT amounts are computed in sterling using this app’s Bank of England
+              daily spot series and the rules summarised above. USD amounts in the ledger are for reference only and may
+              not match your broker’s statement or intraday rates.
+            </p>
+            <p className="mt-3 text-sm text-neutral-700">
               {hasFxModal ? (
                 <>
                   These colours match the <strong>FX rate</strong> column in the results ledger.{' '}
@@ -75,7 +80,7 @@ export function FxRateLedgerColumnDisclosure({
                   </button>
                   <span className="text-neutral-600">
                     {' '}
-                    — full table of rates used for each conversion.
+                    opens a full table of the rate date and value used for each acquisition and disposal conversion.
                   </span>
                 </>
               ) : (
