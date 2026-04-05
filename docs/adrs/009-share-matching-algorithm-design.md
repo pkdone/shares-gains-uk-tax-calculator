@@ -15,7 +15,7 @@ Milestone 4–5 implemented **pool-only** matching. Milestone 6 extends the doma
 ### Schema (`src/domain/schemas/calculation.ts`)
 
 - **`matchingSourceSchema`:** `z.enum(['same-day', 'thirty-day', 'section-104-pool'])`.
-- **`matchingTrancheSchema`:** `{ source, quantity, allowableCostGbp }` per tranche.
+- **`matchingTrancheSchema`:** `{ source, quantity, allowableCostGbp }` per tranche, plus optional **`acquisitionDate`** (ISO date) on **same-day** and **30-day** tranches — the acquisition lot the tranche was identified against (omitted on **Section 104 pool** tranches). Used by the calculation UI to explain how much of a given day’s acquisitions entered the pool vs matched to disposals.
 - **`DisposalResult`:** replaces single `matchingSource` with **`matchingBreakdown`**: `z.array(matchingTrancheSchema).min(1)`. Aggregate `allowableCostGbp` equals the sum of tranche allowable costs (2dp). `gainOrLossGbp` = `grossProceedsGbp - disposalFeesGbp - allowableCostGbp` (same formula as before). `roundedGainOrLossGbp` = `Math.round(gainOrLossGbp)` (SA108-style whole pounds on the **aggregate** disposal).
 
 ### Aggregation (CG51560)
