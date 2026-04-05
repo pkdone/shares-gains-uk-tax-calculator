@@ -65,11 +65,14 @@ function formatAvgCostPerShareGbp(poolShares: number, poolCostGbp: number): stri
 }
 
 function acquisitionMatchingFallbackNote(row: CalculationTransactionAcquisitionAggregateSummaryRow): string {
+  const q = row.totalQuantity;
+  const costLabel = money.format(row.totalCostGbp);
+  const netToPool = `All ${q} shares (£${costLabel}) from this date were added to the Section 104 pool. No same-day or 30-day identification applied to these acquisitions.`;
   if (row.acquisitionLineCount > 1) {
-    return 'Pool after adding unmatched portion to Section 104 (same-day combined).';
+    return `Same-day acquisitions on this date were combined first. ${netToPool}`;
   }
 
-  return 'Pool after adding unmatched portion to Section 104.';
+  return netToPool;
 }
 
 function sortedThirtyDayByDisposal(m: AcquisitionMatchingAttribution) {
