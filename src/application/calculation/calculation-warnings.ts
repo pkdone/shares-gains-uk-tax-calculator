@@ -3,25 +3,15 @@ import type {
   FxAppliedToAcquisition,
   FxAppliedToDisposal,
 } from '@/application/calculation/calculation-types';
-import type { CalcOutput } from '@/domain/schemas/calculation';
-
-const STATIC_TABLE_INTERPRETATION_WARNINGS: readonly string[] = [
-  'Rows are in date order for readability. Matching does not follow this visual order: each disposal is matched under HMRC rules (same day, then acquisitions within 30 days after the disposal, then the Section 104 pool).',
-  'Sterling amounts in this table use this app’s exchange-rate rules (see FX applied); USD columns are for reference. Figures may not match your broker’s or intraday rates.',
-  'Blank cells mean the field does not apply to that row (for example, gain on an acquisition line), not zero.',
-  'Section 104 pool totals after processing for a date appear on the CGT summary row for each disposal date, and on the acquisition aggregate summary when multiple acquisitions fall on the same date without a disposal on that date.',
-];
-
 /**
  * Warnings when the calculation table layout could hide or obscure material facts.
  */
 export function buildMaterialCalculationWarnings(params: {
   readonly ledgerLines: readonly CalculationLedgerLine[];
-  readonly output: CalcOutput;
   readonly fxByAcquisitionId: Readonly<Record<string, FxAppliedToAcquisition>>;
   readonly fxByDisposalId: Readonly<Record<string, FxAppliedToDisposal>>;
 }): readonly string[] {
-  const { ledgerLines, output, fxByAcquisitionId, fxByDisposalId } = params;
+  const { ledgerLines, fxByAcquisitionId, fxByDisposalId } = params;
   const warnings: string[] = [];
 
   const linesByDate = new Map<string, CalculationLedgerLine[]>();
@@ -35,25 +25,14 @@ export function buildMaterialCalculationWarnings(params: {
     }
   }
 
-  const multiLineDates: string[] = [];
   const mixedAcqDispDates: string[] = [];
 
   for (const [date, lines] of [...linesByDate.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-    if (lines.length > 1) {
-      multiLineDates.push(date);
-    }
-
     const hasAcquisition = lines.some((l) => l.kind === 'ACQUISITION');
     const hasDisposal = lines.some((l) => l.kind === 'DISPOSAL');
     if (hasAcquisition && hasDisposal) {
       mixedAcqDispDates.push(date);
     }
-  }
-
-  if (multiLineDates.length > 0) {
-    warnings.push(
-      `These dates have more than one ledger line: ${multiLineDates.join(', ')}. Same-day identification and any gain or loss are calculated on the combined amounts for each date — not separately for each line.`,
-    );
   }
 
   if (mixedAcqDispDates.length > 0) {
@@ -62,35 +41,56 @@ export function buildMaterialCalculationWarnings(params: {
     );
   }
 
-  let sawThirtyDay = false;
-  for (const d of output.disposalResults) {
-    if (d.matchingBreakdown.some((t) => t.source === 'thirty-day')) {
-      sawThirtyDay = true;
-      break;
-    }
-  }
-
-  if (sawThirtyDay) {
-    warnings.push(
-      'At least one disposal uses 30-day matching to shares acquired after the disposal date. Use the matching subtable on the CGT summary row for that disposal date.',
-    );
-  }
-
-  const anyFallback =
-    Object.values(fxByAcquisitionId).some((f) => f.usedFallback) ||
-    Object.values(fxByDisposalId).some((f) => f.usedFallback);
-
-  if (anyFallback) {
-    warnings.push(
-      'At least one USD conversion used a fallback rate date. Check FX applied for details.',
-    );
+  const fxFallback = buildFxFallbackWarning({ fxByAcquisitionId, fxByDisposalId });
+  if (fxFallback !== null) {
+    warnings.push(fxFallback);
   }
 
   return dedupeStrings(warnings);
 }
 
+function buildFxFallbackWarning(params: {
+  readonly fxByAcquisitionId: Readonly<Record<string, FxAppliedToAcquisition>>;
+  readonly fxByDisposalId: Readonly<Record<string, FxAppliedToDisposal>>;
+}): string | null {
+  const { fxByAcquisitionId, fxByDisposalId } = params;
+
+  const acqDates = uniqueSortedDates(
+    Object.values(fxByAcquisitionId)
+      .filter((f) => f.usedFallback)
+      .map((f) => f.eventDate),
+  );
+  const dispDates = uniqueSortedDates(
+    Object.values(fxByDisposalId)
+      .filter((f) => f.usedFallback)
+      .map((f) => f.eventDate),
+  );
+
+  if (acqDates.length === 0 && dispDates.length === 0) {
+    return null;
+  }
+
+  const parts: string[] = [];
+  if (acqDates.length > 0) {
+    parts.push(`acquisitions on ${acqDates.join(', ')}`);
+  }
+  if (dispDates.length > 0) {
+    parts.push(`disposals on ${dispDates.join(', ')}`);
+  }
+
+  return `USD conversions used a Bank of England rate published on an earlier calendar date than the transaction (weekend or holiday fallback) for: ${parts.join('; ')}. Open “Daily FX rates applied” above and use “View FX applied (USD)” to see the rate date used on each row.`;
+}
+
+function uniqueSortedDates(dates: readonly string[]): string[] {
+  return [...new Set(dates)].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Final warning list for the calculation result (material warnings only; table interpretation
+ * copy lives in the collapsible help sections on the calculation page).
+ */
 export function mergeCalculationWarnings(material: readonly string[]): readonly string[] {
-  return dedupeStrings([...STATIC_TABLE_INTERPRETATION_WARNINGS, ...material]);
+  return dedupeStrings([...material]);
 }
 
 function dedupeStrings(values: readonly string[]): string[] {

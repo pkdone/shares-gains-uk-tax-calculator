@@ -1,18 +1,18 @@
 import { buildMaterialCalculationWarnings, mergeCalculationWarnings } from '@/application/calculation/calculation-warnings';
 import type { CalculationLedgerLine } from '@/application/calculation/calculation-types';
-import type { CalcOutput } from '@/domain/schemas/calculation';
-
-function emptyOutput(overrides: Partial<CalcOutput> = {}): CalcOutput {
-  return {
-    symbol: 'X',
-    poolSnapshots: [],
-    disposalResults: [],
-    ...overrides,
-  };
-}
 
 describe('buildMaterialCalculationWarnings', () => {
-  it('warns when multiple ledger lines share a date', () => {
+  it('returns empty when nothing material applies', () => {
+    const w = buildMaterialCalculationWarnings({
+      ledgerLines: [],
+      fxByAcquisitionId: {},
+      fxByDisposalId: {},
+    });
+
+    expect(w).toHaveLength(0);
+  });
+
+  it('warns when a date has both acquisitions and disposals', () => {
     const ledgerLines: CalculationLedgerLine[] = [
       {
         kind: 'ACQUISITION',
@@ -31,16 +31,15 @@ describe('buildMaterialCalculationWarnings', () => {
         },
       },
       {
-        kind: 'ACQUISITION',
+        kind: 'DISPOSAL',
         data: {
-          id: 'a2',
+          id: 'd1',
           holdingId: 'h',
           userId: 'u',
-          economicsKind: 'manual_usd',
           symbol: 'X',
           eventDate: '2024-06-01',
           quantity: 1,
-          considerationUsd: 1,
+          grossProceedsUsd: 2,
           feesUsd: 0,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -50,39 +49,49 @@ describe('buildMaterialCalculationWarnings', () => {
 
     const w = buildMaterialCalculationWarnings({
       ledgerLines,
-      output: emptyOutput(),
       fxByAcquisitionId: {},
       fxByDisposalId: {},
     });
 
-    expect(w.some((x) => x.includes('more than one ledger line'))).toBe(true);
+    expect(w.some((x) => x.includes('both acquisitions and disposals'))).toBe(true);
+    expect(w.some((x) => x.includes('2024-06-01'))).toBe(true);
   });
 
-  it('warns on FX fallback', () => {
+  it('lists acquisition and disposal event dates when FX fallback applies', () => {
     const w = buildMaterialCalculationWarnings({
       ledgerLines: [],
-      output: emptyOutput(),
       fxByAcquisitionId: {
         a1: {
           acquisitionId: 'a1',
-          eventDate: '2024-01-01',
+          eventDate: '2024-01-15',
           usdPerGbp: 1.2,
-          rateDateUsed: '2024-01-01',
+          rateDateUsed: '2024-01-12',
           usedFallback: true,
         },
       },
-      fxByDisposalId: {},
+      fxByDisposalId: {
+        d1: {
+          disposalId: 'd1',
+          eventDate: '2024-03-20',
+          usdPerGbp: 1.25,
+          rateDateUsed: '2024-03-15',
+          usedFallback: true,
+        },
+      },
     });
 
-    expect(w.some((x) => x.includes('fallback'))).toBe(true);
+    expect(w).toHaveLength(1);
+    expect(w[0]).toContain('2024-01-15');
+    expect(w[0]).toContain('2024-03-20');
+    expect(w[0]).toContain('acquisitions on');
+    expect(w[0]).toContain('disposals on');
+    expect(w[0]).toContain('View FX applied');
   });
 });
 
 describe('mergeCalculationWarnings', () => {
-  it('prepends static interpretation warnings', () => {
-    const merged = mergeCalculationWarnings(['Dynamic only']);
-    expect(merged.length).toBeGreaterThan(1);
-    expect(merged[0]).toContain('date order');
-    expect(merged).toContain('Dynamic only');
+  it('dedupes material warnings', () => {
+    const merged = mergeCalculationWarnings(['Same', 'Same', 'Other']);
+    expect(merged).toEqual(['Same', 'Other']);
   });
 });
