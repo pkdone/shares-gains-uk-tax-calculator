@@ -77,11 +77,9 @@ export default async function HoldingCalculationPage({
         <span className="text-neutral-900">Calculation</span>
       </nav>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">Capital gains calculation</h1>
-      <p className="mt-2 max-w-3xl text-xs text-amber-800">
-        Calculates capital gains and losses for the holdings you’ve recorded and does not show your overall CGT
-        liability for a tax year. This application does not provide professional tax advice and could be wrong.
-      </p>
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight">
+        Capital gains calculation for {holding.symbol} holding
+      </h1>
 
       <MatchingAcquisitionsDisclosure />
       <FxRateLedgerColumnDisclosure

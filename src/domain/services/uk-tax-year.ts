@@ -65,3 +65,27 @@ export function ukTaxYearStartDateFromLabel(taxYearLabel: string): string {
 
   return `${String(startYear)}-04-06`;
 }
+
+/**
+ * Display form of a UK tax year label (e.g. `2024-25` → `2024/25`) for UI copy.
+ * Validates the same canonical `YYYY-YY` shape as {@link ukTaxYearStartDateFromLabel}.
+ */
+export function formatUkTaxYearLabelForDisplay(taxYearLabel: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(taxYearLabel);
+  if (!match) {
+    throw new DomainError('Expected tax year label YYYY-YY');
+  }
+
+  const startYear = Number(match[1]);
+  const endTwoDigits = Number(match[2]);
+  if (!Number.isFinite(startYear) || !Number.isFinite(endTwoDigits)) {
+    throw new DomainError('Invalid tax year label');
+  }
+
+  const expectedEnd = (startYear + 1) % 100;
+  if (endTwoDigits !== expectedEnd) {
+    throw new DomainError('Tax year label end year does not match start year');
+  }
+
+  return `${String(startYear)}/${match[2]}`;
+}
