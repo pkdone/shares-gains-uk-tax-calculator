@@ -229,7 +229,7 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
                   </dd>
                 </div>
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
-                  <dt className="text-neutral-600">Total disposals (net)</dt>
+                  <dt className="text-neutral-600">Total disposals (net of fees)</dt>
                   <dd className="tabular-nums font-semibold text-red-800">
                     ${money.format(totalDisposalsUsd)}
                   </dd>
