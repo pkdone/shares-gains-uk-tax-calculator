@@ -62,7 +62,7 @@ function buildFxFallbackWarning(params: {
     return null;
   }
 
-  return `At least one USD conversion used a Bank of England rate published on an earlier calendar date than the transaction (weekend or holiday fallback). In the ledger table below, the FX rate is shown in orange for those rows. Open “Daily FX rates applied” above and use “View FX applied (USD)” to see the rate date used on each row.`;
+  return `At least one USD conversion used a Bank of England rate published on an earlier calendar date than the transaction (weekend or holiday fallback). In the results ledger (by tax year tab), the FX rate is shown in orange for those rows. Open “Daily FX rates applied” near the top of this page and use “View FX applied (USD)” to see the rate date used on each row.`;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
 import type {
@@ -80,7 +80,7 @@ function acquisitionMatchingFallbackNote(row: CalculationTransactionAcquisitionA
   const costLabel = money.format(row.totalCostGbp);
   const poolSentence = `All ${q} shares (£${costLabel}) from this date were added to the Section 104 pool. No same-day or 30-day identification (HMRC matching rules) applied to these acquisitions.`;
   if (row.acquisitionLineCount > 1) {
-    return `Several acquisition entries on this date are listed separately in the ledger above; this summary aggregates their sterling totals. ${poolSentence}`;
+    return `Several acquisition entries on this date are listed separately in the ledger for this date; this summary aggregates their sterling totals. ${poolSentence}`;
   }
 
   return poolSentence;
@@ -147,7 +147,8 @@ function AcquisitionMatchingDetail(params: {
         <p className="mt-1 text-xs text-neutral-600">
           Unmatched portion after identification:{' '}
           <span className="tabular-nums font-medium text-neutral-900">{m.netToPoolQuantity}</span> shares, £
-          {money.format(m.netToPoolCostGbp)}. This is what the pool totals above include from this date.
+          {money.format(m.netToPoolCostGbp)}. This is what the pool totals in this acquisition summary include from this
+          date.
         </p>
       </div>
     </div>
@@ -435,48 +436,51 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
 type TaxYearPanelProps = {
   readonly group: CalculationTransactionTableGroup;
   readonly holdingSymbol: string;
+  /** Optional client actions (e.g. PDF export) rendered inside the panel header row. */
+  readonly pdfToolbar?: ReactNode;
 };
 
 /**
  * One tax year’s calculation content (summary, opening pool, date blocks). Used inside tab panels.
  */
-export function TaxYearPanel({ group, holdingSymbol }: TaxYearPanelProps): ReactElement {
+export function TaxYearPanel({ group, holdingSymbol, pdfToolbar }: TaxYearPanelProps): ReactElement {
   return (
     <div className="rounded-xl border border-neutral-200/90 bg-[#ededed] p-4 shadow-sm sm:p-5">
       <div className="border-b border-neutral-200/90 pb-3">
-        <p className="mt-0 text-base text-neutral-800">
-          <span className="text-neutral-600">
-            Net realised gain/loss for {holdingSymbol} holding in GBP:{' '}
-          </span>
-          <span
-            className={`text-lg font-bold tabular-nums tracking-tight ${taxYearNetGainLossTextClassName(
-              group.totalNetRealisedGainOrLossGbp,
-            )}`}
-          >
-            £{money.format(group.totalNetRealisedGainOrLossGbp)}
-          </span>
-        </p>
-        <p className="mt-3 text-xs text-neutral-600">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="mt-0 min-w-0 flex-1 text-base text-neutral-800">
+            <span className="text-neutral-600">
+              Net realised gain/loss for {holdingSymbol} holding in GBP:{' '}
+            </span>
+            <span
+              className={`text-lg font-bold tabular-nums tracking-tight ${taxYearNetGainLossTextClassName(
+                group.totalNetRealisedGainOrLossGbp,
+              )}`}
+            >
+              £{money.format(group.totalNetRealisedGainOrLossGbp)}
+            </span>
+          </p>
+          {pdfToolbar ? <div className="no-print shrink-0">{pdfToolbar}</div> : null}
+        </div>
+        <p className="mb-0 mt-3 text-xs text-neutral-600">
           Section 104 pool at the start of this tax year (6 April), after all earlier recorded events for this holding:
         </p>
-        <dl className="mt-2 grid max-w-2xl grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-xs text-neutral-600">Pool shares</dt>
-            <dd className="tabular-nums font-medium text-neutral-900">{group.openingPoolShares}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-neutral-600">Pool cost (£)</dt>
-            <dd className="tabular-nums font-medium text-neutral-900">
-              £{money.format(group.openingPoolCostGbp)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-neutral-600">Average cost per share (£)</dt>
-            <dd className="tabular-nums font-medium text-neutral-900">
-              {formatAvgCostPerShareGbp(group.openingPoolShares, group.openingPoolCostGbp)}
-            </dd>
-          </div>
-        </dl>
+        <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-neutral-900">
+          <li>
+            <span className="text-neutral-600">Pool shares</span>
+            <span className="tabular-nums font-medium text-neutral-900"> {group.openingPoolShares}</span>
+          </li>
+          <li>
+            <span className="text-neutral-600">Pool cost (£)</span>
+            <span className="tabular-nums font-medium text-neutral-900"> £{money.format(group.openingPoolCostGbp)}</span>
+          </li>
+          <li>
+            <span className="text-neutral-600">Average cost/share (£)</span>
+            <span className="tabular-nums font-medium text-neutral-900">
+              {` ${formatAvgCostPerShareGbp(group.openingPoolShares, group.openingPoolCostGbp)}`}
+            </span>
+          </li>
+        </ul>
       </div>
       <div className="mt-4 max-w-full space-y-4">
         {group.dateBlocks.map((block) => (

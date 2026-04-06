@@ -10,11 +10,15 @@ import { TaxYearPanel } from './calculation-result-detail';
 type CalculationTaxYearTabsProps = {
   readonly groups: readonly CalculationTransactionTableGroup[];
   readonly holdingSymbol: string;
+  readonly pdfBusy: boolean;
+  readonly onExportThisTaxYear: (group: CalculationTransactionTableGroup) => void;
 };
 
 export function CalculationTaxYearTabs({
   groups,
   holdingSymbol,
+  pdfBusy,
+  onExportThisTaxYear,
 }: CalculationTaxYearTabsProps): ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -103,7 +107,23 @@ export function CalculationTaxYearTabs({
         id={`calc-ty-panel-${selected.taxYearLabel}`}
         aria-labelledby={`calc-ty-tab-${selected.taxYearLabel}`}
       >
-        <TaxYearPanel group={selected} holdingSymbol={holdingSymbol} />
+        <TaxYearPanel
+          group={selected}
+          holdingSymbol={holdingSymbol}
+          pdfToolbar={
+            <button
+              type="button"
+              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 shadow-sm hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={pdfBusy}
+              aria-busy={pdfBusy}
+              onClick={() => {
+                onExportThisTaxYear(selected);
+              }}
+            >
+              Export this tax year (PDF)
+            </button>
+          }
+        />
       </div>
     </div>
   );
