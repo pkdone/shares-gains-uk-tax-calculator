@@ -18,7 +18,7 @@ export function CalculationResultSections({
   const groups = buildCalculationTransactionTableModel(result);
 
   return (
-    <div id="calculation-results" className="mt-10 scroll-mt-6 space-y-10">
+    <div id="calculation-results" className="mt-8 scroll-mt-6 space-y-10">
       <section>
         <CalculationComputationPackActions groups={groups} holdingSymbol={holdingSymbol} />
       </section>
