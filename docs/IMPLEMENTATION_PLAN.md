@@ -2,7 +2,7 @@
 
 **Status:** Draft — post-interview refinement
 **Prepared by:** Paul Done
-**Last updated:** 2026-03-31
+**Last updated:** 2026-04-06
 
 ---
 
@@ -42,13 +42,13 @@ The following real-world export files inform the import pipeline design. They ar
 | File | Source | Content |
 |------|--------|---------|
 | `ByBenefitType_expanded.xlsx` | Morgan Stanley at Work / E\*Trade Equity Edge Online "By Benefit Type" report | RSU grant, vest schedule, tax withholding, and sellable-shares data. Hierarchical: Grant → Vest Schedule → Tax Withholding rows. 697 rows, 63 columns, single sheet "Restricted Stock". All MDB. |
-| `E_TRADE - Stock Plan Orders.pdf` | Morgan Stanley at Work / E\*Trade "Orders" page PDF export | 269 stock plan orders (sell-to-cover at vest + voluntary disposals). Contains order date, qty, order type, price type. **Does not contain sale price, proceeds, or fees.** |
+| `E_TRADE - Stock Plan Orders.pdf` | Morgan Stanley at Work / E\*Trade **Stock Plan Orders** PDF export (filtered, e.g. executed Sell Restricted Stock) | Per order block: **Order Summary** (qty, order type), **Disbursement Details** (**Est. Gross Proceeds**, Commission, SEC Fees, Brokerage Assist Fee), **Order History** (**Order Executed** with date/time). The app imports these into **disposals** as USD gross proceeds and combined fees (see `docs/adrs/006-etrade-stock-plan-orders-pdf-disposal-import.md`). |
 
 **Key data observations:**
 
-- The XLSX provides acquisition data (vest events with dates, quantities, tax withholding details) but not sale/disposal prices.
-- The PDF provides disposal order history but not execution prices or proceeds.
-- Neither file alone is sufficient for a complete CGT calculation. The user will also need trade confirmations or a "Gains & Losses" report for actual sale prices.
+- The XLSX provides acquisition data (vest events with dates, quantities, tax withholding details) but not post-vest **sale** prices for shares sold outside the vesting grid (vest economics use Taxable Gain / vested qty as in M3).
+- The Stock Plan Orders PDF provides **USD gross proceeds and fee breakdown** plus an **execution timestamp** for each imported disposal row; disposal **date** in the ledger is derived from the execution date (import pipeline).
+- For E\*Trade RSU workflows, **By Benefit Type XLSX** (acquisitions) plus **Stock Plan Orders PDF** (plan disposals) can cover the main import paths. Sales not present in that PDF, or lots requiring verification from another source, may still be entered manually or supplemented from trade confirmations / a **Gains & Losses** report.
 - The XLSX uses mixed date formats: `DD-MMM-YYYY` for grant/release dates, `MM/DD/YYYY` for vest dates.
 - The XLSX is sparse — each record type uses a different subset of the 63 columns.
 - Some PDF orders show `0` exercised qty or `--`, indicating cancelled or unfilled orders.
@@ -79,7 +79,7 @@ The following real-world export files inform the import pipeline design. They ar
 - [x] **Top-level domain object: Holding.** A holding is **one stock symbol** per user (uppercase ticker). It is the primary organising entity for that line of stock. It belongs to a user and can span multiple tax years. Tax-year views are derived from holding data, not separate top-level entities.
 - [x] **CGT rate tier (historical):** Previously planned as user-selectable in the calculation UI. **Superseded (2026-03-31):** the holding **calculation** and **computation pack** do **not** show a tier control or compute CGT tax due; `cgt-config` / `RateTier` remain for tests and any future tax feature. See §8.1 in PRD and ADR-006 amendment.
 - [x] **Sell-to-cover at vest: not modelled as disposals.** When RSUs vest and shares are sold to cover PAYE/NI, only the net shares received are tracked as acquisitions. The withheld shares are treated as never received.
-- [x] **Import formats: XLSX and CSV** (and later, potentially parsed PDF). The E\*Trade "ByBenefitType" export (XLSX) is the first target for acquisition/vesting import. Sale/disposal data will require a separate source (e.g. trade confirmations or "Gains & Losses" report) because the Orders PDF lacks execution prices.
+- [x] **Import formats:** E\*Trade **By Benefit Type** XLSX for **vesting acquisitions**; **Stock Plan Orders** PDF for **executed Sell Restricted Stock disposals** (USD gross proceeds and fees, fingerprint idempotency — see ADR-006 PDF disposal import). Other disposals or brokers may still use **manual entry** or future sources (e.g. trade confirmations, **Gains & Losses** export).
 - [x] **FX rates: on-demand download script.** Provide a script to fetch Bank of England daily USD/GBP spot rates (XUDLUSS series) and seed them into MongoDB. Run once to initialise; re-run to update.
 - [x] **MongoDB Atlas required for all environments.** No local MongoDB fallback. The `MONGODB_URI` env var points to Atlas in dev, Docker, and other deployed environments. The developer provides their own Atlas connection string.
 - [x] **Deployment beyond Docker:** orchestration-specific manifests (e.g. Kubernetes) are **not** maintained in this repository; the same app image and env model apply wherever the container runs (see ADR-002 amendment, 2026-03-31).
@@ -541,18 +541,18 @@ Milestone 2 delivered 2026-03-28; see **Status** and **Validated** above.
 - **USD at import:** Canonical acquisition economics support **`import_usd`** (vest proceeds in USD from the export). **GBP conversion and Bank of England rates remain Milestone 5.** Manual **`manual_gbp`** entries (Milestone 2) are unchanged.
 - **Milestone 4 boundary:** The Section 104 engine (M4) is **GBP-only**. Acquisitions with **`import_usd`** economics are **not** inputs to M4 calculations until M5 provides sterling equivalents; the ledger shows USD amounts and an FX-pending stance (see ADR-005).
 - **PRD slice:** Milestone 3 delivers a **fixed parser** for one hierarchical XLSX layout, not the PRD’s long-term **column-mapping** importer or multi-format uploads. Mapping UI is explicitly **out of scope** for M3.
-- **Sell-side data spike:** Investigation of E\*Trade "Gains & Losses" / trade confirmations for **disposal** import is deferred to **pre–Milestone 5** (see **Data source gap** below). M3 does not block on that investigation.
+- **Sell-side data (historical note):** M3 originally deferred disposal import research. **Update (2026-04-06):** E\*Trade **Stock Plan Orders** PDF disposal import is implemented separately (ADR-006 PDF disposal import). Optional follow-on: other export formats (e.g. **Gains & Losses** CSV) for reconciliation or non–stock-plan sales.
 
 #### Scope (summary)
 
 - XLSX read in infrastructure; **pure** domain parser/normaliser over a grid of strings (Grant → Vest Schedule → Tax Withholding).
 - Net shares = Vested Qty − Shares Traded for Taxes; gross USD from Tax Withholding **Taxable Gain** and Vested Qty per agreed decision #15.
 - Filter out non-RSU benefit types (Options, ESPP) with user-visible counts.
-- Review UI → bulk commit to MongoDB. **Deferred:** sell transaction import.
+- Review UI → bulk commit to MongoDB. **Subsequent delivery:** Stock Plan Orders **PDF disposal** import (executed RSU/plan sells with proceeds and fees — not part of original M3 scope; see ADR-006 PDF disposal import).
 
-#### Data source gap: sell transactions
+#### Data source gap: sell transactions *(updated 2026-04-06)*
 
-The E\*Trade "Stock Plan Orders" PDF does not include sale prices or proceeds. **Before Milestone 5** (or as a pre-M5 checkpoint), investigate whether the E\*Trade "Gains & Losses" report or individual trade confirmations provide execution prices in a parseable format (CSV or XLSX). Until then, disposals continue to be entered **manually** (Milestone 2). Real export column names may differ slightly from the fixture headers; adjust the parser when validating against a live export.
+The **Stock Plan Orders** PDF text includes **Est. Gross Proceeds** and per-fee columns; the product imports them into disposals (ADR-006 PDF disposal import). **Remaining gaps:** sales not shown in that export, other brokers, or cross-checking against **Gains & Losses** / confirmations — users can still **add disposals manually** or use additional exports. Real PDF layout may drift; parsers are validated against live extracts and integration tests with optional local files.
 
 #### Tasks
 
@@ -856,7 +856,7 @@ Original M7 completion: 2026-03-30. **2026-03-31:** Product and docs aligned to 
 | 10 | Local MongoDB | Not supported; Atlas required for all environments |
 | 11 | Orchestration beyond Docker | Not fixed in-repo; no Kubernetes manifests maintained (2026-03-31) |
 | 12 | Tax filing/submission | Never; permanent product boundary |
-| 13 | Sell transaction prices | Assume available eventually; manual entry acceptable as fallback |
+| 13 | Sell transaction prices | E\*Trade Stock Plan Orders PDF import supplies USD gross/fees for in-scope plan disposals; manual entry remains for other cases |
 | 14 | Stock Options / ESPP scope | RSU-only. Options and ESPP are permanently out of scope. Import pipeline must filter them out. |
 | 15 | Tax Withholding "Taxable Gain" currency | USD. Divide by Vested Qty to derive per-share USD market value at vest for CGT acquisition cost. |
 | 16 | Stub user for Milestone 2+ *(historical)* | Delivered as `STUB_USER_ID` + `seed:users`; **removed** when Better Auth shipped — tenant `userId` = Better Auth user id (ADR-007). |
@@ -871,7 +871,7 @@ Original M7 completion: 2026-03-30. **2026-03-31:** Product and docs aligned to 
 
 ### 8.2 Still open
 
-- **Sell-side import research** (Gains & Losses / confirmations) remains a checkpoint for **disposal import** scope.
+- **Additional disposal sources** (Gains & Losses CSV, confirmations, other brokers) remain optional; **E\*Trade Stock Plan Orders PDF** disposal import covers the primary plan-sale path (2026-04-06).
 - **User-wide CGT / reporting UX:** If the product later adds “Do I need to report?”, AEA across all gains, or BF entry, that is **out of scope** for the current single-holding calculation (see PRD §8.1; ADR-010 amendment).
 
 ---
@@ -930,7 +930,7 @@ Per PRD Appendix 4, the calculation engine must pass:
 
 ## 11. Risks
 
-- **Sell transaction data gap:** The available PDF export lacks execution prices. Manual entry of sale prices is an acceptable fallback, but reduces the product's self-service value. Mitigate by investigating E\*Trade "Gains & Losses" report and trade confirmations **before Milestone 7** (disposal import scope).
+- **Disposal data outside the Stock Plan Orders PDF:** Plan disposals imported from that PDF include proceeds and fees; other sales still rely on manual entry or future parsers. Mitigate with clear UX copy and optional use of E\*Trade **Gains & Losses** / confirmations for reconciliation.
 - **Import format brittleness:** The XLSX format is hierarchical, sparse, and uses mixed date formats. E\*Trade may change the export layout without notice. Mitigate with defensive parsing, clear validation errors, and a mapping approach.
 - **Tax domain complexity escalation:** Same-day and 30-day matching interact with each other and with the pool in non-obvious ways. Mitigate by deferring matching rules to M6 (after pool mechanics and FX wiring are solid) and testing each rule independently.
 - **CGT liability:** The holding calculation does **not** compute personal CGT due or tier. Mitigate with clear copy (PRD §8.1) if future features add tax estimates.

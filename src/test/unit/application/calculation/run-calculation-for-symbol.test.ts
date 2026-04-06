@@ -65,6 +65,8 @@ describe('runCalculationForHoldingSymbol', () => {
 
   const disposalRepository: ShareDisposalRepository = {
     insert: jest.fn(),
+    insertManyPdfImportBatch: jest.fn(),
+    findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
     listByHoldingForUser: jest.fn().mockResolvedValue(disposals),
     deleteByIdForHoldingUser: jest.fn(),
     deleteAllForHoldingUser: jest.fn(),

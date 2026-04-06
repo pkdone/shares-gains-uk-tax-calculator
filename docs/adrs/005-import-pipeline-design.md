@@ -39,9 +39,9 @@ This avoids inventing FX in M3–M4 or "provisional GBP" that could be mistaken 
 ### Non-goals (Milestone 3)
 
 - Generic **column-mapping UI** (PRD long-term).
-- **Sell / disposal** import (no execution prices in the Orders PDF; research deferred pre-M5).
-- **PDF** parsing.
 - **Authentication** beyond stub user.
+
+**Update (2026-04-06):** **Sell / disposal** import from the e\*Trade **Stock Plan Orders** PDF and **PDF** text extraction are **in scope** as a separate path; see **ADR-006**. M3 non-goals above applied to the original vesting-only milestone, not to later disposal/PDF work.
 
 ### Test strategy
 

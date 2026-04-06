@@ -5,8 +5,35 @@ export type CreateShareDisposal = ShareDisposalBase & {
   userId: string;
 };
 
+export type PdfImportDisposalInsertRow = {
+  readonly symbol: string;
+  readonly eventDate: string;
+  readonly quantity: number;
+  readonly grossProceedsUsd: number;
+  readonly feesUsd: number;
+  readonly importSourceFingerprint: string;
+};
+
 export interface ShareDisposalRepository {
   insert(input: CreateShareDisposal): Promise<ShareDisposal>;
+
+  /**
+   * Inserts multiple PDF-import disposals with fingerprints (idempotent re-import skips duplicates via index).
+   */
+  insertManyPdfImportBatch(
+    holdingId: string,
+    userId: string,
+    rows: readonly PdfImportDisposalInsertRow[],
+  ): Promise<number>;
+
+  /**
+   * Returns which of the given import fingerprints already exist for this holding and user.
+   */
+  findExistingImportFingerprints(
+    holdingId: string,
+    userId: string,
+    fingerprints: readonly string[],
+  ): Promise<ReadonlySet<string>>;
 
   listByHoldingForUser(holdingId: string, userId: string): Promise<ShareDisposal[]>;
 

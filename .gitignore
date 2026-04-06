@@ -15,5 +15,6 @@ NOTES.txt
 test.json
 npm-debug.log*
 tsconfig.tsbuildinfo
-ByBenefitType_expanded.xlsx
-E_TRADE - Stock Plan Orders.pdf
+# Root only (leading /): subdirs may still commit fixtures e.g. under src/test/fixtures/
+/*.xlsx
+/*.pdf

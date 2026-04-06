@@ -21,10 +21,11 @@ export async function sendAuthEmail(payload: AuthEmailPayload): Promise<void> {
   logInfo(`Auth email (noop): subject=${payload.subject} recipient=${payload.to}`);
   const urlRe = /https?:\/\/[^\s<>"']+/;
   const urlMatch = urlRe.exec(payload.text);
-  if (urlMatch !== null) {
+  if (urlMatch) {
     logWarn(`[dev] NOOP EMAIL — copy this URL into the browser: ${urlMatch[0]}`);
+  } else {
+    logInfo(`Auth email (noop) full text: ${payload.text}`);
   }
-  logInfo(`Auth email (noop) full text: ${payload.text}`);
 }
 
 /** Reserved for SMTP / Resend / SES — implement when {@link env.AUTH_EMAIL_PROVIDER} is `smtp`. */

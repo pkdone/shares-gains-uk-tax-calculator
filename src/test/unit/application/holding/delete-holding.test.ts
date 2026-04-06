@@ -33,6 +33,8 @@ describe('deleteHolding', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: deleteAllDisp,
@@ -76,6 +78,8 @@ describe('deleteHolding', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: deleteAllDisp,
@@ -108,6 +112,8 @@ describe('deleteHolding', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: jest.fn().mockResolvedValue(0),
