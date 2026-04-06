@@ -463,13 +463,14 @@ function addTaxYearGroup(
     'Section 104 pool at the start of this tax year (6 April), after all earlier recorded events for this holding:';
   y = writeWrappedLines(doc, poolIntro, MARGIN_MM, y, maxW) + 4;
 
+  const bulletIndent = MARGIN_MM + 4;
   const poolLines = [
-    `Pool shares: ${group.openingPoolShares}`,
-    `Pool cost (£): £${formatGbpAmount(group.openingPoolCostGbp)}`,
-    `Average cost/share (£): ${formatAvgCostPerShareGbp(group.openingPoolShares, group.openingPoolCostGbp)}`,
+    `• Pool shares: ${group.openingPoolShares}`,
+    `• Pool cost (£): £${formatGbpAmount(group.openingPoolCostGbp)}`,
+    `• Average cost/share (£): ${formatAvgCostPerShareGbp(group.openingPoolShares, group.openingPoolCostGbp)}`,
   ];
   for (const line of poolLines) {
-    y = writeWrappedLines(doc, line, MARGIN_MM, y, maxW);
+    y = writeWrappedLines(doc, line, bulletIndent, y, maxW - 4);
   }
   y += 8;
 

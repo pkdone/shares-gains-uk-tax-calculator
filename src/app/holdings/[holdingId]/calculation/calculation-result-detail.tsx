@@ -462,24 +462,22 @@ export function TaxYearPanel({ group, holdingSymbol, pdfToolbar }: TaxYearPanelP
         <p className="mt-3 text-xs text-neutral-600">
           Section 104 pool at the start of this tax year (6 April), after all earlier recorded events for this holding:
         </p>
-        <dl className="mt-2 grid max-w-2xl grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-xs text-neutral-600">Pool shares</dt>
-            <dd className="tabular-nums font-medium text-neutral-900">{group.openingPoolShares}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-neutral-600">Pool cost (£)</dt>
-            <dd className="tabular-nums font-medium text-neutral-900">
-              £{money.format(group.openingPoolCostGbp)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-neutral-600">Average cost per share (£)</dt>
-            <dd className="tabular-nums font-medium text-neutral-900">
-              {formatAvgCostPerShareGbp(group.openingPoolShares, group.openingPoolCostGbp)}
-            </dd>
-          </div>
-        </dl>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-900">
+          <li>
+            <span className="text-neutral-600">Pool shares</span>
+            <span className="tabular-nums font-medium text-neutral-900"> {group.openingPoolShares}</span>
+          </li>
+          <li>
+            <span className="text-neutral-600">Pool cost (£)</span>
+            <span className="tabular-nums font-medium text-neutral-900"> £{money.format(group.openingPoolCostGbp)}</span>
+          </li>
+          <li>
+            <span className="text-neutral-600">Average cost/share (£)</span>
+            <span className="tabular-nums font-medium text-neutral-900">
+              {` ${formatAvgCostPerShareGbp(group.openingPoolShares, group.openingPoolCostGbp)}`}
+            </span>
+          </li>
+        </ul>
       </div>
       <div className="mt-4 max-w-full space-y-4">
         {group.dateBlocks.map((block) => (
