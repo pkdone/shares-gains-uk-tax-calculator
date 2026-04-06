@@ -55,34 +55,14 @@ function buildFxFallbackWarning(params: {
 }): string | null {
   const { fxByAcquisitionId, fxByDisposalId } = params;
 
-  const acqDates = uniqueSortedDates(
-    Object.values(fxByAcquisitionId)
-      .filter((f) => f.usedFallback)
-      .map((f) => f.eventDate),
-  );
-  const dispDates = uniqueSortedDates(
-    Object.values(fxByDisposalId)
-      .filter((f) => f.usedFallback)
-      .map((f) => f.eventDate),
-  );
+  const hasAcquisitionFallback = Object.values(fxByAcquisitionId).some((f) => f.usedFallback);
+  const hasDisposalFallback = Object.values(fxByDisposalId).some((f) => f.usedFallback);
 
-  if (acqDates.length === 0 && dispDates.length === 0) {
+  if (!hasAcquisitionFallback && !hasDisposalFallback) {
     return null;
   }
 
-  const parts: string[] = [];
-  if (acqDates.length > 0) {
-    parts.push(`acquisitions on ${acqDates.join(', ')}`);
-  }
-  if (dispDates.length > 0) {
-    parts.push(`disposals on ${dispDates.join(', ')}`);
-  }
-
-  return `USD conversions used a Bank of England rate published on an earlier calendar date than the transaction (weekend or holiday fallback) for: ${parts.join('; ')}. Open “Daily FX rates applied” above and use “View FX applied (USD)” to see the rate date used on each row.`;
-}
-
-function uniqueSortedDates(dates: readonly string[]): string[] {
-  return [...new Set(dates)].sort((a, b) => a.localeCompare(b));
+  return `At least one USD conversion used a Bank of England rate published on an earlier calendar date than the transaction (weekend or holiday fallback). In the ledger table below, the FX rate is shown in orange for those rows. Open “Daily FX rates applied” above and use “View FX applied (USD)” to see the rate date used on each row.`;
 }
 
 /**
