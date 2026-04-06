@@ -112,7 +112,9 @@ function addTitleBlock(doc: jsPDF, holdingSymbol: string, generatedAt: Date): nu
   doc.setTextColor(60, 60, 60);
   const fxNote =
     'Sterling amounts for USD-denominated ledger rows use Bank of England USD/GBP (XUDLUSS) spot rates as in the on-screen calculation.';
-  y = writeWrappedLines(doc, fxNote, MARGIN_MM, y + 2, maxW) + 4;
+  /** Extra space before the first tax year section (body starts below the header block). */
+  const gapAfterFxNoteMm = 12;
+  y = writeWrappedLines(doc, fxNote, MARGIN_MM, y + 2, maxW) + gapAfterFxNoteMm;
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(FONT_BODY);
 
