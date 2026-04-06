@@ -20,11 +20,7 @@ export function CalculationResultSections({
   return (
     <div id="calculation-results" className="mt-10 scroll-mt-6 space-y-10">
       <section>
-        <CalculationComputationPackActions
-          groups={groups}
-          holdingSymbol={holdingSymbol}
-          warnings={result.warnings}
-        />
+        <CalculationComputationPackActions groups={groups} holdingSymbol={holdingSymbol} />
       </section>
 
       {result.warnings.length > 0 ? (

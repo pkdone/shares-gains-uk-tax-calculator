@@ -17,7 +17,6 @@ import { CalculationTaxYearTabs } from '@/app/holdings/[holdingId]/calculation/c
 type CalculationComputationPackActionsProps = {
   readonly groups: readonly CalculationTransactionTableGroup[];
   readonly holdingSymbol: string;
-  readonly warnings: readonly string[];
 };
 
 function downloadPdf(bytes: Uint8Array, filename: string): void {
@@ -39,7 +38,6 @@ const exportButtonClassName =
 export function CalculationComputationPackActions({
   groups,
   holdingSymbol,
-  warnings,
 }: CalculationComputationPackActionsProps): ReactElement {
   const [pdfBusy, setPdfBusy] = useState(false);
 
@@ -49,7 +47,6 @@ export function CalculationComputationPackActions({
       const generatedAt = new Date();
       const bytes = buildComputationPackPdfAllYears({
         holdingSymbol,
-        warnings,
         groups,
         generatedAt,
       });
@@ -60,7 +57,7 @@ export function CalculationComputationPackActions({
     } finally {
       setPdfBusy(false);
     }
-  }, [groups, holdingSymbol, warnings]);
+  }, [groups, holdingSymbol]);
 
   const handleExportThisTaxYear = useCallback(
     (group: CalculationTransactionTableGroup) => {
@@ -69,7 +66,6 @@ export function CalculationComputationPackActions({
         const generatedAt = new Date();
         const bytes = buildComputationPackPdfSingleTaxYear({
           holdingSymbol,
-          warnings,
           group,
           generatedAt,
         });
@@ -84,7 +80,7 @@ export function CalculationComputationPackActions({
         setPdfBusy(false);
       }
     },
-    [holdingSymbol, warnings],
+    [holdingSymbol],
   );
 
   return (

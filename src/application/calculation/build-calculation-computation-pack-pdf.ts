@@ -96,12 +96,8 @@ function addTitleBlock(doc: jsPDF, holdingSymbol: string, generatedAt: Date): nu
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('Shares Gains UK Tax Calculator', MARGIN_MM, y);
-  y += 8;
-
-  doc.setFontSize(12);
-  doc.text('Capital gains computation pack', MARGIN_MM, y);
-  y += 7;
+  doc.text('Holding capital gains report', MARGIN_MM, y);
+  y += 10;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(FONT_BODY);
@@ -120,33 +116,6 @@ function addTitleBlock(doc: jsPDF, holdingSymbol: string, generatedAt: Date): nu
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(FONT_BODY);
 
-  return y;
-}
-
-/** Appends a warnings block at the end of the document (after all tax year sections). */
-function addWarnings(doc: jsPDF, warnings: readonly string[], startY: number): number {
-  if (warnings.length === 0) {
-    return startY;
-  }
-
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const maxW = pageWidth - MARGIN_MM * 2;
-  let y = ensureSpace(doc, startY, 20);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Warnings', MARGIN_MM, y);
-  y += LINE_HEIGHT + 1;
-
-  doc.setFont('helvetica', 'normal');
-  for (const w of warnings) {
-    const bullet = `• ${w}`;
-    const lines = splitTextToLines(doc, bullet, maxW);
-    y = ensureSpace(doc, y, lines.length * LINE_HEIGHT + 2);
-    doc.text(lines, MARGIN_MM, y);
-    y += lines.length * LINE_HEIGHT + 1;
-  }
-
-  y += 4;
   return y;
 }
 
@@ -484,12 +453,11 @@ function addTaxYearGroup(
 
 function buildPdfDocument(params: {
   readonly holdingSymbol: string;
-  readonly warnings: readonly string[];
   readonly groups: readonly CalculationTransactionTableGroup[];
   readonly generatedAt: Date;
 }): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  const { holdingSymbol, warnings, groups, generatedAt } = params;
+  const { holdingSymbol, groups, generatedAt } = params;
 
   let y = addTitleBlock(doc, holdingSymbol, generatedAt);
 
@@ -507,26 +475,20 @@ function buildPdfDocument(params: {
     y = addTaxYearGroup(doc, g, holdingSymbol, y);
   }
 
-  if (warnings.length > 0) {
-    addWarnings(doc, warnings, y);
-  }
-
   return doc;
 }
 
 /**
- * Builds a PDF computation pack for all tax years in order.
+ * Builds a PDF holding capital gains report for all tax years in order.
  */
 export function buildComputationPackPdfAllYears(params: {
   readonly holdingSymbol: string;
-  readonly warnings: readonly string[];
   readonly groups: readonly CalculationTransactionTableGroup[];
   readonly generatedAt?: Date;
 }): Uint8Array {
   const generatedAt = params.generatedAt ?? new Date();
   const doc = buildPdfDocument({
     holdingSymbol: params.holdingSymbol,
-    warnings: params.warnings,
     groups: params.groups,
     generatedAt,
   });
@@ -538,18 +500,16 @@ export function buildComputationPackPdfAllYears(params: {
 }
 
 /**
- * Builds a PDF computation pack for a single UK tax year.
+ * Builds a PDF holding capital gains report for a single UK tax year.
  */
 export function buildComputationPackPdfSingleTaxYear(params: {
   readonly holdingSymbol: string;
-  readonly warnings: readonly string[];
   readonly group: CalculationTransactionTableGroup;
   readonly generatedAt?: Date;
 }): Uint8Array {
   const generatedAt = params.generatedAt ?? new Date();
   const doc = buildPdfDocument({
     holdingSymbol: params.holdingSymbol,
-    warnings: params.warnings,
     groups: [params.group],
     generatedAt,
   });

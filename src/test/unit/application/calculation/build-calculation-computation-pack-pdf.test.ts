@@ -17,7 +17,6 @@ describe('build-calculation-computation-pack-pdf', () => {
     const generatedAt = new Date('2026-01-15T10:00:00.000Z');
     const bytes = buildComputationPackPdfSingleTaxYear({
       holdingSymbol: 'MDB',
-      warnings: ['Test warning'],
       group: minimalGroup,
       generatedAt,
     });
@@ -31,7 +30,6 @@ describe('build-calculation-computation-pack-pdf', () => {
   it('buildComputationPackPdfAllYears returns non-empty PDF bytes', () => {
     const bytes = buildComputationPackPdfAllYears({
       holdingSymbol: 'MDB',
-      warnings: [],
       groups: [minimalGroup],
     });
     expect(bytes.byteLength).toBeGreaterThan(500);
