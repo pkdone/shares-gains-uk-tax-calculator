@@ -42,3 +42,26 @@ export function ukTaxYearLabelFromDateOnly(isoDate: string): string {
   const endTwoDigits = String(endYear).slice(-2).padStart(2, '0');
   return `${startYear}-${endTwoDigits}`;
 }
+
+/**
+ * First calendar day of the UK tax year for a label (e.g. `2024-25` → `2024-04-06`), UTC date-only.
+ */
+export function ukTaxYearStartDateFromLabel(taxYearLabel: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(taxYearLabel);
+  if (!match) {
+    throw new DomainError('Expected tax year label YYYY-YY');
+  }
+
+  const startYear = Number(match[1]);
+  const endTwoDigits = Number(match[2]);
+  if (!Number.isFinite(startYear) || !Number.isFinite(endTwoDigits)) {
+    throw new DomainError('Invalid tax year label');
+  }
+
+  const expectedEnd = (startYear + 1) % 100;
+  if (endTwoDigits !== expectedEnd) {
+    throw new DomainError('Tax year label end year does not match start year');
+  }
+
+  return `${String(startYear)}-04-06`;
+}

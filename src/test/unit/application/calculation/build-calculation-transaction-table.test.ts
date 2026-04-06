@@ -112,6 +112,10 @@ describe('buildCalculationTransactionTableModel', () => {
     const dispYear = groups.find((g) => g.taxYearLabel === '2020-21');
     expect(acqYear?.totalNetRealisedGainOrLossGbp).toBe(0);
     expect(dispYear?.totalNetRealisedGainOrLossGbp).toBe(100);
+    expect(acqYear?.openingPoolShares).toBe(0);
+    expect(acqYear?.openingPoolCostGbp).toBe(0);
+    expect(dispYear?.openingPoolShares).toBe(100);
+    expect(dispYear?.openingPoolCostGbp).toBe(1000);
     expect(acqYear?.dateBlocks).toHaveLength(1);
     expect(dispYear?.dateBlocks).toHaveLength(1);
 
@@ -448,5 +452,7 @@ describe('buildCalculationTransactionTableModel', () => {
     const groups = buildCalculationTransactionTableModel(calc);
     const year2020 = groups.find((g) => g.taxYearLabel === '2020-21');
     expect(year2020?.totalNetRealisedGainOrLossGbp).toBe(75);
+    expect(year2020?.openingPoolShares).toBe(100);
+    expect(year2020?.openingPoolCostGbp).toBe(1000);
   });
 });

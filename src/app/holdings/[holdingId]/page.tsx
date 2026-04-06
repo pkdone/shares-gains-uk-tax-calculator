@@ -223,7 +223,7 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
               <h3 className="text-sm font-semibold text-neutral-900">Ledger totals (USD)</h3>
               <dl className="mt-2 max-w-lg divide-y divide-neutral-100 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
-                  <dt className="text-neutral-600">Total acquisitions</dt>
+                  <dt className="text-neutral-600">Total acquisitions (incl. fees)</dt>
                   <dd className="tabular-nums font-semibold text-neutral-900">
                     ${money.format(totalAcquisitionsUsd)}
                   </dd>

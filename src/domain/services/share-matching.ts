@@ -174,6 +174,8 @@ function buildDisposalResult(params: {
 export function computeMatchingOutput(events: readonly CalcEvent[]): {
   readonly poolSnapshots: PoolSnapshot[];
   readonly disposalResults: DisposalResult[];
+  /** Pool state after processing all events (Section 104 pool, GBP cost 2dp). */
+  readonly finalPool: { readonly shares: number; readonly costGbp: number };
 } {
   const { acqByDate, dispByDate } = aggregateAcquisitionsAndDisposals(events);
   const acqRemaining = cloneAcqState(acqByDate);
@@ -235,5 +237,9 @@ export function computeMatchingOutput(events: readonly CalcEvent[]): {
     }
   }
 
-  return { poolSnapshots, disposalResults };
+  return {
+    poolSnapshots,
+    disposalResults,
+    finalPool: { shares: pool.shares, costGbp: pool.costGbp },
+  };
 }
