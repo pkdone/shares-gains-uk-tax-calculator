@@ -62,5 +62,15 @@ export async function initMongoDatabase(db: Db): Promise<void> {
     },
   );
   await db.collection(COLLECTION_DISPOSALS).createIndex({ holdingId: 1, userId: 1 });
+  await db.collection(COLLECTION_DISPOSALS).createIndex(
+    { holdingId: 1, userId: 1, importSourceFingerprint: 1 },
+    {
+      unique: true,
+      name: 'disposals_import_fingerprint_unique',
+      partialFilterExpression: {
+        importSourceFingerprint: { $exists: true, $type: 'string' },
+      },
+    },
+  );
   await db.collection(COLLECTION_FX_RATES).createIndex({ date: 1 }, { unique: true });
 }

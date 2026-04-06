@@ -44,6 +44,9 @@ async function main(): Promise<void> {
       `    - ${COLLECTION_ACQUISITIONS}: unique partial { holdingId: 1, userId: 1, symbol: 1, grantNumber: 1, vestPeriod: 1 } (import_usd with grant/vest)`,
     );
     logInfo(`    - ${COLLECTION_DISPOSALS}: { holdingId: 1, userId: 1 }`);
+    logInfo(
+      `    - ${COLLECTION_DISPOSALS}: unique partial { holdingId: 1, userId: 1, importSourceFingerprint: 1 } (PDF import)`,
+    );
     logInfo(`    - ${COLLECTION_FX_RATES}: unique on { date: 1 }`);
     logInfo('  Applying…');
     await initMongoDatabase(db);

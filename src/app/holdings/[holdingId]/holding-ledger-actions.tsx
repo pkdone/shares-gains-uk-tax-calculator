@@ -5,13 +5,14 @@ import { useCallback, useRef, useState } from 'react';
 import { AcquisitionForm } from '@/app/holdings/[holdingId]/acquisition-form';
 import { DisposalForm } from '@/app/holdings/[holdingId]/disposal-form';
 import { EtradeImportSection } from '@/app/holdings/[holdingId]/etrade-import-section';
+import { EtradePdfDisposalImportSection } from '@/app/holdings/[holdingId]/etrade-pdf-disposal-import-section';
 
 type HoldingLedgerActionsProps = {
   readonly holdingId: string;
   readonly holdingSymbol: string;
 };
 
-type ModalId = 'acquisition' | 'disposal' | 'import';
+type ModalId = 'acquisition' | 'disposal' | 'import' | 'pdfImport';
 
 export function HoldingLedgerActions({
   holdingId,
@@ -20,11 +21,13 @@ export function HoldingLedgerActions({
   const acquisitionDialogRef = useRef<HTMLDialogElement>(null);
   const disposalDialogRef = useRef<HTMLDialogElement>(null);
   const importDialogRef = useRef<HTMLDialogElement>(null);
+  const pdfImportDialogRef = useRef<HTMLDialogElement>(null);
 
   const closeAll = useCallback((): void => {
     acquisitionDialogRef.current?.close();
     disposalDialogRef.current?.close();
     importDialogRef.current?.close();
+    pdfImportDialogRef.current?.close();
   }, []);
 
   const openModal = useCallback(
@@ -34,8 +37,10 @@ export function HoldingLedgerActions({
         acquisitionDialogRef.current?.showModal();
       } else if (id === 'disposal') {
         disposalDialogRef.current?.showModal();
-      } else {
+      } else if (id === 'import') {
         importDialogRef.current?.showModal();
+      } else {
+        pdfImportDialogRef.current?.showModal();
       }
     },
     [closeAll],
@@ -53,12 +58,22 @@ export function HoldingLedgerActions({
     importDialogRef.current?.close();
   }, []);
 
+  const closePdfImportModal = useCallback((): void => {
+    pdfImportDialogRef.current?.close();
+  }, []);
+
   const [etradeImportSectionKey, setEtradeImportSectionKey] = useState(0);
+  const [etradePdfImportSectionKey, setEtradePdfImportSectionKey] = useState(0);
 
   const onImportCommitSuccess = useCallback((): void => {
     setEtradeImportSectionKey((k) => k + 1);
     closeImportModal();
   }, [closeImportModal]);
+
+  const onPdfImportCommitSuccess = useCallback((): void => {
+    setEtradePdfImportSectionKey((k) => k + 1);
+    closePdfImportModal();
+  }, [closePdfImportModal]);
 
   const onBackdropPointerDown = useCallback((event: React.PointerEvent<HTMLDialogElement>): void => {
     if (event.target === event.currentTarget) {
@@ -77,6 +92,15 @@ export function HoldingLedgerActions({
           }}
         >
           Import RSUs
+        </button>
+        <button
+          type="button"
+          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+          onClick={() => {
+            openModal('pdfImport');
+          }}
+        >
+          Import RSU disposals (PDF)
         </button>
         <button
           type="button"
@@ -180,6 +204,37 @@ export function HoldingLedgerActions({
             holdingSymbol={holdingSymbol}
             layout="plain"
             onCommitSuccess={onImportCommitSuccess}
+          />
+        </div>
+      </dialog>
+
+      <dialog
+        ref={pdfImportDialogRef}
+        className="w-full max-w-4xl rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
+        onPointerDown={onBackdropPointerDown}
+        aria-labelledby="holding-modal-pdf-import-title"
+      >
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="holding-modal-pdf-import-title" className="text-lg font-medium text-neutral-900">
+              Import RSU disposals — PDF ({holdingSymbol})
+            </h2>
+            <button
+              type="button"
+              className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100"
+              onClick={closePdfImportModal}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <div className="max-h-[min(80vh,720px)] overflow-y-auto px-4 py-4">
+          <EtradePdfDisposalImportSection
+            key={etradePdfImportSectionKey}
+            holdingId={holdingId}
+            holdingSymbol={holdingSymbol}
+            layout="plain"
+            onCommitSuccess={onPdfImportCommitSuccess}
           />
         </div>
       </dialog>

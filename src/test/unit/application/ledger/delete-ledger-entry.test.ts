@@ -40,6 +40,8 @@ describe('deleteLedgerEntry', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
@@ -78,6 +80,8 @@ describe('deleteLedgerEntry', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
@@ -107,6 +111,8 @@ describe('deleteLedgerEntry', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn().mockResolvedValue(false),
       deleteAllForHoldingUser: jest.fn(),
@@ -137,6 +143,8 @@ describe('deleteLedgerEntry', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
@@ -166,6 +174,8 @@ describe('deleteLedgerEntry', () => {
     };
     const disposalRepo: ShareDisposalRepository = {
       insert: jest.fn(),
+      insertManyPdfImportBatch: jest.fn(),
+      findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
