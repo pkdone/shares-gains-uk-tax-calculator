@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
 import { buildCalculationTransactionTableModel } from '@/application/calculation/build-calculation-transaction-table';
 
-import { CalculationTaxYearTabs } from '@/app/holdings/[holdingId]/calculation/calculation-tax-year-tabs';
+import { CalculationComputationPackActions } from '@/app/holdings/[holdingId]/calculation/calculation-computation-pack-actions';
 
 type CalculationResultSectionsProps = {
   readonly result: SuccessfulHoldingCalculation;
@@ -20,7 +20,11 @@ export function CalculationResultSections({
   return (
     <div id="calculation-results" className="mt-10 scroll-mt-6 space-y-10">
       <section>
-        <CalculationTaxYearTabs groups={groups} holdingSymbol={holdingSymbol} />
+        <CalculationComputationPackActions
+          groups={groups}
+          holdingSymbol={holdingSymbol}
+          warnings={result.warnings}
+        />
       </section>
 
       {result.warnings.length > 0 ? (

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
 import type {
@@ -435,14 +435,17 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
 type TaxYearPanelProps = {
   readonly group: CalculationTransactionTableGroup;
   readonly holdingSymbol: string;
+  /** Optional client actions (e.g. PDF export) rendered inside the panel header row. */
+  readonly pdfToolbar?: ReactNode;
 };
 
 /**
  * One tax year’s calculation content (summary, opening pool, date blocks). Used inside tab panels.
  */
-export function TaxYearPanel({ group, holdingSymbol }: TaxYearPanelProps): ReactElement {
+export function TaxYearPanel({ group, holdingSymbol, pdfToolbar }: TaxYearPanelProps): ReactElement {
   return (
     <div className="rounded-xl border border-neutral-200/90 bg-[#ededed] p-4 shadow-sm sm:p-5">
+      {pdfToolbar ? <div className="no-print mb-4 flex flex-wrap justify-end">{pdfToolbar}</div> : null}
       <div className="border-b border-neutral-200/90 pb-3">
         <p className="mt-0 text-base text-neutral-800">
           <span className="text-neutral-600">
