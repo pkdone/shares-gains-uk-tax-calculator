@@ -91,7 +91,7 @@ export function HoldingLedgerActions({
             openModal('import');
           }}
         >
-          Import RSUs
+          Import RSU acquisitions (XLSX)
         </button>
         <button
           type="button"
