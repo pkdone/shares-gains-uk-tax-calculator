@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { buildCalculationTransactionTableModel } from '@/application/calculation/build-calculation-transaction-table';
 import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
 import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
@@ -9,6 +10,8 @@ import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mong
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { DomainError } from '@/shared/errors/app-error';
 
+import { CalculationPageTitleAndExport } from '@/app/holdings/[holdingId]/calculation/calculation-page-title-and-export';
+import { CalculationPdfExportProvider } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 import { FxRateLedgerColumnDisclosure } from '@/app/holdings/[holdingId]/calculation/fx-rate-ledger-column-disclosure';
 import { MatchingAcquisitionsDisclosure } from '@/app/holdings/[holdingId]/calculation/matching-acquisitions-disclosure';
@@ -60,6 +63,9 @@ export default async function HoldingCalculationPage({
     }
   }
 
+  const transactionTableGroups =
+    result !== null && calcError === null ? buildCalculationTransactionTableModel(result) : [];
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <nav className="text-sm text-neutral-600 no-print">
@@ -77,35 +83,39 @@ export default async function HoldingCalculationPage({
         <span className="text-neutral-900">Calculation</span>
       </nav>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">
-        Capital gains calculation for {holding.symbol} holding
-      </h1>
+      <CalculationPdfExportProvider>
+        <CalculationPageTitleAndExport holdingSymbol={holding.symbol} groups={transactionTableGroups} />
 
-      <MatchingAcquisitionsDisclosure />
-      <FxRateLedgerColumnDisclosure
-        acquisitionRows={
-          result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
-        }
-        disposalRows={
-          result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
-        }
-      />
+        <MatchingAcquisitionsDisclosure />
+        <FxRateLedgerColumnDisclosure
+          acquisitionRows={
+            result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
+          }
+          disposalRows={
+            result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
+          }
+        />
 
-      {hasLedgerData ? (
-        <>
-          {calcError ? (
-            <div className="mt-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 no-print">
-              {calcError}
-            </div>
-          ) : null}
+        {hasLedgerData ? (
+          <>
+            {calcError ? (
+              <div className="mt-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 no-print">
+                {calcError}
+              </div>
+            ) : null}
 
-          {result !== null && calcError === null ? (
-            <CalculationResultSections result={result} holdingSymbol={holding.symbol} />
-          ) : null}
-        </>
-      ) : (
-        <p className="mt-8 text-sm text-neutral-600">Add acquisitions or disposals to run a calculation.</p>
-      )}
+            {result !== null && calcError === null ? (
+              <CalculationResultSections
+                result={result}
+                holdingSymbol={holding.symbol}
+                groups={transactionTableGroups}
+              />
+            ) : null}
+          </>
+        ) : (
+          <p className="mt-8 text-sm text-neutral-600">Add acquisitions or disposals to run a calculation.</p>
+        )}
+      </CalculationPdfExportProvider>
     </main>
   );
 }

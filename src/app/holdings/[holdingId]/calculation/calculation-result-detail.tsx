@@ -445,20 +445,22 @@ type TaxYearPanelProps = {
 export function TaxYearPanel({ group, holdingSymbol, pdfToolbar }: TaxYearPanelProps): ReactElement {
   return (
     <div className="rounded-xl border border-neutral-200/90 bg-[#ededed] p-4 shadow-sm sm:p-5">
-      {pdfToolbar ? <div className="no-print mb-4 flex flex-wrap justify-end">{pdfToolbar}</div> : null}
       <div className="border-b border-neutral-200/90 pb-3">
-        <p className="mt-0 text-base text-neutral-800">
-          <span className="text-neutral-600">
-            Net realised gain/loss for {holdingSymbol} holding in GBP:{' '}
-          </span>
-          <span
-            className={`text-lg font-bold tabular-nums tracking-tight ${taxYearNetGainLossTextClassName(
-              group.totalNetRealisedGainOrLossGbp,
-            )}`}
-          >
-            £{money.format(group.totalNetRealisedGainOrLossGbp)}
-          </span>
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="mt-0 min-w-0 flex-1 text-base text-neutral-800">
+            <span className="text-neutral-600">
+              Net realised gain/loss for {holdingSymbol} holding in GBP:{' '}
+            </span>
+            <span
+              className={`text-lg font-bold tabular-nums tracking-tight ${taxYearNetGainLossTextClassName(
+                group.totalNetRealisedGainOrLossGbp,
+              )}`}
+            >
+              £{money.format(group.totalNetRealisedGainOrLossGbp)}
+            </span>
+          </p>
+          {pdfToolbar ? <div className="no-print shrink-0">{pdfToolbar}</div> : null}
+        </div>
         <p className="mb-0 mt-3 text-xs text-neutral-600">
           Section 104 pool at the start of this tax year (6 April), after all earlier recorded events for this holding:
         </p>
