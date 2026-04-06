@@ -117,7 +117,7 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
                 </h3>
                 <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
                   <table className="min-w-full text-left text-sm">
-                    <thead className="bg-neutral-50 text-neutral-700">
+                    <thead className="bg-[#ededed] text-neutral-700">
                       <tr>
                         <th className="px-3 py-2 font-medium">Type</th>
                         <th className="px-3 py-2 font-medium">Date</th>

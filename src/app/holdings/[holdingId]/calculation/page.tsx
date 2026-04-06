@@ -102,7 +102,7 @@ export default async function HoldingCalculationPage({
           ) : null}
 
           {result !== null && calcError === null ? (
-            <CalculationResultSections result={result} />
+            <CalculationResultSections result={result} holdingSymbol={holding.symbol} />
           ) : null}
         </>
       ) : (

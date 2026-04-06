@@ -79,12 +79,12 @@ function taxYearNetGainLossTextClassName(netGbp: number): string {
 function acquisitionMatchingFallbackNote(row: CalculationTransactionAcquisitionAggregateSummaryRow): string {
   const q = row.totalQuantity;
   const costLabel = money.format(row.totalCostGbp);
-  const netToPool = `All ${q} shares (£${costLabel}) from this date were added to the Section 104 pool. No same-day or 30-day identification applied to these acquisitions.`;
+  const poolSentence = `All ${q} shares (£${costLabel}) from this date were added to the Section 104 pool. No same-day or 30-day identification (HMRC matching rules) applied to these acquisitions.`;
   if (row.acquisitionLineCount > 1) {
-    return `Same-day acquisitions on this date were combined first. ${netToPool}`;
+    return `Several acquisition entries on this date are listed separately in the ledger above; this summary aggregates their sterling totals. ${poolSentence}`;
   }
 
-  return netToPool;
+  return poolSentence;
 }
 
 function sortedThirtyDayByDisposal(m: AcquisitionMatchingAttribution) {
@@ -227,7 +227,7 @@ function AcquisitionOutcomeSection({
   const hasPool = poolShares !== undefined && poolCost !== undefined;
 
   return (
-    <div className="rounded-md border border-neutral-200/80 bg-white/80 px-3 py-2">
+    <div className="rounded-md border border-neutral-200/80 bg-white px-3 py-2">
       <h4 className="text-xs font-semibold text-neutral-800">CGT acquisition summary</h4>
       <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div>
@@ -394,8 +394,8 @@ function OutcomeSections({
 
 function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBlock }): ReactElement {
   return (
-    <div className="break-inside-avoid rounded-lg border border-neutral-200 border-l-4 border-l-neutral-400 bg-neutral-50/30">
-      <div className="border-b border-neutral-100 bg-neutral-50/80 px-3 py-2">
+    <div className="break-inside-avoid rounded-lg border border-neutral-200 border-l-4 border-l-neutral-400 bg-white">
+      <div className="border-b border-neutral-200/80 bg-white px-3 py-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Date</span>{' '}
         <span className="text-sm font-medium text-neutral-900">{block.eventDate}</span>
       </div>
@@ -435,10 +435,13 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
 
 type CalculationResultSectionsProps = {
   readonly result: SuccessfulHoldingCalculation;
+  /** Stock symbol for the holding whose calculation is shown (e.g. MDB). */
+  readonly holdingSymbol: string;
 };
 
 export function CalculationResultSections({
   result,
+  holdingSymbol,
 }: CalculationResultSectionsProps): ReactElement {
   const groups = buildCalculationTransactionTableModel(result);
 
@@ -454,16 +457,18 @@ export function CalculationResultSections({
             {groups.map((group) => (
               <div
                 key={group.taxYearLabel}
-                className="rounded-xl border border-neutral-200/80 bg-neutral-100 p-4 shadow-sm sm:p-5"
+                className="rounded-xl border border-neutral-200/90 bg-[#ededed] p-4 shadow-sm sm:p-5"
               >
                 <div className="border-b border-neutral-200/90 pb-3">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-700">
                     Tax year {group.taxYearLabel}
                   </h3>
-                  <p className="mt-2 text-sm text-neutral-700">
-                    <span className="text-neutral-600">Net realised gain/loss (this holding, GBP): </span>
+                  <p className="mt-2 text-base text-neutral-800">
+                    <span className="text-neutral-600">
+                      Net realised gain/loss for {holdingSymbol} holding in GBP:{' '}
+                    </span>
                     <span
-                      className={`font-semibold tabular-nums ${taxYearNetGainLossTextClassName(
+                      className={`text-lg font-bold tabular-nums tracking-tight ${taxYearNetGainLossTextClassName(
                         group.totalNetRealisedGainOrLossGbp,
                       )}`}
                     >

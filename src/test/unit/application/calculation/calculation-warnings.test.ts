@@ -57,7 +57,7 @@ describe('buildMaterialCalculationWarnings', () => {
     expect(w.some((x) => x.includes('2024-06-01'))).toBe(true);
   });
 
-  it('lists acquisition and disposal event dates when FX fallback applies', () => {
+  it('adds a concise FX fallback warning when any acquisition or disposal used a fallback rate', () => {
     const w = buildMaterialCalculationWarnings({
       ledgerLines: [],
       fxByAcquisitionId: {
@@ -81,10 +81,10 @@ describe('buildMaterialCalculationWarnings', () => {
     });
 
     expect(w).toHaveLength(1);
-    expect(w[0]).toContain('2024-01-15');
-    expect(w[0]).toContain('2024-03-20');
-    expect(w[0]).toContain('acquisitions on');
-    expect(w[0]).toContain('disposals on');
+    expect(w[0]).toContain('At least one');
+    expect(w[0]).toContain('orange');
+    expect(w[0]).not.toContain('2024-01-15');
+    expect(w[0]).not.toContain('2024-03-20');
     expect(w[0]).toContain('View FX applied');
   });
 });
