@@ -233,7 +233,7 @@ function addAcquisitionMatchingTables(
   doc.text('Net increase to Section 104 pool', MARGIN_MM, y);
   y += LINE_HEIGHT;
   doc.setFont('helvetica', 'normal');
-  const poolText = `Unmatched portion after identification: ${m.netToPoolQuantity} shares, £${formatGbpAmount(m.netToPoolCostGbp)}.`;
+  const poolText = `Unmatched portion after identification: ${m.netToPoolQuantity} shares, £${formatGbpAmount(m.netToPoolCostGbp)}. This is what the pool totals in this acquisition summary include from this date.`;
   y = writeWrappedLines(doc, poolText, MARGIN_MM, y, maxW) + 4;
 
   return y;
@@ -285,7 +285,7 @@ function addAcquisitionOutcome(
     const costLabel = formatGbpAmount(row.totalCostGbp);
     let note = `All ${q} shares (£${costLabel}) from this date were added to the Section 104 pool. No same-day or 30-day identification (HMRC matching rules) applied to these acquisitions.`;
     if (row.acquisitionLineCount > 1) {
-      note = `Several acquisition entries on this date are listed separately in the ledger above; this summary aggregates their sterling totals. ${note}`;
+      note = `Several acquisition entries on this date are listed separately in the ledger for this date; this summary aggregates their sterling totals. ${note}`;
     }
     y = writeWrappedLines(doc, note, MARGIN_MM, y, maxW) + 4;
   } else {

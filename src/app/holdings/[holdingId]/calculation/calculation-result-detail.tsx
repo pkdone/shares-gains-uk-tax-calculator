@@ -80,7 +80,7 @@ function acquisitionMatchingFallbackNote(row: CalculationTransactionAcquisitionA
   const costLabel = money.format(row.totalCostGbp);
   const poolSentence = `All ${q} shares (£${costLabel}) from this date were added to the Section 104 pool. No same-day or 30-day identification (HMRC matching rules) applied to these acquisitions.`;
   if (row.acquisitionLineCount > 1) {
-    return `Several acquisition entries on this date are listed separately in the ledger above; this summary aggregates their sterling totals. ${poolSentence}`;
+    return `Several acquisition entries on this date are listed separately in the ledger for this date; this summary aggregates their sterling totals. ${poolSentence}`;
   }
 
   return poolSentence;
@@ -147,7 +147,8 @@ function AcquisitionMatchingDetail(params: {
         <p className="mt-1 text-xs text-neutral-600">
           Unmatched portion after identification:{' '}
           <span className="tabular-nums font-medium text-neutral-900">{m.netToPoolQuantity}</span> shares, £
-          {money.format(m.netToPoolCostGbp)}. This is what the pool totals above include from this date.
+          {money.format(m.netToPoolCostGbp)}. This is what the pool totals in this acquisition summary include from this
+          date.
         </p>
       </div>
     </div>
