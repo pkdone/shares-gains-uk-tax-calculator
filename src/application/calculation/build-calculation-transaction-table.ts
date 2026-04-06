@@ -8,9 +8,10 @@ import type {
   DisposalSterlingLine,
   SuccessfulHoldingCalculation,
 } from '@/application/calculation/calculation-types';
-import type { DisposalResult } from '@/domain/schemas/calculation';
+import type { CalcEvent, DisposalResult } from '@/domain/schemas/calculation';
+import { computeMatchingOutput } from '@/domain/services/share-matching';
 import { roundMoney2dp } from '@/domain/services/section-104-pool';
-import { ukTaxYearLabelFromDateOnly } from '@/domain/services/uk-tax-year';
+import { ukTaxYearLabelFromDateOnly, ukTaxYearStartDateFromLabel } from '@/domain/services/uk-tax-year';
 
 export type CalculationTransactionLedgerAcquisitionRow = {
   readonly rowKind: 'ledger-acquisition';
@@ -95,7 +96,64 @@ export type CalculationTransactionTableGroup = {
    * Acquisition-only years are zero.
    */
   readonly totalNetRealisedGainOrLossGbp: number;
+  /** Section 104 pool immediately before the first day of this UK tax year (6 April), after prior-year events. */
+  readonly openingPoolShares: number;
+  readonly openingPoolCostGbp: number;
 };
+
+function buildCalcEventsFromSuccessfulHoldingCalculation(
+  calc: SuccessfulHoldingCalculation,
+): readonly CalcEvent[] {
+  const sorted = [...calc.ledgerLines].sort(compareLedgerLines);
+  const events: CalcEvent[] = [];
+  for (const line of sorted) {
+    if (line.kind === 'ACQUISITION') {
+      const st = calc.sterlingByAcquisitionId[line.data.id];
+      if (st === undefined) {
+        throw new Error(`Internal: missing sterling for acquisition ${line.data.id}`);
+      }
+
+      events.push({
+        kind: 'acquisition',
+        data: {
+          eventDate: line.data.eventDate,
+          quantity: line.data.quantity,
+          totalCostGbp: st.totalCostGbp,
+        },
+      });
+    } else {
+      const st = calc.sterlingByDisposalId[line.data.id];
+      if (st === undefined) {
+        throw new Error(`Internal: missing sterling for disposal ${line.data.id}`);
+      }
+
+      events.push({
+        kind: 'disposal',
+        data: {
+          eventDate: line.data.eventDate,
+          quantity: line.data.quantity,
+          grossProceedsGbp: st.grossProceedsGbp,
+          feesGbp: st.feesGbp,
+        },
+      });
+    }
+  }
+
+  return events;
+}
+
+function openingPoolAtTaxYearStart(
+  events: readonly CalcEvent[],
+  taxYearLabel: string,
+): { readonly shares: number; readonly costGbp: number } {
+  const start = ukTaxYearStartDateFromLabel(taxYearLabel);
+  const prior = events.filter((e) => e.data.eventDate < start);
+  if (prior.length === 0) {
+    return { shares: 0, costGbp: 0 };
+  }
+
+  return computeMatchingOutput(prior).finalPool;
+}
 
 function compareLedgerLines(a: CalculationLedgerLine, b: CalculationLedgerLine): number {
   const dateCmp = a.data.eventDate.localeCompare(b.data.eventDate);
@@ -199,6 +257,7 @@ function pushDisposalLedgerRow(params: {
 export function buildCalculationTransactionTableModel(
   calc: SuccessfulHoldingCalculation,
 ): readonly CalculationTransactionTableGroup[] {
+  const calcEvents = buildCalcEventsFromSuccessfulHoldingCalculation(calc);
   const sortedLines = [...calc.ledgerLines].sort(compareLedgerLines);
 
   const dates = [...new Set(sortedLines.map((l) => l.data.eventDate))].sort((a, b) =>
@@ -318,10 +377,14 @@ export function buildCalculationTransactionTableModel(
       }
     }
 
+    const opening = openingPoolAtTaxYearStart(calcEvents, taxYearLabel);
+
     return {
       taxYearLabel,
       dateBlocks,
       totalNetRealisedGainOrLossGbp: roundMoney2dp(totalNet),
+      openingPoolShares: opening.shares,
+      openingPoolCostGbp: roundMoney2dp(opening.costGbp),
     };
   });
 }

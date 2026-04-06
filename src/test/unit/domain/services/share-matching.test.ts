@@ -31,13 +31,15 @@ describe('computeMatchingOutput', () => {
       { kind: 'acquisition', data: { eventDate: '2020-01-01', quantity: 100, totalCostGbp: 1000 } },
       { kind: 'disposal', data: { eventDate: '2020-01-01', quantity: 50, grossProceedsGbp: 600, feesGbp: 0 } },
     ];
-    const { disposalResults, poolSnapshots } = computeMatchingOutput(events);
+    const { disposalResults, poolSnapshots, finalPool } = computeMatchingOutput(events);
     expect(disposalResults).toHaveLength(1);
     expect(disposalResults[0]?.matchingBreakdown).toEqual([
       { source: 'same-day', quantity: 50, allowableCostGbp: 500, acquisitionDate: '2020-01-01' },
     ]);
     expect(disposalResults[0]?.gainOrLossGbp).toBe(100);
     expect(poolSnapshots.some((s) => s.description.includes('unmatched'))).toBe(true);
+    expect(finalPool.shares).toBe(50);
+    expect(finalPool.costGbp).toBe(500);
   });
 
   it('applies 30-day matching before pool and FIFO by acquisition date', () => {
