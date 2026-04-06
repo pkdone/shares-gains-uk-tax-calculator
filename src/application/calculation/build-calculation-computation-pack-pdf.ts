@@ -430,7 +430,7 @@ function addTaxYearGroup(
   doc.setFontSize(FONT_SMALL);
   const poolIntro =
     'Section 104 pool at the start of this tax year (6 April), after all earlier recorded events for this holding:';
-  y = writeWrappedLines(doc, poolIntro, MARGIN_MM, y, maxW) + 4;
+  y = writeWrappedLines(doc, poolIntro, MARGIN_MM, y, maxW) + 1;
 
   const bulletIndent = MARGIN_MM + 4;
   const poolLines = [

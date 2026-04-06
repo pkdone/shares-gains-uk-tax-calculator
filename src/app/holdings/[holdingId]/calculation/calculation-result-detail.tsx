@@ -459,10 +459,10 @@ export function TaxYearPanel({ group, holdingSymbol, pdfToolbar }: TaxYearPanelP
             £{money.format(group.totalNetRealisedGainOrLossGbp)}
           </span>
         </p>
-        <p className="mt-3 text-xs text-neutral-600">
+        <p className="mb-0 mt-3 text-xs text-neutral-600">
           Section 104 pool at the start of this tax year (6 April), after all earlier recorded events for this holding:
         </p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-900">
+        <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-neutral-900">
           <li>
             <span className="text-neutral-600">Pool shares</span>
             <span className="tabular-nums font-medium text-neutral-900"> {group.openingPoolShares}</span>
