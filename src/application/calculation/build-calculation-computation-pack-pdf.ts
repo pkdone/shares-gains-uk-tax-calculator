@@ -123,23 +123,7 @@ function addTitleBlock(doc: jsPDF, holdingSymbol: string, generatedAt: Date): nu
   return y;
 }
 
-function addDisclaimer(doc: jsPDF, startY: number): number {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const maxW = pageWidth - MARGIN_MM * 2;
-  let y = startY;
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Important', MARGIN_MM, y);
-  y += LINE_HEIGHT + 1;
-
-  doc.setFont('helvetica', 'normal');
-  const disclaimer =
-    'Not professional tax advice. The calculations shown may be incorrect. This pack shows holding-level capital gains and losses only — not your overall CGT liability for a tax year.';
-  y = writeWrappedLines(doc, disclaimer, MARGIN_MM, y, maxW) + 6;
-
-  return y;
-}
-
+/** Appends a warnings block at the end of the document (after all tax year sections). */
 function addWarnings(doc: jsPDF, warnings: readonly string[], startY: number): number {
   if (warnings.length === 0) {
     return startY;
@@ -507,8 +491,6 @@ function buildPdfDocument(params: {
   const { holdingSymbol, warnings, groups, generatedAt } = params;
 
   let y = addTitleBlock(doc, holdingSymbol, generatedAt);
-  y = addDisclaimer(doc, y);
-  y = addWarnings(doc, warnings, y);
 
   for (let i = 0; i < groups.length; i += 1) {
     const g = groups[i];
@@ -522,6 +504,10 @@ function buildPdfDocument(params: {
     }
 
     y = addTaxYearGroup(doc, g, holdingSymbol, y);
+  }
+
+  if (warnings.length > 0) {
+    addWarnings(doc, warnings, y);
   }
 
   return doc;
