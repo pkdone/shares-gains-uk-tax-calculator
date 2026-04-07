@@ -86,11 +86,15 @@ export function parseDisposalForm(
 
 export const ledgerEntryKindSchema = z.enum(['ACQUISITION', 'DISPOSAL']);
 
-export const deleteLedgerEntryFormSchema = z.object({
-  holdingId: z.string().trim().min(1),
+export const bulkDeleteLedgerEntryRowSchema = z.object({
   kind: ledgerEntryKindSchema,
   entryId: z.string().trim().min(1),
 });
+
+export const bulkDeleteLedgerEntriesRowsSchema = z
+  .array(bulkDeleteLedgerEntryRowSchema)
+  .min(1)
+  .max(50);
 
 export const deleteHoldingFormSchema = z.object({
   holdingId: z.string().trim().min(1),

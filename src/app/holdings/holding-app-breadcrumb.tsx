@@ -6,7 +6,7 @@ type HoldingAppBreadcrumbProps = {
 };
 
 /**
- * Breadcrumb for the app header on holding routes: Holdings → symbol (same on Ledger and Capital gains).
+ * Breadcrumb for the app header on holding routes: Holdings → symbol (same on Ledger and Capital Gains).
  */
 export function HoldingAppBreadcrumb({ symbol }: HoldingAppBreadcrumbProps): ReactElement {
   return (

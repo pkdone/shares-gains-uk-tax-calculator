@@ -6,7 +6,11 @@ import { AcquisitionForm } from '@/app/holdings/[holdingId]/acquisition-form';
 import { DisposalForm } from '@/app/holdings/[holdingId]/disposal-form';
 import { EtradeImportSection } from '@/app/holdings/[holdingId]/etrade-import-section';
 import { EtradePdfDisposalImportSection } from '@/app/holdings/[holdingId]/etrade-pdf-disposal-import-section';
-import { buttonModalCloseClassName, buttonPrimaryClassName } from '@/app/ui/button-variants';
+import {
+  buttonModalCloseClassName,
+  buttonPrimaryClassName,
+  buttonSecondaryClassName,
+} from '@/app/ui/button-variants';
 
 type HoldingLedgerActionsProps = {
   readonly holdingId: string;
@@ -88,43 +92,53 @@ export function HoldingLedgerActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className={buttonPrimaryClassName}
-          onClick={() => {
-            openModal('acquisition');
-          }}
-        >
-          Add acquisition
-        </button>
-        <button
-          type="button"
-          className={buttonPrimaryClassName}
-          onClick={() => {
-            openModal('disposal');
-          }}
-        >
-          Add disposal
-        </button>
-        <button
-          type="button"
-          className={buttonPrimaryClassName}
-          onClick={() => {
-            openModal('import');
-          }}
-        >
-          Import RSU acquisitions (XLSX)
-        </button>
-        <button
-          type="button"
-          className={buttonPrimaryClassName}
-          onClick={() => {
-            openModal('pdfImport');
-          }}
-        >
-          Import RSU disposals (PDF)
-        </button>
+      <div className="flex flex-wrap items-center gap-4 gap-y-3">
+        <fieldset className="min-w-0 border-0 p-0">
+          <legend className="sr-only">Add ledger entries</legend>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={buttonPrimaryClassName}
+              onClick={() => {
+                openModal('acquisition');
+              }}
+            >
+              Add acquisition
+            </button>
+            <button
+              type="button"
+              className={buttonPrimaryClassName}
+              onClick={() => {
+                openModal('disposal');
+              }}
+            >
+              Add disposal
+            </button>
+          </div>
+        </fieldset>
+        <fieldset className="min-w-0 border-0 p-0">
+          <legend className="sr-only">Import from files</legend>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={buttonSecondaryClassName}
+              onClick={() => {
+                openModal('import');
+              }}
+            >
+              Import RSU acquisitions (XLSX)
+            </button>
+            <button
+              type="button"
+              className={buttonSecondaryClassName}
+              onClick={() => {
+                openModal('pdfImport');
+              }}
+            >
+              Import RSU disposals (PDF)
+            </button>
+          </div>
+        </fieldset>
       </div>
 
       <dialog
