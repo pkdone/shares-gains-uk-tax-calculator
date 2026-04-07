@@ -34,8 +34,10 @@ export function HoldingLedgerActions({
     (id: ModalId): void => {
       closeAll();
       if (id === 'acquisition') {
+        setAcquisitionFormKey((k) => k + 1);
         acquisitionDialogRef.current?.showModal();
       } else if (id === 'disposal') {
+        setDisposalFormKey((k) => k + 1);
         disposalDialogRef.current?.showModal();
       } else if (id === 'import') {
         importDialogRef.current?.showModal();
@@ -64,6 +66,8 @@ export function HoldingLedgerActions({
 
   const [etradeImportSectionKey, setEtradeImportSectionKey] = useState(0);
   const [etradePdfImportSectionKey, setEtradePdfImportSectionKey] = useState(0);
+  const [acquisitionFormKey, setAcquisitionFormKey] = useState(0);
+  const [disposalFormKey, setDisposalFormKey] = useState(0);
 
   const onImportCommitSuccess = useCallback((): void => {
     setEtradeImportSectionKey((k) => k + 1);
@@ -145,6 +149,7 @@ export function HoldingLedgerActions({
         </div>
         <div className="px-4 py-4">
           <AcquisitionForm
+            key={acquisitionFormKey}
             holdingId={holdingId}
             holdingSymbol={holdingSymbol}
             onAfterSuccess={closeAcquisitionModal}
@@ -173,7 +178,12 @@ export function HoldingLedgerActions({
           </div>
         </div>
         <div className="px-4 py-4">
-          <DisposalForm holdingId={holdingId} holdingSymbol={holdingSymbol} onAfterSuccess={closeDisposalModal} />
+          <DisposalForm
+            key={disposalFormKey}
+            holdingId={holdingId}
+            holdingSymbol={holdingSymbol}
+            onAfterSuccess={closeDisposalModal}
+          />
         </div>
       </dialog>
 

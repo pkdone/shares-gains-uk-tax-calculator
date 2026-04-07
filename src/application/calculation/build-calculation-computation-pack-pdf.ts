@@ -26,6 +26,8 @@ const PAGE_BOTTOM_MM = 297 - MARGIN_MM;
 const LINE_HEIGHT = 5;
 const FONT_BODY = 9;
 const FONT_SMALL = 8;
+/** Section title under a date block (“Outcomes”) — larger than outcome sub-headings. */
+const FONT_OUTCOMES_SECTION = 11;
 
 function formatMatchingSourceLabel(source: MatchingSource): string {
   switch (source) {
@@ -111,7 +113,7 @@ function addTitleBlock(doc: jsPDF, holdingSymbol: string, generatedAt: Date): nu
   doc.setFontSize(FONT_SMALL);
   doc.setTextColor(60, 60, 60);
   const fxNote =
-    'Sterling amounts for USD-denominated ledger rows use Bank of England USD/GBP (XUDLUSS) spot rates as in the on-screen calculation.';
+    'Sterling amounts for USD-denominated ledger rows use Bank of England USD/GBP (XUDLUSS) spot rates.';
   /** Extra space before the first tax year section (body starts below the header block). */
   const gapAfterFxNoteMm = 12;
   y = writeWrappedLines(doc, fxNote, MARGIN_MM, y + 2, maxW) + gapAfterFxNoteMm;
@@ -197,6 +199,7 @@ function addAcquisitionMatchingTables(
     doc.text('Same-day identification', MARGIN_MM, y);
     y += LINE_HEIGHT;
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(FONT_BODY);
     const t = `Matched to disposal(s) on ${eventDate}: ${m.sameDayQuantity} shares, £${formatGbpAmount(m.sameDayCostGbp)} allowable cost.`;
     y = writeWrappedLines(doc, t, MARGIN_MM, y, maxW) + 4;
   }
@@ -204,9 +207,11 @@ function addAcquisitionMatchingTables(
   if (m.thirtyDayQuantity > 0) {
     y = ensureSpace(doc, y, 40);
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(FONT_SMALL);
     doc.text('30-day identification', MARGIN_MM, y);
     y += LINE_HEIGHT;
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(FONT_BODY);
     const intro =
       'Matched to earlier disposal(s) under the bed-and-breakfast (30-day) rule. Those shares and their acquisition cost are treated as sold by those disposals.';
     y = writeWrappedLines(doc, intro, MARGIN_MM, y, maxW) + 4;
@@ -230,9 +235,11 @@ function addAcquisitionMatchingTables(
 
   y = ensureSpace(doc, y, 16);
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(FONT_SMALL);
   doc.text('Net increase to Section 104 pool', MARGIN_MM, y);
   y += LINE_HEIGHT;
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(FONT_BODY);
   const poolText = `Unmatched portion after identification: ${m.netToPoolQuantity} shares, £${formatGbpAmount(m.netToPoolCostGbp)}. This is what the pool totals in this acquisition summary include from this date.`;
   y = writeWrappedLines(doc, poolText, MARGIN_MM, y, maxW) + 4;
 
@@ -250,10 +257,12 @@ function addAcquisitionOutcome(
 
   y = ensureSpace(doc, y, 30);
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(FONT_BODY);
   doc.text('CGT acquisition summary', MARGIN_MM, y);
   y += LINE_HEIGHT + 2;
 
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(FONT_BODY);
   const poolShares = row.poolSharesAfter;
   const poolCost = row.poolCostGbpAfter;
   const hasPool = poolShares !== undefined && poolCost !== undefined;
@@ -276,9 +285,11 @@ function addAcquisitionOutcome(
 
   y += 2;
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(FONT_BODY);
   doc.text('Matching', MARGIN_MM, y);
   y += LINE_HEIGHT;
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(FONT_BODY);
 
   if (row.acquisitionMatching === undefined) {
     const q = row.totalQuantity;
@@ -307,10 +318,12 @@ function addCgtDisposalOutcome(
 
   y = ensureSpace(doc, y, 36);
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(FONT_BODY);
   doc.text('CGT disposal summary', MARGIN_MM, y);
   y += LINE_HEIGHT + 2;
 
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(FONT_BODY);
   const summaryPricePerShare = r.grossProceedsGbp / r.quantity;
   const netProceeds = r.grossProceedsGbp - r.disposalFeesGbp;
 
@@ -333,9 +346,11 @@ function addCgtDisposalOutcome(
 
   y += 2;
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(FONT_BODY);
   doc.text('Matching', MARGIN_MM, y);
   y += LINE_HEIGHT + 2;
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(FONT_BODY);
 
   autoTable(doc, {
     startY: y,
@@ -391,11 +406,12 @@ function addDateBlock(doc: jsPDF, block: CalculationTransactionDateBlock, startY
   y = addLedgerTable(doc, block.ledgerRows, y);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(FONT_SMALL);
-  y = ensureSpace(doc, y, 12);
+  doc.setFontSize(FONT_OUTCOMES_SECTION);
+  y = ensureSpace(doc, y, 14);
   doc.text('Outcomes', MARGIN_MM, y);
-  y += LINE_HEIGHT + 2;
+  y += LINE_HEIGHT + 4;
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(FONT_BODY);
 
   y = addOutcomes(doc, block.outcomes, y);
   y += 4;

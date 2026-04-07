@@ -101,7 +101,7 @@ function AcquisitionMatchingDetail(params: {
     <div className="space-y-3 text-neutral-800">
       {m.sameDayQuantity > 0 ? (
         <div>
-          <p className="text-xs font-semibold text-neutral-900">Same-day identification</p>
+          <p className="text-xs font-medium text-neutral-800">Same-day identification</p>
           <p className="mt-1 text-xs text-neutral-600">
             Matched to disposal(s) on <span className="font-medium text-neutral-800">{eventDate}</span>:{' '}
             <span className="tabular-nums">{m.sameDayQuantity}</span> shares, £{money.format(m.sameDayCostGbp)}{' '}
@@ -112,7 +112,7 @@ function AcquisitionMatchingDetail(params: {
       ) : null}
       {m.thirtyDayQuantity > 0 ? (
         <div>
-          <p className="text-xs font-semibold text-neutral-900">30-day identification</p>
+          <p className="text-xs font-medium text-neutral-800">30-day identification</p>
           <p className="mt-1 text-xs text-neutral-600">
             Matched to earlier disposal(s) under the bed-and-breakfast (30-day) rule. Those shares and their acquisition
             cost are treated as sold by those disposals, so they do not increase the pool.
@@ -143,7 +143,7 @@ function AcquisitionMatchingDetail(params: {
         </div>
       ) : null}
       <div>
-        <p className="text-xs font-semibold text-neutral-900">Net increase to Section 104 pool</p>
+        <p className="text-xs font-medium text-neutral-800">Net increase to Section 104 pool</p>
         <p className="mt-1 text-xs text-neutral-600">
           Unmatched portion after identification:{' '}
           <span className="tabular-nums font-medium text-neutral-900">{m.netToPoolQuantity}</span> shares, £
@@ -228,7 +228,7 @@ function AcquisitionOutcomeSection({
 
   return (
     <div className="rounded-md border border-neutral-200/80 bg-white px-3 py-2">
-      <h4 className="text-xs font-semibold text-neutral-800">CGT acquisition summary</h4>
+      <h4 className="text-xs font-medium text-neutral-700">CGT acquisition summary</h4>
       <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <dt className="text-xs text-neutral-500">Shares (total)</dt>
@@ -259,7 +259,7 @@ function AcquisitionOutcomeSection({
           </dd>
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
-          <dt className="text-xs text-neutral-500">Matching</dt>
+          <dt className="text-xs font-semibold text-neutral-800">Matching</dt>
           <dd className="text-xs text-neutral-600">
             {row.acquisitionMatching === undefined ? (
               acquisitionMatchingFallbackNote(row)
@@ -284,7 +284,7 @@ function CgtDisposalOutcomeSection({
 
   return (
     <div className="rounded-md border border-red-200/90 bg-red-50/40 px-3 py-2 text-red-900">
-      <h4 className="text-xs font-semibold text-red-900">CGT disposal summary</h4>
+      <h4 className="text-xs font-medium text-red-800">CGT disposal summary</h4>
       <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <dt className="text-xs text-red-700/90">Shares (disposed)</dt>
@@ -329,7 +329,7 @@ function CgtDisposalOutcomeSection({
           </dd>
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
-          <dt className="text-xs text-red-700/90">Matching</dt>
+          <dt className="text-xs font-semibold text-red-900">Matching</dt>
           <dd className="mt-1">
             <table className="w-full max-w-2xl border-collapse text-xs text-red-900">
               <thead>
@@ -425,8 +425,10 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
         </div>
 
         <div>
-          <p className="mb-2 text-xs font-medium text-neutral-600">Outcomes</p>
-          <OutcomeSections outcomes={block.outcomes} />
+          <h3 className="text-sm font-semibold text-neutral-900">Outcomes</h3>
+          <div className="mt-2 space-y-3 border-l-2 border-neutral-200 pl-3">
+            <OutcomeSections outcomes={block.outcomes} />
+          </div>
         </div>
       </div>
     </div>

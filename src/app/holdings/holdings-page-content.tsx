@@ -2,28 +2,31 @@ import Link from 'next/link';
 
 import { CreateHoldingForm } from '@/app/holdings/create-holding-form';
 import { HoldingDeleteButton } from '@/app/holdings/holding-delete-button';
-import { SignOutButton } from '@/app/sign-out-button';
+import { UserAccountMenu } from '@/app/user-account-menu';
 import type { Holding } from '@/domain/schemas/holding';
 
 type HoldingsPageContentProps = {
   readonly holdings: readonly Holding[];
+  readonly userDisplayName: string;
 };
 
 /**
  * Shared holdings list and create-holding UI for `/` and (via redirect) `/holdings`.
  */
-export function HoldingsPageContent({ holdings }: HoldingsPageContentProps): React.ReactElement {
+export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageContentProps): React.ReactElement {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
-      <p className="text-sm font-medium text-[var(--color-accent)]">Manual ledger</p>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Holdings</h1>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-pretty text-sm leading-relaxed text-neutral-600">
-          Each holding is one stock symbol. Add acquisitions and disposals for that symbol. Amounts are USD in the
-          ledger; CGT uses sterling on the calculation page.
-        </p>
-        <SignOutButton />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-[var(--color-accent)]">Manual ledger</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Holdings</h1>
+        </div>
+        <UserAccountMenu displayName={userDisplayName} />
       </div>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-neutral-600">
+        Each holding is one stock symbol. Add acquisitions and disposals for that symbol. Amounts are USD in the ledger;
+        CGT uses sterling on the calculation page.
+      </p>
 
       <section className="mt-8">
         <h2 className="text-lg font-medium text-neutral-900">New holding</h2>
