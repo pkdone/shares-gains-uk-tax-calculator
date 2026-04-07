@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactElement, ReactNode } from 'react';
 
@@ -16,6 +15,7 @@ import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mong
 
 import { LedgerEntryDelete } from '@/app/holdings/[holdingId]/ledger-entry-delete';
 import { HoldingLedgerActions } from '@/app/holdings/[holdingId]/holding-ledger-actions';
+import { OpenCalculationLink } from '@/app/holdings/[holdingId]/open-calculation-link';
 
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
@@ -84,12 +84,7 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
       <h1 className="mt-6 text-2xl font-semibold tracking-tight">{holding.symbol}</h1>
 
       <p className="mt-4">
-        <Link
-          href={`/holdings/${holdingId}/calculation`}
-          className="text-sm font-medium text-[var(--color-accent)] hover:underline"
-        >
-          Open capital gains calculation
-        </Link>
+        <OpenCalculationLink holdingId={holdingId} />
       </p>
 
       <div className="mt-10">
