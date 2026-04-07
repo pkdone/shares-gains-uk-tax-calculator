@@ -9,6 +9,7 @@ import type { CalculationTransactionTableGroup } from '@/application/calculation
 import { buildComputationPackPdfFilenameAllYears } from '@/application/calculation/calculation-pdf-filename';
 
 import { useCalculationPdfExportBusy } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
+import { buttonSecondaryClassName } from '@/app/ui/button-variants';
 
 type CalculationPageTitleAndExportProps = {
   readonly holdingSymbol: string;
@@ -27,9 +28,6 @@ function downloadPdf(bytes: Uint8Array, filename: string): void {
   anchor.click();
   URL.revokeObjectURL(url);
 }
-
-const exportButtonClassName =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 shadow-sm hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50';
 
 export function CalculationPageTitleAndExport({
   holdingSymbol,
@@ -62,7 +60,7 @@ export function CalculationPageTitleAndExport({
       </h1>
       <button
         type="button"
-        className={`${exportButtonClassName} shrink-0`}
+        className={`${buttonSecondaryClassName} shrink-0 px-3 py-2 text-sm`}
         disabled={groups.length === 0 || pdfBusy}
         aria-busy={pdfBusy}
         onClick={() => {

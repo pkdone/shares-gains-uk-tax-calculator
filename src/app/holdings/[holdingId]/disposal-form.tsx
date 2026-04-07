@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 
 import { addDisposalAction, type FormActionState } from '@/app/holdings/actions';
+import { buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 const priceUsd = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
@@ -116,7 +117,7 @@ export function DisposalForm({ holdingId, holdingSymbol, onAfterSuccess }: Dispo
           {proceedsDisplay}
         </div>
       </div>
-      <div className="sm:col-span-2">
+      <div className="border-t border-neutral-200 pt-4 sm:col-span-2">
         {state?.error ? (
           <p className="text-sm text-red-600" role="alert">
             {state.error}
@@ -125,7 +126,8 @@ export function DisposalForm({ holdingId, holdingSymbol, onAfterSuccess }: Dispo
         <button
           type="submit"
           disabled={pending}
-          className="mt-2 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-50 disabled:opacity-60"
+          className={`mt-2 inline-flex items-center justify-center ${buttonPrimaryClassName}`}
+          aria-busy={pending}
         >
           {pending ? 'Saving…' : 'Add disposal'}
         </button>
