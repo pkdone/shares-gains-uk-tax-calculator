@@ -13,7 +13,10 @@ export function CreateHoldingForm(): React.ReactElement {
   );
 
   return (
-    <form action={action} className="flex max-w-md flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+    <form
+      action={action}
+      className="flex w-full flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+    >
       <label className="text-sm font-medium text-neutral-800" htmlFor="holding-symbol">
         Stock symbol
       </label>

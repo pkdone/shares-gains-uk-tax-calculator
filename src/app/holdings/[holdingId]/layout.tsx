@@ -4,9 +4,9 @@ import { notFound } from 'next/navigation';
 import type { ReactElement, ReactNode } from 'react';
 
 import { AppHeader, formatSessionDisplayName } from '@/app/app-header';
-import { holdingDocumentTitle, siteTitle } from '@/app/site-copy';
 import { HoldingLayoutChrome } from '@/app/holdings/[holdingId]/holding-layout-chrome';
 import { HoldingViewHeading } from '@/app/holdings/[holdingId]/holding-view-heading';
+import { holdingDocumentTitle, siteTitle } from '@/app/site-copy';
 import { requireVerifiedSessionUser } from '@/infrastructure/auth/session';
 import { holdingRepository } from '@/infrastructure/repositories/composition-root';
 
