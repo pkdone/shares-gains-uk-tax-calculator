@@ -4,44 +4,97 @@
 
 UK capital gains workflow for equity compensation (e.g. RSUs from a US employer). The app calculates **capital gains and losses (chargeable gains mechanics) per holding** you import — not your **overall CGT liability** for a tax year (other disposals, brought-forward losses, reliefs, and your rate position can change what you owe). This repository is under active development.
 
-## Prerequisites
+## Table of contents
 
-- **Node.js** >= 22.21.1
-- **MongoDB Atlas** — the app expects a single connection string in `MONGODB_URI` (no local MongoDB fallback)
+- [Quick start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Environment variables](#environment-variables)
+- [MongoDB Atlas (first-time)](#mongodb-atlas-first-time)
+- [Database and FX scripts](#database-and-fx-scripts)
+- [Development](#development)
+- [Quality gate and tests](#quality-gate-and-tests)
+- [Project layout](#project-layout)
+- [Documentation](#documentation)
+- [Docker](#docker)
+- [Security and operations](#security-and-operations)
+- [License](#license)
+- [Contributing](#contributing)
 
-## Setup
+## Quick start
 
-1. Copy the environment template to `.env.local`, then edit `.env.local` and set variables appropriately (at minimum `MONGODB_URI`, `NEXT_PUBLIC_APP_URL`, matching `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL`, and `BETTER_AUTH_SECRET`; database name must appear in the URI path):
+1. Clone the repository and install dependencies:
+
+   ```bash
+   git clone <repository-url>
+   cd shares-gains-uk-tax-calculator
+   npm ci
+   ```
+
+2. Copy the environment template and fill in values (see [Environment variables](#environment-variables) and [MongoDB Atlas (first-time)](#mongodb-atlas-first-time)):
 
    ```bash
    cp .env.example .env.local
    ```
 
-2. Install dependencies:
-
-   ```bash
-   npm ci
-   ```
-
-3. **Provision the database** (once per Atlas database / environment — creates collections, `$jsonSchema` validators, and indexes):
+3. Provision the database (once per Atlas database / environment):
 
    ```bash
    npm run db:init
    ```
 
-4. **Load Bank of England USD/GBP spot rates** (after `db:init`; required for sterling conversion of imported USD vest rows at calculation time):
+4. Load Bank of England USD/GBP spot rates (required for sterling conversion of imported USD rows at calculation time):
 
    ```bash
    npm run fetch:fx-rates
    ```
 
-## Database provisioning
+5. Start the app:
+
+   ```bash
+   npm run dev
+   ```
+
+6. Open [http://localhost:3000](http://localhost:3000), check [http://localhost:3000/api/health](http://localhost:3000/api/health) (`db` should be `connected`), then sign up (see [Sign up and email verification (development)](#sign-up-and-email-verification-development)).
+
+**Suggested order for any new environment:** configure `.env.local` → `db:init` → `fetch:fx-rates` → `npm run dev`.
+
+## Prerequisites
+
+- **Node.js** >= 22.21.1 (see `engines` in [package.json](package.json); use [nvm](https://github.com/nvm-sh/nvm) or your version manager if helpful)
+- **npm** (ships with Node)
+- **MongoDB Atlas** — the app expects a single connection string in `MONGODB_URI`. There is **no** local MongoDB fallback.
+
+## Environment variables
+
+Copy [.env.example](.env.example) to `.env.local` for local development. The app validates configuration at startup ([`src/shared/config/env.ts`](src/shared/config/env.ts)).
+
+| Variable | Purpose |
+|----------|---------|
+| `NODE_ENV` | `development`, `production`, or `test` (default `development`). |
+| `MONGODB_URI` | Atlas connection string; **database name must appear in the URI path** (e.g. `.../mydb?...`). |
+| `NEXT_PUBLIC_APP_URL` | Public site origin **without** trailing slash (e.g. `http://localhost:3000`). |
+| `NEXT_PUBLIC_BETTER_AUTH_URL` | Better Auth API base URL for the browser; **must be identical** to `BETTER_AUTH_URL` and include `/api/auth`. |
+| `BETTER_AUTH_URL` | Same value as `NEXT_PUBLIC_BETTER_AUTH_URL` (full URL including `/api/auth`). |
+| `BETTER_AUTH_SECRET` | Session signing secret; **at least 32 characters** (e.g. `openssl rand -base64 32`). |
+| `AUTH_EMAIL_PROVIDER` | `noop` (default) logs auth links via the app logger; `smtp` is reserved for a future provider. |
+| `ALLOW_DB_TEARDOWN` | Set to `1` **only** when running `npm run db:teardown` (destructive). Do not set in production. |
+
+## MongoDB Atlas (first-time)
+
+1. Create a cluster (or use an existing one) in [MongoDB Atlas](https://www.mongodb.com/atlas).
+2. Create a **database user** with read/write access to your app database.
+3. Under **Network Access**, allow your current IP (development) or your deployment’s egress (production). Connection failures are often due to missing network access rules.
+4. Build a connection string that includes the **database name in the path** and paste it into `MONGODB_URI` in `.env.local`.
+5. Use Atlas “Connect” / “Test connection” to confirm credentials before running `npm run db:init`.
+
+## Database and FX scripts
 
 | Command | Purpose |
-|--------|---------|
-| `npm run db:init` | Idempotent setup: managed collections, validators, indexes. **Run before** first app use on a new database. |
+|---------|---------|
+| `npm run db:init` | Idempotent setup: managed collections, `$jsonSchema` validators, indexes. **Run before** first app use on a new database. |
 | `npm run fetch:fx-rates` | Downloads BoE XUDLUSS series and upserts into the `fx_rates` collection. **Run after** `db:init`; safe to re-run to refresh rates. |
 | `npm run db:teardown` | Drops managed app collections **and** Better Auth collections (`user`, `session`, `account`, `verification`, optional `rateLimit`). **Requires** `ALLOW_DB_TEARDOWN=1` (see `.env.example`). |
+| `npm run db:refresh` | Destructive dev reset: `db:teardown` → `db:init` → `fetch:fx-rates` (uses `ALLOW_DB_TEARDOWN=1` internally). |
 
 **Teardown example** (destructive; use only on a database you intend to wipe):
 
@@ -53,9 +106,7 @@ After teardown, the app will not start until you run **`npm run db:init`** again
 
 The application **`getMongoClient()`** does not create collections at runtime; it checks that provisioned collections exist and fails with a clear error if you skipped `db:init`.
 
-**Suggested order for a new environment:** `db:init` → `fetch:fx-rates` → `npm run dev`, then sign up (see **Sign up and email verification (development)** under Development).
-
-For container or hosted deployments, run **`db:init`** and **`fetch:fx-rates`** against the target database (e.g. CI job or startup hook) before serving traffic, in addition to configuring `MONGODB_URI` at runtime.
+For container or hosted deployments, run **`db:init`** and **`fetch:fx-rates`** against the target database (e.g. CI job or init container) before serving traffic, in addition to configuring `MONGODB_URI` at runtime.
 
 ## Development
 
@@ -63,13 +114,21 @@ For container or hosted deployments, run **`db:init`** and **`fetch:fx-rates`** 
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Health check: [http://localhost:3000/api/health](http://localhost:3000/api/health) (`db` is `connected` when Atlas is reachable and the database is provisioned).
+Useful URLs:
+
+| URL | Notes |
+|-----|--------|
+| [http://localhost:3000](http://localhost:3000) | Home |
+| [http://localhost:3000/sign-up](http://localhost:3000/sign-up) | Register |
+| [http://localhost:3000/sign-in](http://localhost:3000/sign-in) | Sign in |
+| [http://localhost:3000/holdings](http://localhost:3000/holdings) | Holdings (requires verified email) |
+| [http://localhost:3000/api/health](http://localhost:3000/api/health) | Health check (`db` is `connected` when Atlas is reachable and the database is provisioned) |
 
 ### Sign up and email verification (development)
 
-By default **`AUTH_EMAIL_PROVIDER=noop`**: no real email is sent. Verification and password-reset links are still generated; the app logs them via `src/shared/app-logger.ts`.
+By default **`AUTH_EMAIL_PROVIDER=noop`**: no real email is sent. Verification and password-reset links are still generated; the app logs them through [`src/shared/app-logger.ts`](src/shared/app-logger.ts) (`logInfo` / `logWarn`).
 
-1. Keep the **terminal where `npm run dev` is running** visible (that is where auth emails are logged). The URL is **not** on the `POST /api/auth/sign-up/email` line — look for a **`[dev] NOOP EMAIL`** line (printed with `console.warn` so it is easy to spot) or `Auth email (noop) full text:` right after it.
+1. Keep the **terminal where `npm run dev` is running** visible. The URL is **not** on the `POST /api/auth/sign-up/email` line — look for a **`[dev] NOOP EMAIL`** line (warn-level output from `logWarn`, easy to spot) or `Auth email (noop) full text:` if no URL was extracted.
 2. Complete **Sign up** in the browser with a **new email**, or use **Resend verification** on `/verify-email` if you already registered. **Re-using an email that already exists** used to produce a success response with **no** verification email (Better Auth’s duplicate-email path); the app now **resends** the verification link for unverified accounts in that case.
 3. **Paste the URL** into the address bar if needed, complete verification, then continue.
 4. Use **Sign in** with the same email and password. Holding routes require a verified email.
@@ -78,13 +137,13 @@ Password reset flows work the same way in noop mode: copy the reset URL from the
 
 For production, configure a real transactional email provider and set `AUTH_EMAIL_PROVIDER` (and any provider-specific env vars) once implemented — do not rely on noop for real users.
 
-## Quality gate
+## Quality gate and tests
 
 ```bash
 npm run validate
 ```
 
-Runs `build`, `lint`, `npm test`, and `npm run test:integration`. **Build** loads the same env as Next.js (`/.env.local`); set `MONGODB_URI` plus Better Auth variables (`NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`) so config validation passes. For CI without secrets, pass placeholders for the build step only, for example:
+Runs `build`, `lint`, `npm test`, and `npm run test:integration`. **Build** loads the same env as Next.js (`/.env.local`); set `MONGODB_URI` plus Better Auth variables so config validation passes. For CI without secrets, pass placeholders for the build step only, for example:
 
 ```bash
 MONGODB_URI='mongodb://127.0.0.1:27017/ci-build' \
@@ -95,20 +154,56 @@ BETTER_AUTH_SECRET='0123456789abcdef0123456789abcdef' \
 npm run build
 ```
 
-Integration tests need a **reachable** Atlas URI and will run `db:init` logic in setup when needed.
+After a successful `npm run build`, you can smoke-test production mode locally:
 
-## Tests
+```bash
+npm run start
+```
+
+**Tests**
 
 - **Unit** tests live under `src/test/unit/` and run with `npm test`.
-- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (included in **`npm run validate`**). They need a **reachable** MongoDB at `MONGODB_URI`. Jest loads `.env.local` and `.env` first (see `src/test/jest-setup.ts`); if `MONGODB_URI` is still unset, a localhost placeholder is applied so config validation can load — use a real Atlas URI in `.env.local` (or export `MONGODB_URI` in CI). Each integration suite calls `ensureTestDatabase()` in `beforeAll` to apply the same provisioning as `npm run db:init`.
+- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (included in **`npm run validate`**). They require a **reachable** MongoDB at a **real** `MONGODB_URI` in `.env.local` (or exported in CI). Jest applies a localhost placeholder only when `MONGODB_URI` is unset so config validation can load — that placeholder is **not** sufficient for integration tests that hit Atlas. Each integration suite calls `ensureTestDatabase()` in `beforeAll` to apply the same provisioning as `npm run db:init`.
+
+## Project layout
+
+| Path | Role |
+|------|------|
+| `src/app/` | Next.js App Router: UI, layouts, and route handlers (e.g. `/api/auth`, `/api/health`). |
+| `src/domain/` | Domain model, canonical Zod schemas, repository **interfaces**. See [src/domain/README.md](src/domain/README.md). |
+| `src/application/` | Use cases and orchestration. See [src/application/README.md](src/application/README.md). |
+| `src/infrastructure/` | Repositories, MongoDB, Better Auth adapter, imports. See [src/infrastructure/README.md](src/infrastructure/README.md). |
+| `src/shared/` | Config, errors, logging. See [src/shared/README.md](src/shared/README.md). |
+| `scripts/` | `db:init`, `db:teardown`, `fetch:fx-rates`. |
+
+Layering is described in [docs/adrs/001-folder-structure-and-ddd-layering.md](docs/adrs/001-folder-structure-and-ddd-layering.md). Cursor / AI context for engineers: [`.cursor/rules/project.mdc`](.cursor/rules/project.mdc).
+
+## Documentation
+
+- Product specification: [docs/PRD.md](docs/PRD.md)
+- Delivery plan: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+- Architecture decision records: [docs/adrs/](docs/adrs/) — start with [ADR-001 (layering)](docs/adrs/001-folder-structure-and-ddd-layering.md), [ADR-002 (environment and configuration)](docs/adrs/002-environment-and-configuration-loading.md), [ADR-007 (Better Auth)](docs/adrs/007-authentication-better-auth.md)
 
 ## Docker
 
-Build (uses a dummy `MONGODB_URI` only for the Next.js compile step; override at runtime). **`BETTER_AUTH_SECRET` must be supplied at build time** (no default in the Dockerfile):
+The image uses Next.js **standalone** output ([`next.config.ts`](next.config.ts)). Build uses a dummy `MONGODB_URI` for the compile step; override at **runtime** with `-e MONGODB_URI=...`.
+
+**`BETTER_AUTH_SECRET` must be supplied at build time** (no default in the Dockerfile):
 
 ```bash
 docker build -f docker/Dockerfile \
   --build-arg BETTER_AUTH_SECRET='your-at-least-32-character-secret-here' \
+  -t shares-gains-uk-tax-calculator:latest .
+```
+
+`NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, and `BETTER_AUTH_URL` are **baked into the client bundle at build time** (Dockerfile defaults use `http://127.0.0.1:3000`). If the app is served at a different origin (e.g. `https://app.example.com`), rebuild with matching arguments so Better Auth and client-side URLs stay correct:
+
+```bash
+docker build -f docker/Dockerfile \
+  --build-arg BETTER_AUTH_SECRET='your-at-least-32-character-secret-here' \
+  --build-arg NEXT_PUBLIC_APP_URL='https://app.example.com' \
+  --build-arg NEXT_PUBLIC_BETTER_AUTH_URL='https://app.example.com/api/auth' \
+  --build-arg BETTER_AUTH_URL='https://app.example.com/api/auth' \
   -t shares-gains-uk-tax-calculator:latest .
 ```
 
@@ -120,11 +215,29 @@ docker run --rm -p 3000:3000 -e MONGODB_URI='mongodb+srv://...' shares-gains-uk-
 
 ## Security and operations
 
-- **Secrets:** supply `MONGODB_URI` only via environment (or your platform’s secret store) — never commit real URIs. The app logs through `src/shared/app-logger.ts`; do not add `console.log` of connection strings or user financial payloads.
+- **Secrets:** supply `MONGODB_URI` only via environment (or your platform’s secret store) — never commit real URIs. Do not commit `.env.local`.
+- **Logging:** the app logs through `src/shared/app-logger.ts`; do not log connection strings or user financial payloads.
 - **Data:** holding and transaction data live in MongoDB Atlas; treat backups and access control as part of your deployment policy.
 - **Container:** the production image runs as a non-root user (`nextjs`, UID 1001).
 
-## Documentation
+## License
 
-- Product: `docs/PRD.md`
-- Delivery plan: `docs/IMPLEMENTATION_PLAN.md`
+[MIT](LICENSE)
+
+## Contributing
+
+1. Create a branch from `main` (for example `docs/readme-developer-onboarding` or `feature/your-change`).
+2. Make changes; run **`npm run validate`** before opening a PR.
+3. Push and open a pull request against `main`:
+
+   ```bash
+   git push -u origin your-branch-name
+   ```
+
+   On GitHub you can use the compare URL or the CLI, for example:
+
+   ```bash
+   gh pr create --base main --head your-branch-name
+   ```
+
+Use clear, imperative commit messages (e.g. `docs: expand README for developer onboarding`).
