@@ -2,7 +2,7 @@
 
 # Shares Gains UK Tax Calculator
 
-UK capital gains workflow for equity compensation (e.g. RSUs from a US employer). The app calculates **capital gains and losses (chargeable gains mechanics) per holding** you import — not your **overall CGT liability** for a tax year (other disposals, brought-forward losses, reliefs, and your rate position can change what you owe). This repository is under active development.
+UK capital gains workflow for calculating capital gains HMRC tax liabilities as a result of US employer awarded RSUs vesting and being disposed of, where the source trading system is E*TRADE. The app **calculates capital gains and losses for each holding (stock ticker)** you import, for each tax year. It does not calculate your overall annual CGT liability because other disposals, brought-forward losses, reliefs, and your rate position, which are not tracked by this application, change what you owe overall. 
 
 ## Table of contents
 
@@ -17,7 +17,6 @@ UK capital gains workflow for equity compensation (e.g. RSUs from a US employer)
 - [Documentation](#documentation)
 - [Docker](#docker)
 - [Security and operations](#security-and-operations)
-- [License](#license)
 - [Contributing](#contributing)
 
 ## Quick start
@@ -219,10 +218,6 @@ docker run --rm -p 3000:3000 -e MONGODB_URI='mongodb+srv://...' shares-gains-uk-
 - **Logging:** the app logs through `src/shared/app-logger.ts`; do not log connection strings or user financial payloads.
 - **Data:** holding and transaction data live in MongoDB Atlas; treat backups and access control as part of your deployment policy.
 - **Container:** the production image runs as a non-root user (`nextjs`, UID 1001).
-
-## License
-
-[MIT](LICENSE)
 
 ## Contributing
 
