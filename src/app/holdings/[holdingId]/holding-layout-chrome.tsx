@@ -6,13 +6,12 @@ import type { ReactElement } from 'react';
 
 type HoldingLayoutChromeProps = {
   readonly holdingId: string;
-  readonly symbol: string;
 };
 
 /**
- * Breadcrumb and Ledger / Capital gains sub-navigation for a single holding.
+ * Ledger / Capital gains sub-navigation for a single holding (breadcrumbs live in AppHeader).
  */
-export function HoldingLayoutChrome({ holdingId, symbol }: HoldingLayoutChromeProps): ReactElement {
+export function HoldingLayoutChrome({ holdingId }: HoldingLayoutChromeProps): ReactElement {
   const pathname = usePathname();
   const ledgerHref = `/holdings/${holdingId}`;
   const calculationHref = `/holdings/${holdingId}/calculation`;
@@ -29,23 +28,7 @@ export function HoldingLayoutChrome({ holdingId, symbol }: HoldingLayoutChromePr
 
   return (
     <header className="no-print">
-      <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
-        <Link href="/" className="text-[var(--color-accent)] hover:underline">
-          Holdings
-        </Link>
-        <span className="mx-2 text-neutral-400">/</span>
-        <Link href={ledgerHref} className="text-[var(--color-accent)] hover:underline" prefetch>
-          {symbol}
-        </Link>
-        {isCalculation ? (
-          <>
-            <span className="mx-2 text-neutral-400">/</span>
-            <span className="text-neutral-900">Calculation</span>
-          </>
-        ) : null}
-      </nav>
-
-      <nav aria-label="Holding views" className="mt-4 flex gap-6 border-b border-neutral-200">
+      <nav aria-label="Holding views" className="flex gap-6 border-b border-neutral-200">
         <Link href={ledgerHref} className={tabClass(isLedger)} prefetch>
           Ledger
         </Link>

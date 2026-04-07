@@ -23,9 +23,13 @@ export default async function HoldingLayout({ children, params }: HoldingLayoutP
 
   return (
     <>
-      <AppHeader userDisplayName={formatSessionDisplayName(user)} holdingSymbol={holding.symbol} />
+      <AppHeader
+        userDisplayName={formatSessionDisplayName(user)}
+        holdingId={holdingId}
+        holdingSymbol={holding.symbol}
+      />
       <main className="mx-auto max-w-7xl px-6 py-12">
-        <HoldingLayoutChrome holdingId={holdingId} symbol={holding.symbol} />
+        <HoldingLayoutChrome holdingId={holdingId} />
         {children}
       </main>
     </>
