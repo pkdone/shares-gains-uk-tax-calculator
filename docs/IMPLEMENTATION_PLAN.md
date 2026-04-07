@@ -107,7 +107,7 @@ The following real-world export files inform the import pipeline design. They ar
 
 - [x] **Better Auth** integrated: App Router `/api/auth/[...all]`, `@better-auth/mongo-adapter` sharing `MONGODB_URI`, cookie sessions (`nextCookies` plugin).
 - [x] **Email/password** with **required email verification** before holding routes; password reset and verification email scaffolding (`AUTH_EMAIL_PROVIDER=noop` default — log-based until a real provider is wired).
-- [x] **Stub user removed:** no `STUB_USER_ID`, no `scripts/seed-users.ts`; `userId` on tenant documents = Better Auth `user.id`. Domain `users` collection upserted on sign-up for consistency with existing provisioning.
+- [x] **Stub user removed:** no `STUB_USER_ID`, no `scripts/seed-users.ts`; `userId` on tenant documents = Better Auth `user.id`. Domain `app_users` collection upserted on sign-up for consistency with existing provisioning.
 - [x] **ADR-007** written: `docs/adrs/007-authentication-better-auth.md`.
 
 ---

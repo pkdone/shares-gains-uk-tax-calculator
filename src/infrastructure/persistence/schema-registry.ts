@@ -9,7 +9,7 @@ import {
 } from '@/infrastructure/persistence/json-schema-for-mongodb';
 import { zodSchemaToMongoJsonSchema } from '@/infrastructure/persistence/zod-to-mongo-json-schema';
 
-export const COLLECTION_USERS = 'users';
+export const COLLECTION_APP_USERS = 'app_users';
 export const COLLECTION_HOLDINGS = 'holdings';
 export const COLLECTION_ACQUISITIONS = 'acquisitions';
 export const COLLECTION_DISPOSALS = 'disposals';
@@ -26,7 +26,7 @@ function getOrBuild(name: string, build: () => JsonSchemaNode): JsonSchemaNode {
 
 export function getJsonSchemaForCollection(collectionName: string): JsonSchemaNode {
   switch (collectionName) {
-    case COLLECTION_USERS:
+    case COLLECTION_APP_USERS:
       return getOrBuild(collectionName, () =>
         zodSchemaToMongoJsonSchema(userDocumentSchema, { objectIdFields: ['_id'] }),
       );

@@ -4,7 +4,7 @@ import { nextCookies } from 'better-auth/next-js';
 import { mongodbAdapter } from '@better-auth/mongo-adapter';
 
 import { getMongoClient } from '@/infrastructure/persistence/mongodb-client';
-import { COLLECTION_USERS } from '@/infrastructure/persistence/schema-registry';
+import { COLLECTION_APP_USERS } from '@/infrastructure/persistence/schema-registry';
 import { sendAuthEmail } from '@/infrastructure/email/send-auth-email';
 import { env } from '@/shared/config/env';
 
@@ -78,9 +78,9 @@ async function buildBetterAuth() {
       user: {
         create: {
           after: async (user) => {
-            const users = db.collection(COLLECTION_USERS);
+            const appUsers = db.collection(COLLECTION_APP_USERS);
             const now = new Date();
-            await users.updateOne(
+            await appUsers.updateOne(
               { userId: user.id },
               { $setOnInsert: { userId: user.id, createdAt: now } },
               { upsert: true },

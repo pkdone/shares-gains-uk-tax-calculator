@@ -17,7 +17,7 @@ async function main(): Promise<void> {
     COLLECTION_DISPOSALS,
     COLLECTION_FX_RATES,
     COLLECTION_HOLDINGS,
-    COLLECTION_USERS,
+    COLLECTION_APP_USERS,
   } = await import('../src/infrastructure/persistence/schema-registry');
 
   const client = await createConnectedMongoClient();
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
       logInfo(`    - ${name}`);
     }
     logInfo('  Indexes (createIndex, idempotent):');
-    logInfo(`    - ${COLLECTION_USERS}: unique on { userId: 1 }`);
+    logInfo(`    - ${COLLECTION_APP_USERS}: unique on { userId: 1 }`);
     logInfo(`    - ${COLLECTION_HOLDINGS}: unique on { userId: 1, symbol: 1 }`);
     logInfo(`    - ${COLLECTION_ACQUISITIONS}: { holdingId: 1, userId: 1 }`);
     logInfo(
