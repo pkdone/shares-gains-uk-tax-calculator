@@ -42,14 +42,14 @@ export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageC
         ) : (
           <ul className="mt-3 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
             {holdings.map((h) => (
-              <li key={h.id}>
-                <div className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-neutral-50">
-                  <Link
-                    href={`/holdings/${h.id}`}
-                    className="min-w-0 flex-1 text-sm font-medium text-neutral-900"
-                  >
-                    {h.symbol}
-                  </Link>
+              <li key={h.id} className="flex items-stretch">
+                <Link
+                  href={`/holdings/${h.id}`}
+                  className="flex min-h-[3rem] min-w-0 flex-1 items-center px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+                >
+                  {h.symbol}
+                </Link>
+                <div className="flex shrink-0 items-center border-l border-neutral-200 bg-white px-2 py-2">
                   <HoldingDeleteButton holdingId={h.id} symbol={h.symbol} />
                 </div>
               </li>
