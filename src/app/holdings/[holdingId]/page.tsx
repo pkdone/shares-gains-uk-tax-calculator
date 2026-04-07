@@ -103,21 +103,21 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
                   Tax year {group.taxYearLabel}
                 </h3>
                 <div className="mt-3 overflow-x-auto rounded-lg border border-neutral-200">
-                  <table className="min-w-full text-left text-sm">
+                  <table className="min-w-full text-sm">
                     <thead className="bg-[#ededed] text-neutral-700">
                       <tr>
-                        <th className="px-3 py-2 font-medium">Type</th>
-                        <th className="px-3 py-2 font-medium">Date</th>
-                        <th className="px-3 py-2 font-medium">Grant #</th>
-                        <th className="px-3 py-2 font-medium">Vest period</th>
-                        <th className="px-3 py-2 font-medium">Vested</th>
-                        <th className="px-3 py-2 font-medium">For tax</th>
-                        <th className="px-3 py-2 font-medium">Qty (net)</th>
-                        <th className="px-3 py-2 font-medium">Price / share</th>
-                        <th className="px-3 py-2 font-medium">Consideration / proceeds</th>
-                        <th className="px-3 py-2 font-medium">Fees</th>
-                        <th className="px-3 py-2 font-medium">Total</th>
-                        <th className="px-3 py-2 font-medium">Actions</th>
+                        <th className="px-3 py-2 text-left font-medium">Type</th>
+                        <th className="px-3 py-2 text-left font-medium">Date</th>
+                        <th className="px-3 py-2 text-left font-medium">Grant #</th>
+                        <th className="px-3 py-2 text-left font-medium">Vest period</th>
+                        <th className="px-3 py-2 text-right font-medium">Vested</th>
+                        <th className="px-3 py-2 text-right font-medium">For tax</th>
+                        <th className="px-3 py-2 text-right font-medium">Qty (net)</th>
+                        <th className="px-3 py-2 text-right font-medium">Price / share</th>
+                        <th className="px-3 py-2 text-right font-medium">Consideration / proceeds</th>
+                        <th className="px-3 py-2 text-right font-medium">Fees</th>
+                        <th className="px-3 py-2 text-right font-medium">Total</th>
+                        <th className="px-3 py-2 text-center font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100 bg-white">
@@ -132,30 +132,30 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
                                 ? line.data.vestPeriod
                                 : '—'}
                             </td>
-                            <td className="px-3 py-2 tabular-nums text-neutral-600">
+                            <td className="px-3 py-2 text-right tabular-nums text-neutral-600">
                               {line.data.economicsKind === 'import_usd' &&
                               line.data.grossVestedQuantity !== undefined
                                 ? line.data.grossVestedQuantity
                                 : '—'}
                             </td>
-                            <td className="px-3 py-2 tabular-nums text-neutral-600">
+                            <td className="px-3 py-2 text-right tabular-nums text-neutral-600">
                               {line.data.economicsKind === 'import_usd' &&
                               line.data.sharesTradedForTaxes !== undefined
                                 ? line.data.sharesTradedForTaxes
                                 : '—'}
                             </td>
-                            <td className="px-3 py-2 tabular-nums">{line.data.quantity}</td>
-                            <td className="px-3 py-2 tabular-nums text-neutral-700">
+                            <td className="px-3 py-2 text-right tabular-nums">{line.data.quantity}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-neutral-700">
                               $
                               {priceUsd.format(
                                 pricePerShare(line.data.considerationUsd, line.data.quantity),
                               )}
                             </td>
-                            <td className="px-3 py-2 tabular-nums">
+                            <td className="px-3 py-2 text-right tabular-nums">
                               ${money.format(line.data.considerationUsd)}
                             </td>
-                            <td className="px-3 py-2 tabular-nums">${money.format(line.data.feesUsd)}</td>
-                            <td className="px-3 py-2 tabular-nums font-medium">
+                            <td className="px-3 py-2 text-right tabular-nums">${money.format(line.data.feesUsd)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums font-medium">
                               $
                               {money.format(
                                 totalAcquisitionCostUsd(
@@ -176,18 +176,18 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
                             <td className="px-3 py-2 tabular-nums">{line.data.eventDate}</td>
                             <td className="px-3 py-2 text-red-700/80">—</td>
                             <td className="px-3 py-2 text-red-700/80">—</td>
-                            <td className="px-3 py-2 text-red-700/80">—</td>
-                            <td className="px-3 py-2 text-red-700/80">—</td>
-                            <td className="px-3 py-2 tabular-nums">{line.data.quantity}</td>
-                            <td className="px-3 py-2 tabular-nums">
+                            <td className="px-3 py-2 text-right tabular-nums text-red-700/80">—</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-red-700/80">—</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{line.data.quantity}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">
                               $
                               {priceUsd.format(
                                 pricePerShare(line.data.grossProceedsUsd, line.data.quantity),
                               )}
                             </td>
-                            <td className="px-3 py-2 tabular-nums">${money.format(line.data.grossProceedsUsd)}</td>
-                            <td className="px-3 py-2 tabular-nums">${money.format(line.data.feesUsd)}</td>
-                            <td className="px-3 py-2 tabular-nums font-medium">
+                            <td className="px-3 py-2 text-right tabular-nums">${money.format(line.data.grossProceedsUsd)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">${money.format(line.data.feesUsd)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums font-medium">
                               $
                               {money.format(
                                 netDisposalProceedsUsd(line.data.grossProceedsUsd, line.data.feesUsd),
