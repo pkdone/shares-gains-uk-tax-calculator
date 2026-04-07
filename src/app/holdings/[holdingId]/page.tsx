@@ -43,7 +43,6 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-medium text-neutral-900">Entries by tax year</h2>
         <HoldingLedgerTable
           holdingId={holdingId}
           byTaxYear={ledger.byTaxYear}

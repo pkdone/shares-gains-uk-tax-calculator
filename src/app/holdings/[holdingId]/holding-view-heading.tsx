@@ -13,7 +13,7 @@ type HoldingViewHeadingProps = {
 export function HoldingViewHeading({ symbol }: HoldingViewHeadingProps): ReactElement {
   const pathname = usePathname();
   const isCalculation = pathname.endsWith('/calculation');
-  const suffix = isCalculation ? 'Capital gains' : 'Ledger';
+  const suffix = isCalculation ? 'Capital Gains' : 'Ledger';
 
   return (
     <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">

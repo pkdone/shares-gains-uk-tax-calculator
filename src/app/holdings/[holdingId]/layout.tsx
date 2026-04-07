@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: HoldingLayoutParams): Promise
   }
 
   const path = (await headers()).get('x-pathname') ?? '';
-  const viewSuffix: 'Capital gains' | 'Ledger' = path.includes('/calculation') ? 'Capital gains' : 'Ledger';
+  const viewSuffix: 'Capital Gains' | 'Ledger' = path.includes('/calculation') ? 'Capital Gains' : 'Ledger';
 
   return {
     title: holdingDocumentTitle(holding.symbol, viewSuffix),

@@ -15,7 +15,7 @@ export function CreateHoldingForm(): React.ReactElement {
   return (
     <form
       action={action}
-      className="flex w-full flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+      className="inline-flex max-w-full flex-col items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
     >
       <label className="text-sm font-medium text-neutral-800" htmlFor="holding-symbol">
         Stock symbol
@@ -29,12 +29,12 @@ export function CreateHoldingForm(): React.ReactElement {
         autoCapitalize="characters"
         autoCorrect="off"
         spellCheck={false}
-        className="rounded-md border border-neutral-300 px-3 py-2 text-sm uppercase"
+        className="w-36 rounded-md border border-neutral-300 px-3 py-2 text-sm uppercase sm:w-40"
         placeholder="e.g. NVDA"
         disabled={pending}
       />
       {state?.error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="max-w-xs text-sm text-red-600" role="alert">
           {state.error}
         </p>
       ) : null}

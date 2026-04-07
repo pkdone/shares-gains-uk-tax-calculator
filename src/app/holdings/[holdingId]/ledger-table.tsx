@@ -159,21 +159,24 @@ export function HoldingLedgerTable({
 
   return (
     <>
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h2 className="text-lg font-medium text-neutral-900">Entries by tax year</h2>
+        {byTaxYear.length > 0 ? (
+          <button
+            type="button"
+            disabled={selected.size === 0}
+            className="shrink-0 rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-800 hover:bg-red-50 disabled:pointer-events-none disabled:opacity-50"
+            onClick={openBulkDialog}
+          >
+            {selected.size === 0 ? 'Delete selected' : `Delete selected (${String(selected.size)})`}
+          </button>
+        ) : null}
+      </div>
+
       {byTaxYear.length === 0 ? (
         <p className="mt-3 text-sm text-neutral-600">No events yet.</p>
       ) : (
         <div className="mt-4 space-y-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={selected.size === 0}
-              className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-800 hover:bg-red-50 disabled:pointer-events-none disabled:opacity-50"
-              onClick={openBulkDialog}
-            >
-              {selected.size === 0 ? 'Delete selected' : `Delete selected (${String(selected.size)})`}
-            </button>
-          </div>
-
           <dialog
             ref={dialogRef}
             className="w-[min(100vw-2rem,28rem)] max-w-none rounded-lg border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-black/40"
@@ -248,24 +251,16 @@ export function HoldingLedgerTable({
                       <th className="px-3 py-2 text-right font-medium">Consideration / proceeds</th>
                       <th className="px-3 py-2 text-right font-medium">Fees</th>
                       <th className="px-3 py-2 text-right font-medium">Total</th>
-                      <th className="px-3 py-2 text-center font-medium">
-                        <div className="flex flex-col items-center gap-1 normal-case">
-                          <span className="text-xs font-medium">Select</span>
-                          <label className="inline-flex cursor-pointer items-center gap-1 text-xs font-normal">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-neutral-300"
-                              checked={groupAllSelected(group)}
-                              onChange={(e) => {
-                                setGroupSelection(group, e.target.checked);
-                              }}
-                              aria-label={`Select all entries for tax year ${group.taxYearLabel}`}
-                            />
-                            <span className="hidden sm:inline" aria-hidden>
-                              All
-                            </span>
-                          </label>
-                        </div>
+                      <th className="w-12 px-2 py-2 text-center align-middle" scope="col">
+                        <input
+                          type="checkbox"
+                          className="mx-auto block h-4 w-4 rounded border-neutral-300"
+                          checked={groupAllSelected(group)}
+                          onChange={(e) => {
+                            setGroupSelection(group, e.target.checked);
+                          }}
+                          aria-label={`Select all entries for tax year ${group.taxYearLabel}`}
+                        />
                       </th>
                     </tr>
                   </thead>
