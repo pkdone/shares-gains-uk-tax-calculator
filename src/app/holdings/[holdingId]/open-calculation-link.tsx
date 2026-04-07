@@ -3,6 +3,8 @@
 import Link, { useLinkStatus } from 'next/link';
 import type { ReactElement } from 'react';
 
+import { buttonPrimaryClassName } from '@/app/ui/button-variants';
+
 type OpenCalculationLinkProps = {
   readonly holdingId: string;
 };
@@ -30,7 +32,7 @@ export function OpenCalculationLink({ holdingId }: OpenCalculationLinkProps): Re
     <Link
       href={`/holdings/${holdingId}/calculation`}
       prefetch
-      className="inline-flex min-h-[40px] min-w-[12rem] items-center justify-center rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+      className={`inline-flex min-h-[40px] min-w-[12rem] items-center justify-center gap-2 ${buttonPrimaryClassName}`}
     >
       <OpenCalculationLinkLabel />
     </Link>

@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 
 import { createHoldingAction, type FormActionState } from '@/app/holdings/actions';
+import { buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 export function CreateHoldingForm(): React.ReactElement {
   const [state, action, pending] = useActionState<FormActionState | undefined, FormData>(
@@ -36,7 +37,7 @@ export function CreateHoldingForm(): React.ReactElement {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className={buttonPrimaryClassName}
       >
         {pending ? 'Creating…' : 'Create holding'}
       </button>
