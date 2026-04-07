@@ -10,7 +10,7 @@ export const userIdentitySchema = z.object({
 export type UserIdentity = z.infer<typeof userIdentitySchema>;
 
 /**
- * Persisted stub user document (MongoDB `users` collection).
+ * Persisted stub user document (MongoDB `app_users` collection).
  */
 export const userStubDocumentSchema = userIdentitySchema.extend({
   createdAt: z.date(),

@@ -5,13 +5,13 @@ import {
   COLLECTION_DISPOSALS,
   COLLECTION_FX_RATES,
   COLLECTION_HOLDINGS,
-  COLLECTION_USERS,
+  COLLECTION_APP_USERS,
   getJsonSchemaForCollection,
 } from '@/infrastructure/persistence/schema-registry';
 
 /** Collections provisioned by `initMongoDatabase` / `npm run db:init`. */
 export const MANAGED_COLLECTION_NAMES = [
-  COLLECTION_USERS,
+  COLLECTION_APP_USERS,
   COLLECTION_HOLDINGS,
   COLLECTION_ACQUISITIONS,
   COLLECTION_DISPOSALS,
@@ -44,7 +44,7 @@ export async function initMongoDatabase(db: Db): Promise<void> {
     }
   }
 
-  await db.collection(COLLECTION_USERS).createIndex({ userId: 1 }, { unique: true });
+  await db.collection(COLLECTION_APP_USERS).createIndex({ userId: 1 }, { unique: true });
 
   await db.collection(COLLECTION_HOLDINGS).createIndex({ userId: 1, symbol: 1 }, { unique: true });
 
