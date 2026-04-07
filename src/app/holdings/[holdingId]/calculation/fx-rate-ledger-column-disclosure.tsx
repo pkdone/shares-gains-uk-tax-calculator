@@ -34,7 +34,7 @@ export function FxRateLedgerColumnDisclosure({
   };
 
   return (
-    <section className="mt-4 no-print">
+    <section className="mt-0 no-print">
       <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white text-sm shadow-sm">
         <button
           type="button"

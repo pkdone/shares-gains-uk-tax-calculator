@@ -9,7 +9,7 @@ type HoldingLayoutChromeProps = {
 };
 
 /**
- * Ledger / Capital gains sub-navigation for a single holding (breadcrumbs live in AppHeader).
+ * Ledger / Capital Gains sub-navigation for a single holding (breadcrumbs live in AppHeader).
  */
 export function HoldingLayoutChrome({ holdingId }: HoldingLayoutChromeProps): ReactElement {
   const pathname = usePathname();
@@ -27,13 +27,13 @@ export function HoldingLayoutChrome({ holdingId }: HoldingLayoutChromeProps): Re
     ].join(' ');
 
   return (
-    <header className="no-print">
+    <header className="no-print mt-4">
       <nav aria-label="Holding views" className="flex gap-6 border-b border-neutral-200">
         <Link href={ledgerHref} className={tabClass(isLedger)} prefetch>
           Ledger
         </Link>
         <Link href={calculationHref} className={tabClass(isCalculation)} prefetch>
-          Capital gains
+          Capital Gains
         </Link>
       </nav>
     </header>

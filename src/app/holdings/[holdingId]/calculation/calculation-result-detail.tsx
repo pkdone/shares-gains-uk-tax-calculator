@@ -12,8 +12,6 @@ import type {
 } from '@/application/calculation/build-calculation-transaction-table';
 import type { MatchingSource } from '@/domain/schemas/calculation';
 
-import { FxRateLedgerLegendInline } from '@/app/holdings/[holdingId]/calculation/fx-rate-ledger-legend-body';
-
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -405,10 +403,6 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
       </div>
       <div className="space-y-4 px-3 py-3">
         <div>
-          <p className="mb-2 text-xs font-medium text-neutral-600">
-            Ledger (USD reference; CGT amounts in sterling)
-          </p>
-          <FxRateLedgerLegendInline />
           <div className="w-full overflow-x-auto">
             <table className="w-full max-w-full text-sm">
               <thead className="bg-neutral-100/80 text-neutral-700">

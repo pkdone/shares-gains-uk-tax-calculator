@@ -1,17 +1,11 @@
-import type {
-  CalculationLedgerLine,
-  FxAppliedToAcquisition,
-  FxAppliedToDisposal,
-} from '@/application/calculation/calculation-types';
+import type { CalculationLedgerLine } from '@/application/calculation/calculation-types';
 /**
  * Warnings when the calculation table layout could hide or obscure material facts.
  */
 export function buildMaterialCalculationWarnings(params: {
   readonly ledgerLines: readonly CalculationLedgerLine[];
-  readonly fxByAcquisitionId: Readonly<Record<string, FxAppliedToAcquisition>>;
-  readonly fxByDisposalId: Readonly<Record<string, FxAppliedToDisposal>>;
 }): readonly string[] {
-  const { ledgerLines, fxByAcquisitionId, fxByDisposalId } = params;
+  const { ledgerLines } = params;
   const warnings: string[] = [];
 
   const linesByDate = new Map<string, CalculationLedgerLine[]>();
@@ -41,28 +35,7 @@ export function buildMaterialCalculationWarnings(params: {
     );
   }
 
-  const fxFallback = buildFxFallbackWarning({ fxByAcquisitionId, fxByDisposalId });
-  if (fxFallback !== null) {
-    warnings.push(fxFallback);
-  }
-
   return dedupeStrings(warnings);
-}
-
-function buildFxFallbackWarning(params: {
-  readonly fxByAcquisitionId: Readonly<Record<string, FxAppliedToAcquisition>>;
-  readonly fxByDisposalId: Readonly<Record<string, FxAppliedToDisposal>>;
-}): string | null {
-  const { fxByAcquisitionId, fxByDisposalId } = params;
-
-  const hasAcquisitionFallback = Object.values(fxByAcquisitionId).some((f) => f.usedFallback);
-  const hasDisposalFallback = Object.values(fxByDisposalId).some((f) => f.usedFallback);
-
-  if (!hasAcquisitionFallback && !hasDisposalFallback) {
-    return null;
-  }
-
-  return `At least one USD conversion used a Bank of England rate published on an earlier calendar date than the transaction (weekend or holiday fallback). In the results ledger (by tax year tab), the FX rate is shown in orange for those rows. Open “Daily FX rates applied” near the top of this page and use “View FX applied (USD)” to see the rate date used on each row.`;
 }
 
 /**

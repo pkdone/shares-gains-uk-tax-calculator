@@ -15,7 +15,6 @@ import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mong
 
 import { LedgerEntryDelete } from '@/app/holdings/[holdingId]/ledger-entry-delete';
 import { HoldingLedgerActions } from '@/app/holdings/[holdingId]/holding-ledger-actions';
-import { OpenCalculationLink } from '@/app/holdings/[holdingId]/open-calculation-link';
 
 const money = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
@@ -81,13 +80,7 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
 
   return (
     <>
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight">{holding.symbol}</h1>
-
-      <p className="mt-4">
-        <OpenCalculationLink holdingId={holdingId} />
-      </p>
-
-      <div className="mt-10">
+      <div className="mt-8">
         <HoldingLedgerActions holdingId={holdingId} holdingSymbol={holding.symbol} />
       </div>
 

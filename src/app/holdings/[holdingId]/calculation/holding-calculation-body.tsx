@@ -64,7 +64,8 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
               userId,
             },
           }),
-        ['holding-calculation-v1', holdingId, userId],
+        // Bump version when cached payload shape or warning rules change (invalidates stale entries).
+        ['holding-calculation-v2', holdingId, userId],
         { tags: [holdingCalculationCacheTag(holdingId)] },
       );
       result = await runCached();
@@ -81,19 +82,28 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
     result !== null && calcError === null ? buildCalculationTransactionTableModel(result) : [];
 
   return (
-    <div className="no-print">
+    <div className="no-print w-full min-w-0">
       <CalculationPdfExportProvider>
-        <CalculationPageTitleAndExport holdingSymbol={holding.symbol} groups={transactionTableGroups} />
-
-        <MatchingAcquisitionsDisclosure />
-        <FxRateLedgerColumnDisclosure
-          acquisitionRows={
-            result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
-          }
-          disposalRows={
-            result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
-          }
-        />
+        {/*
+          min-w-0: flex/grid children default to min-width:auto and can force horizontal overflow past
+          the max-w-7xl main column; keep the export control aligned to the main content edge.
+        */}
+        <div className="mb-8 mt-6 flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+          <div className="min-w-0 w-full shrink-0 space-y-4 lg:w-3/4">
+            <MatchingAcquisitionsDisclosure />
+            <FxRateLedgerColumnDisclosure
+              acquisitionRows={
+                result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
+              }
+              disposalRows={
+                result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
+              }
+            />
+          </div>
+          <div className="flex min-w-0 w-full shrink-0 justify-end lg:w-auto lg:max-w-none lg:pt-0">
+            <CalculationPageTitleAndExport holdingSymbol={holding.symbol} groups={transactionTableGroups} />
+          </div>
+        </div>
 
         {hasLedgerData ? (
           <>

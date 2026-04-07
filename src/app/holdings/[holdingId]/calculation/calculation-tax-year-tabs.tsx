@@ -5,7 +5,7 @@ import { type KeyboardEvent, type ReactElement, useRef, useState } from 'react';
 import type { CalculationTransactionTableGroup } from '@/application/calculation/build-calculation-transaction-table';
 import { formatUkTaxYearLabelForDisplay } from '@/domain/services/uk-tax-year';
 
-import { buttonSecondaryClassName } from '@/app/ui/button-variants';
+import { buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 import { TaxYearPanel } from './calculation-result-detail';
 
@@ -116,7 +116,7 @@ export function CalculationTaxYearTabs({
           pdfToolbar={
             <button
               type="button"
-              className={`${buttonSecondaryClassName} px-3 py-2 text-sm`}
+              className={buttonPrimaryClassName}
               disabled={pdfBusy}
               aria-busy={pdfBusy}
               onClick={() => {

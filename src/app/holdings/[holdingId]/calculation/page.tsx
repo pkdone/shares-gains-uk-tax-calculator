@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 
 import { HoldingCalculationBody } from '@/app/holdings/[holdingId]/calculation/holding-calculation-body';
-import { HoldingCalculationLoadingFallback } from '@/app/holdings/[holdingId]/calculation/loading';
 
 type CalculationPageProps = {
   readonly params: Promise<{ holdingId: string }>;
@@ -13,7 +12,7 @@ export default async function HoldingCalculationPage({
   const { holdingId } = await params;
 
   return (
-    <Suspense fallback={<HoldingCalculationLoadingFallback />}>
+    <Suspense fallback={null}>
       <HoldingCalculationBody holdingId={holdingId} />
     </Suspense>
   );

@@ -17,7 +17,7 @@ export function formatSessionDisplayName(user: {
 
 type AppHeaderProps = {
   readonly userDisplayName: string;
-  /** Holding list page: breadcrumb Holdings → symbol (and Calculation when on that route). */
+  /** When set with holdingSymbol, shows Holdings → symbol breadcrumb. */
   readonly holdingId?: string;
   readonly holdingSymbol?: string;
 };
@@ -33,9 +33,9 @@ export function AppHeader({ userDisplayName, holdingId, holdingSymbol }: AppHead
     <header className="border-b border-neutral-200 bg-white no-print">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
         {showHoldingBreadcrumb ? (
-          <HoldingAppBreadcrumb holdingId={holdingId} symbol={holdingSymbol} />
+          <HoldingAppBreadcrumb symbol={holdingSymbol} />
         ) : (
-          <nav className="min-w-0 flex-1 text-sm" aria-label="App">
+          <nav className="min-w-0 flex-1 text-lg" aria-label="App">
             <Link href="/" className="font-semibold text-neutral-900 hover:text-[var(--color-accent)]">
               Holdings
             </Link>

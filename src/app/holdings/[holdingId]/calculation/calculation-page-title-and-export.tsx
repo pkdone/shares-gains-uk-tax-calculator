@@ -9,7 +9,7 @@ import type { CalculationTransactionTableGroup } from '@/application/calculation
 import { buildComputationPackPdfFilenameAllYears } from '@/application/calculation/calculation-pdf-filename';
 
 import { useCalculationPdfExportBusy } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
-import { buttonSecondaryClassName } from '@/app/ui/button-variants';
+import { buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 type CalculationPageTitleAndExportProps = {
   readonly holdingSymbol: string;
@@ -54,13 +54,10 @@ export function CalculationPageTitleAndExport({
   }, [groups, holdingSymbol, setPdfBusy]);
 
   return (
-    <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Capital gains calculations for {holdingSymbol} holding
-      </h1>
+    <div className="no-print flex w-full min-w-0 flex-wrap justify-end gap-4 lg:w-auto">
       <button
         type="button"
-        className={`${buttonSecondaryClassName} shrink-0 px-3 py-2 text-sm`}
+        className={`${buttonPrimaryClassName} shrink-0`}
         disabled={groups.length === 0 || pdfBusy}
         aria-busy={pdfBusy}
         onClick={() => {

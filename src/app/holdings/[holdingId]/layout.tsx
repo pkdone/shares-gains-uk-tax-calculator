@@ -28,7 +28,8 @@ export default async function HoldingLayout({ children, params }: HoldingLayoutP
         holdingId={holdingId}
         holdingSymbol={holding.symbol}
       />
-      <main className="mx-auto max-w-7xl px-6 py-12">
+      <main className="mx-auto w-full min-w-0 max-w-7xl px-6 pt-8 pb-12">
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">{holding.symbol}</h1>
         <HoldingLayoutChrome holdingId={holdingId} />
         {children}
       </main>

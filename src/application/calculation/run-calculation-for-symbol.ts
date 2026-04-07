@@ -114,8 +114,6 @@ export async function runCalculationForHoldingSymbol(params: {
 
   const materialWarnings = buildMaterialCalculationWarnings({
     ledgerLines,
-    fxByAcquisitionId,
-    fxByDisposalId,
   });
 
   return {
