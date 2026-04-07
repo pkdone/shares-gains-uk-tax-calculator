@@ -1,4 +1,4 @@
-import { linesFromJspdfSplitTextToSize } from '@/application/calculation/lines-from-jspdf-split-text-to-size';
+import { linesFromJspdfSplitTextToSize } from '@/infrastructure/calculation-pdf/lines-from-jspdf-split-text-to-size';
 
 describe('linesFromJspdfSplitTextToSize', () => {
   it('wraps a single string line', () => {

@@ -12,9 +12,10 @@ import type {
 } from '@/application/calculation/build-calculation-transaction-table';
 import { formatGbpAmount, formatUsdCurrency } from '@/application/calculation/calculation-amount-format';
 import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
-import { linesFromJspdfSplitTextToSize } from '@/application/calculation/lines-from-jspdf-split-text-to-size';
 import type { MatchingSource } from '@/domain/schemas/calculation';
 import { formatUkTaxYearLabelForDisplay } from '@/domain/services/uk-tax-year';
+
+import { linesFromJspdfSplitTextToSize } from './lines-from-jspdf-split-text-to-size';
 
 const MARGIN_MM = 14;
 const PAGE_BOTTOM_MM = 297 - MARGIN_MM;

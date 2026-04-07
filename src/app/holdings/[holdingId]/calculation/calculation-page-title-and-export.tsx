@@ -4,9 +4,9 @@ import { useCallback, type ReactElement } from 'react';
 
 import {
   buildComputationPackPdfAllYears,
-} from '@/application/calculation/build-calculation-computation-pack-pdf';
+} from '@/infrastructure/calculation-pdf/build-calculation-computation-pack-pdf';
 import type { CalculationTransactionTableGroup } from '@/application/calculation/build-calculation-transaction-table';
-import { buildComputationPackPdfFilenameAllYears } from '@/application/calculation/calculation-pdf-filename';
+import { buildComputationPackPdfFilenameAllYears } from '@/infrastructure/calculation-pdf/calculation-pdf-filename';
 
 import { useCalculationPdfExportBusy } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
 import { buttonPrimaryClassName } from '@/app/ui/button-variants';
