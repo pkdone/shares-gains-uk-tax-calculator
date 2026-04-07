@@ -35,17 +35,6 @@ export class ValidationError extends AppError {
 }
 
 /**
- * Domain invariant or business rule violated.
- */
-export class DomainError extends AppError {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, 'DOMAIN_RULE', options);
-    this.name = 'DomainError';
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
-}
-
-/**
  * Unexpected persistence or database failure.
  */
 export class PersistenceError extends AppError {

@@ -1,5 +1,5 @@
 import type { FormActionState } from '@/app/holdings/types';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export function toFormActionError(err: unknown, fallbackMessage: string): FormActionState {
   if (err instanceof DomainError) {

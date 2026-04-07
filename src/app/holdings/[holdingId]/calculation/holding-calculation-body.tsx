@@ -12,7 +12,7 @@ import {
 } from '@/infrastructure/repositories/composition-root';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { logInfo } from '@/shared/app-logger';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
 import { CalculationPageTitleAndExport } from '@/app/holdings/[holdingId]/calculation/calculation-page-title-and-export';

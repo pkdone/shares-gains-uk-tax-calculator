@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 
 import { deleteHolding } from '@/application/holding/delete-holding';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 import { disconnectMongoClient, getMongoClient } from '@/infrastructure/persistence/mongodb-client';
 import {
   COLLECTION_ACQUISITIONS,

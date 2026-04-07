@@ -1,6 +1,6 @@
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { Holding } from '@/domain/schemas/holding';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export async function requireHoldingForUser(
   holdingRepository: HoldingRepository,

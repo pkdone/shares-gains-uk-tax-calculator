@@ -1,7 +1,7 @@
 import type { CalcEvent, CalcInput, CalcOutput } from '@/domain/schemas/calculation';
 import { calcInputSchema } from '@/domain/schemas/calculation';
 import { computeMatchingOutput } from '@/domain/services/share-matching';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 function compareEvents(a: CalcEvent, b: CalcEvent): number {
   const dateCmp = a.data.eventDate.localeCompare(b.data.eventDate);

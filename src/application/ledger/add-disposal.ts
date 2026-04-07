@@ -5,7 +5,7 @@ import type {
 } from '@/domain/repositories/share-disposal-repository';
 import type { ShareDisposal } from '@/domain/schemas/share-disposal';
 import { requireHoldingForUser } from '@/application/holding/require-holding';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export async function addDisposal(
   holdingRepository: HoldingRepository,

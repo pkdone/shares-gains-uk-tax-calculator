@@ -5,7 +5,8 @@ import type { Holding, HoldingCreate } from '@/domain/schemas/holding';
 import { getMongoClient } from '@/infrastructure/persistence/mongodb-client';
 import type { HoldingDocument } from '@/infrastructure/persistence/schemas/holding-record';
 import { COLLECTION_HOLDINGS } from '@/infrastructure/persistence/schema-registry';
-import { DomainError, PersistenceError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
+import { PersistenceError } from '@/shared/errors/app-error';
 
 function mapDoc(doc: WithId<HoldingDocument>): Holding {
   return {

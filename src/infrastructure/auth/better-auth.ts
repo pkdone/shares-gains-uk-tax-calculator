@@ -1,5 +1,5 @@
 import { createEmailVerificationToken } from 'better-auth/api';
-import { betterAuth, type Auth } from 'better-auth';
+import { betterAuth } from 'better-auth';
 import { nextCookies } from 'better-auth/next-js';
 import { mongodbAdapter } from '@better-auth/mongo-adapter';
 
@@ -8,20 +8,13 @@ import { COLLECTION_USERS } from '@/infrastructure/persistence/schema-registry';
 import { sendAuthEmail } from '@/infrastructure/email/send-auth-email';
 import { env } from '@/shared/config/env';
 
-let authSingleton: Auth | undefined;
+let authSingleton: Awaited<ReturnType<typeof buildBetterAuth>> | undefined;
 
-/**
- * Lazily builds Better Auth with the shared MongoDB client so we do not connect twice.
- */
-export async function getAuth(): Promise<Auth> {
-  if (authSingleton) {
-    return authSingleton;
-  }
-
+async function buildBetterAuth() {
   const client = await getMongoClient();
   const db = client.db();
 
-  authSingleton = betterAuth({
+  return betterAuth({
     appName: 'Shares Gains UK Tax Calculator',
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
@@ -96,7 +89,17 @@ export async function getAuth(): Promise<Auth> {
         },
       },
     },
-  }) as unknown as Auth;
+  });
+}
 
+/**
+ * Lazily builds Better Auth with the shared MongoDB client so we do not connect twice.
+ */
+export async function getAuth() {
+  if (authSingleton) {
+    return authSingleton;
+  }
+
+  authSingleton = await buildBetterAuth();
   return authSingleton;
 }

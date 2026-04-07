@@ -3,7 +3,7 @@ import type { HoldingRepository } from '@/domain/repositories/holding-repository
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
 import type { Holding } from '@/domain/schemas/holding';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('deleteLedgerEntry', () => {
   const holding: Holding = {

@@ -1,5 +1,5 @@
 import { roundMoney2dp } from '@/domain/value-objects/money';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export type Section104Pool = {
   readonly shares: number;

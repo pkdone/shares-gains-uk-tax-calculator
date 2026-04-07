@@ -5,7 +5,7 @@ import type {
 } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import { requireHoldingForUser } from '@/application/holding/require-holding';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export async function addAcquisition(
   holdingRepository: HoldingRepository,

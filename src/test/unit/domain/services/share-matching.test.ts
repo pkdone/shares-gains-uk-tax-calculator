@@ -4,7 +4,7 @@ import {
   aggregateAcquisitionsAndDisposals,
   computeMatchingOutput,
 } from '@/domain/services/share-matching';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('share-matching helpers', () => {
   it('addDaysIso adds UTC calendar days', () => {

@@ -15,7 +15,7 @@ Milestone 4 delivers **GBP-only** pool mechanics and **pool-only** matching. Sam
 ### Location and purity
 
 - **Location:** `src/domain/services/` for algorithms; `src/domain/schemas/calculation.ts` for canonical Zod contracts and inferred types.
-- **Purity:** No imports from `application`, `infrastructure`, `interfaces`, or framework code. Domain may use `shared/errors` (`DomainError`) and existing domain helpers (e.g. `ukTaxYearLabelFromDateOnly`).
+- **Purity:** No imports from `application`, `infrastructure`, `interfaces`, or framework code. Domain may throw `DomainError` from `src/domain/errors/domain-error.ts` (extends `AppError` in `shared/errors`) and use existing domain helpers (e.g. `ukTaxYearLabelFromDateOnly`).
 - **Entry point:** `calculateGainsForSymbol(input: CalcInput): CalcOutput` in `cgt-calculator.ts` — **one symbol per invocation**. Multi-symbol grouping is an application-layer concern.
 
 ### Input contract

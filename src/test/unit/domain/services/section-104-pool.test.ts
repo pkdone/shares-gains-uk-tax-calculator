@@ -4,7 +4,7 @@ import {
   disposeFromPool,
 } from '@/domain/services/section-104-pool';
 import { roundMoney2dp } from '@/domain/value-objects/money';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('section-104-pool', () => {
   it('starts empty', () => {

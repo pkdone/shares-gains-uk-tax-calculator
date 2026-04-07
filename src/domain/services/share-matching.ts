@@ -7,7 +7,7 @@ import {
 } from '@/domain/services/section-104-pool';
 import { roundMoney2dp } from '@/domain/value-objects/money';
 import { ukTaxYearLabelFromDateOnly } from '@/domain/services/uk-tax-year';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 type AcqAgg = { qty: number; cost: number };
 type DispAgg = { qty: number; gross: number; fees: number };

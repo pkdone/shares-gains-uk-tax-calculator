@@ -4,7 +4,7 @@ import type { ShareDisposalPdfImportDraft } from '@/domain/schemas/share-disposa
 
 import { computeEtradeDisposalImportFingerprint } from '@/application/import/hash-etrade-disposal-import-fingerprint';
 import { requireHoldingForUser } from '@/application/holding/require-holding';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export async function commitEtradeStockPlanOrdersPdfImport(
   holdingRepository: HoldingRepository,
