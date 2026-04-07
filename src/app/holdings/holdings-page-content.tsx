@@ -17,7 +17,7 @@ export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageC
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pt-2">
           <h1 className="text-2xl font-semibold tracking-tight">Holdings</h1>
         </div>
         <UserAccountMenu displayName={userDisplayName} />
@@ -29,9 +29,7 @@ export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageC
 
       <section className="mt-8">
         <h2 className="text-lg font-medium text-neutral-900">New holding</h2>
-        <p className="mt-1 text-xs text-neutral-600">
-          Enter a ticker (e.g. NVDA). It will be stored and shown in uppercase.
-        </p>
+        <p className="mt-1 text-xs text-neutral-600">Enter a ticker (e.g. NVDA).</p>
         <div className="mt-3">
           <CreateHoldingForm />
         </div>

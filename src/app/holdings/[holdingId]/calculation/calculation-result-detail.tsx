@@ -98,11 +98,11 @@ function AcquisitionMatchingDetail(params: {
   const thirtyRows = sortedThirtyDayByDisposal(m);
 
   return (
-    <div className="space-y-3 text-neutral-800">
+    <div className="ml-0.5 space-y-4 border-l-2 border-neutral-200 pl-3 text-neutral-800">
       {m.sameDayQuantity > 0 ? (
         <div>
-          <p className="text-xs font-medium text-neutral-800">Same-day identification</p>
-          <p className="mt-1 text-xs text-neutral-600">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-600">Same-day identification</p>
+          <p className="mt-1.5 text-xs text-neutral-600">
             Matched to disposal(s) on <span className="font-medium text-neutral-800">{eventDate}</span>:{' '}
             <span className="tabular-nums">{m.sameDayQuantity}</span> shares, £{money.format(m.sameDayCostGbp)}{' '}
             allowable cost. These shares do not increase the Section 104 pool (they are identified against that
@@ -112,8 +112,8 @@ function AcquisitionMatchingDetail(params: {
       ) : null}
       {m.thirtyDayQuantity > 0 ? (
         <div>
-          <p className="text-xs font-medium text-neutral-800">30-day identification</p>
-          <p className="mt-1 text-xs text-neutral-600">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-600">30-day identification</p>
+          <p className="mt-1.5 text-xs text-neutral-600">
             Matched to earlier disposal(s) under the bed-and-breakfast (30-day) rule. Those shares and their acquisition
             cost are treated as sold by those disposals, so they do not increase the pool.
           </p>
@@ -143,8 +143,8 @@ function AcquisitionMatchingDetail(params: {
         </div>
       ) : null}
       <div>
-        <p className="text-xs font-medium text-neutral-800">Net increase to Section 104 pool</p>
-        <p className="mt-1 text-xs text-neutral-600">
+        <p className="text-[11px] font-semibold leading-snug text-neutral-600">Net increase to Section 104 pool</p>
+        <p className="mt-1.5 text-xs text-neutral-600">
           Unmatched portion after identification:{' '}
           <span className="tabular-nums font-medium text-neutral-900">{m.netToPoolQuantity}</span> shares, £
           {money.format(m.netToPoolCostGbp)}. This is what the pool totals in this acquisition summary include from this
