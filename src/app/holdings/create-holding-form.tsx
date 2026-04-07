@@ -25,7 +25,7 @@ export function CreateHoldingForm(): React.ReactElement {
         autoCorrect="off"
         spellCheck={false}
         className="rounded-md border border-neutral-300 px-3 py-2 text-sm uppercase"
-        placeholder="e.g. AAPL"
+        placeholder="e.g. NVDA"
         disabled={pending}
       />
       {state?.error ? (

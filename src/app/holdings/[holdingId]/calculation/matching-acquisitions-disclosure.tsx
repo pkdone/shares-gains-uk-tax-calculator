@@ -40,7 +40,9 @@ export function MatchingAcquisitionsDisclosure(): ReactElement {
             className="border-t border-neutral-200 bg-neutral-50/80 px-4 pb-4 pt-3"
           >
             <p className="text-neutral-600">
-              These rules apply to every acquisition and disposal for this holding (e.g. vesting, buys, sells).
+              These rules apply to every acquisition and disposal for this holding (e.g. vesting, buys, sells). Under
+              HMRC, the Section 104 pool is the pooled holding of shares of the same class in the same company, where
+              allowable costs are averaged until same-day or 30-day identification applies.
             </p>
             <p className="mt-3 text-neutral-800">
               <strong>How each date appears below:</strong> Results are grouped by tax year, then by calendar date. For

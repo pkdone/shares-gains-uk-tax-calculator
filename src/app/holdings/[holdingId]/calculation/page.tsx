@@ -67,7 +67,7 @@ export default async function HoldingCalculationPage({
     result !== null && calcError === null ? buildCalculationTransactionTableModel(result) : [];
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
+    <main className="mx-auto max-w-7xl px-6 py-12">
       <nav className="text-sm text-neutral-600 no-print">
         <Link href="/" className="text-[var(--color-accent)] hover:underline">
           Holdings
