@@ -3,6 +3,28 @@ import type { ReactElement } from 'react';
 /**
  * Shared copy for the ledger FX rate column colour key (green = same-day rate date, orange = fallback).
  */
+/**
+ * Compact legend for tables where the FX rate column uses green/orange colouring.
+ */
+export function FxRateLedgerLegendInline(): ReactElement {
+  return (
+    <div
+      className="mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-neutral-100 pb-2 text-[11px] text-neutral-600"
+      role="note"
+    >
+      <span className="font-medium text-neutral-700">FX rate column:</span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm bg-green-700" aria-hidden />
+        <span>Same-day BoE rate date</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm bg-orange-600" aria-hidden />
+        <span>Earlier published rate (e.g. weekend/holiday)</span>
+      </span>
+    </div>
+  );
+}
+
 export function FxRateLedgerLegendBody(): ReactElement {
   return (
     <ul className="space-y-1.5 text-neutral-700">

@@ -9,6 +9,7 @@ import {
   type EtradePdfDisposalImportCommitState,
   type EtradePdfDisposalImportPreviewState,
 } from '@/app/holdings/import-disposal-pdf-actions';
+import { buttonPrimaryClassName, buttonSecondaryClassName } from '@/app/ui/button-variants';
 
 type EtradePdfDisposalImportSectionProps = {
   readonly holdingId: string;
@@ -80,8 +81,15 @@ export function EtradePdfDisposalImportSection({
         <button
           type="submit"
           disabled={previewPending}
-          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-50 disabled:opacity-60"
+          className={`inline-flex min-h-[40px] items-center justify-center gap-2 ${buttonSecondaryClassName}`}
+          aria-busy={previewPending}
         >
+          {previewPending ? (
+            <span
+              className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-neutral-400 border-t-[var(--color-accent)]"
+              aria-hidden
+            />
+          ) : null}
           {previewPending ? 'Reading…' : 'Preview import'}
         </button>
       </form>
@@ -138,7 +146,8 @@ export function EtradePdfDisposalImportSection({
             <button
               type="submit"
               disabled={commitPending}
-              className="rounded-md border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+              className={`inline-flex items-center justify-center ${buttonPrimaryClassName}`}
+              aria-busy={commitPending}
             >
               {commitPending ? 'Saving…' : 'Commit import'}
             </button>

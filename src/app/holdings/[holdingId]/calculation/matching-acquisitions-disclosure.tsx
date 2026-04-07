@@ -12,7 +12,7 @@ export function MatchingAcquisitionsDisclosure(): ReactElement {
   const headingId = useId();
 
   return (
-    <section className="mt-8 no-print">
+    <section className="mt-0 no-print">
       <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white text-sm shadow-sm">
         <button
           type="button"

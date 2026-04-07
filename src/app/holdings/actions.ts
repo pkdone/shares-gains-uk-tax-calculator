@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { addAcquisition } from '@/application/ledger/add-acquisition';
@@ -11,6 +11,7 @@ import { createHolding } from '@/application/holding/create-holding';
 import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
+import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
 import {
   createHoldingFormSchema,
   deleteHoldingFormSchema,
@@ -99,6 +100,7 @@ export async function addAcquisitionAction(
   }
 
   revalidatePath(`/holdings/${holdingId}`);
+  revalidateTag(holdingCalculationCacheTag(holdingId));
   return undefined;
 }
 
@@ -137,6 +139,7 @@ export async function addDisposalAction(
   }
 
   revalidatePath(`/holdings/${holdingId}`);
+  revalidateTag(holdingCalculationCacheTag(holdingId));
   return undefined;
 }
 
@@ -176,6 +179,7 @@ export async function deleteLedgerEntryAction(
   }
 
   revalidatePath(`/holdings/${holdingId}`);
+  revalidateTag(holdingCalculationCacheTag(holdingId));
   return undefined;
 }
 
@@ -212,5 +216,6 @@ export async function deleteHoldingAction(
   revalidatePath('/');
   revalidatePath('/holdings');
   revalidatePath(`/holdings/${holdingId}`);
+  revalidateTag(holdingCalculationCacheTag(holdingId));
   return undefined;
 }

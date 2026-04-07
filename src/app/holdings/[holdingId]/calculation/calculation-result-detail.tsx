@@ -172,18 +172,18 @@ function LedgerTableRows({
             <tr key={`acq-${row.acquisitionId}`}>
               <td className="px-2 py-1.5 text-neutral-800 sm:px-3 sm:py-2">Acquisition</td>
               <td className="px-2 py-1.5 tabular-nums sm:px-3">{row.eventDate}</td>
-              <td className="px-2 py-1.5 tabular-nums sm:px-3">{row.quantity}</td>
-              <td className="px-2 py-1.5 tabular-nums sm:px-3">{usdMoney.format(row.pricePerShareUsd)}</td>
-              <td className="px-2 py-1.5 tabular-nums sm:px-3">{usdMoney.format(row.combinedUsd)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{row.quantity}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{usdMoney.format(row.pricePerShareUsd)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{usdMoney.format(row.combinedUsd)}</td>
               <td
-                className={`px-2 py-1.5 tabular-nums sm:px-3 ${fxRateCellClassName({
+                className={`px-2 py-1.5 text-right tabular-nums sm:px-3 ${fxRateCellClassName({
                   fxRate: row.fxRate,
                   fxUsedFallback: row.fxUsedFallback,
                 })}`}
               >
                 {row.fxRate === undefined ? '—' : row.fxRate.toFixed(4)}
               </td>
-              <td className="px-2 py-1.5 tabular-nums font-medium sm:px-3">
+              <td className="px-2 py-1.5 text-right tabular-nums font-medium sm:px-3">
                 £{money.format(sterling.totalCostGbp)}
               </td>
             </tr>
@@ -192,24 +192,26 @@ function LedgerTableRows({
 
         const { sterling } = row;
         const netGbp = sterling.grossProceedsGbp - sterling.feesGbp;
-        const disposalCell = 'px-2 py-1.5 tabular-nums text-red-800 sm:px-3';
+        const disposalCell = 'px-2 py-1.5 text-right tabular-nums text-red-800 sm:px-3';
         const disposalCellType = 'px-2 py-1.5 text-red-800 sm:px-3 sm:py-2';
         return (
           <tr key={`disp-${row.disposalId}`}>
             <td className={disposalCellType}>Disposal</td>
-            <td className={disposalCell}>{row.eventDate}</td>
+            <td className="px-2 py-1.5 tabular-nums text-red-800 sm:px-3">{row.eventDate}</td>
             <td className={disposalCell}>{row.quantity}</td>
             <td className={disposalCell}>{usdMoney.format(row.pricePerShareUsd)}</td>
             <td className={disposalCell}>{usdMoney.format(row.combinedUsd)}</td>
             <td
-              className={`px-2 py-1.5 tabular-nums sm:px-3 ${fxRateCellClassName({
+              className={`px-2 py-1.5 text-right tabular-nums sm:px-3 ${fxRateCellClassName({
                 fxRate: row.fxRate,
                 fxUsedFallback: row.fxUsedFallback,
               })}`}
             >
               {row.fxRate === undefined ? '—' : row.fxRate.toFixed(4)}
             </td>
-            <td className="px-2 py-1.5 tabular-nums font-medium text-red-800 sm:px-3">£{money.format(netGbp)}</td>
+            <td className="px-2 py-1.5 text-right tabular-nums font-medium text-red-800 sm:px-3">
+              £{money.format(netGbp)}
+            </td>
           </tr>
         );
       })}
@@ -401,20 +403,17 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
       </div>
       <div className="space-y-4 px-3 py-3">
         <div>
-          <p className="mb-2 text-xs font-medium text-neutral-600">
-            Ledger (USD reference; CGT amounts in sterling)
-          </p>
           <div className="w-full overflow-x-auto">
-            <table className="w-full max-w-full text-left text-sm">
+            <table className="w-full max-w-full text-sm">
               <thead className="bg-neutral-100/80 text-neutral-700">
                 <tr>
-                  <th className="px-2 py-2 font-medium sm:px-3">Type</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">Date</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">Shares</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">Price/share ($)</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">Cost / net ($)</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">FX rate</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">Cost / net (£)</th>
+                  <th className="px-2 py-2 text-left font-medium sm:px-3">Type</th>
+                  <th className="px-2 py-2 text-left font-medium sm:px-3">Date</th>
+                  <th className="px-2 py-2 text-right font-medium sm:px-3">Shares</th>
+                  <th className="px-2 py-2 text-right font-medium sm:px-3">Price/share ($)</th>
+                  <th className="px-2 py-2 text-right font-medium sm:px-3">Cost / net ($)</th>
+                  <th className="px-2 py-2 text-right font-medium sm:px-3">FX rate</th>
+                  <th className="px-2 py-2 text-right font-medium sm:px-3">Cost / net (£)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 bg-white">

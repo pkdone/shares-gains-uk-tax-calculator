@@ -9,6 +9,7 @@ import type { CalculationTransactionTableGroup } from '@/application/calculation
 import { buildComputationPackPdfFilenameAllYears } from '@/application/calculation/calculation-pdf-filename';
 
 import { useCalculationPdfExportBusy } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
+import { buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 type CalculationPageTitleAndExportProps = {
   readonly holdingSymbol: string;
@@ -27,9 +28,6 @@ function downloadPdf(bytes: Uint8Array, filename: string): void {
   anchor.click();
   URL.revokeObjectURL(url);
 }
-
-const exportButtonClassName =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 shadow-sm hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50';
 
 export function CalculationPageTitleAndExport({
   holdingSymbol,
@@ -56,13 +54,10 @@ export function CalculationPageTitleAndExport({
   }, [groups, holdingSymbol, setPdfBusy]);
 
   return (
-    <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Capital gains calculations for {holdingSymbol} holding
-      </h1>
+    <div className="no-print flex w-full min-w-0 flex-wrap justify-end gap-4 lg:w-auto">
       <button
         type="button"
-        className={`${exportButtonClassName} shrink-0`}
+        className={`${buttonPrimaryClassName} shrink-0`}
         disabled={groups.length === 0 || pdfBusy}
         aria-busy={pdfBusy}
         onClick={() => {

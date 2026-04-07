@@ -5,6 +5,8 @@ import { type KeyboardEvent, type ReactElement, useRef, useState } from 'react';
 import type { CalculationTransactionTableGroup } from '@/application/calculation/build-calculation-transaction-table';
 import { formatUkTaxYearLabelForDisplay } from '@/domain/services/uk-tax-year';
 
+import { buttonPrimaryClassName } from '@/app/ui/button-variants';
+
 import { TaxYearPanel } from './calculation-result-detail';
 
 type CalculationTaxYearTabsProps = {
@@ -62,8 +64,9 @@ export function CalculationTaxYearTabs({
         className="-mx-1 overflow-x-auto overflow-y-hidden px-1 pb-px"
         role="tablist"
         aria-label="Tax years"
+        aria-orientation="horizontal"
       >
-        <div className="flex min-w-min flex-nowrap gap-1 border-b border-neutral-200">
+        <div className="flex min-w-min flex-nowrap gap-0.5 border-b border-neutral-200">
           {groups.map((g, i) => {
             const tabId = `calc-ty-tab-${g.taxYearLabel}`;
             const panelId = `calc-ty-panel-${g.taxYearLabel}`;
@@ -82,10 +85,10 @@ export function CalculationTaxYearTabs({
                 aria-selected={isSelected}
                 aria-controls={panelId}
                 tabIndex={isSelected ? 0 : -1}
-                className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
+                className={`shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
                   isSelected
-                    ? 'border-[var(--color-accent)] text-neutral-900'
-                    : 'border-transparent text-neutral-600 hover:text-neutral-900'
+                    ? 'border-[var(--color-accent)] bg-neutral-50 font-semibold text-neutral-900'
+                    : 'border-transparent font-medium text-neutral-600 hover:bg-neutral-50/80 hover:text-neutral-900'
                 }`}
                 onClick={() => {
                   setSelectedIndex(i);
@@ -113,7 +116,7 @@ export function CalculationTaxYearTabs({
           pdfToolbar={
             <button
               type="button"
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 shadow-sm hover:bg-neutral-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+              className={buttonPrimaryClassName}
               disabled={pdfBusy}
               aria-busy={pdfBusy}
               onClick={() => {
