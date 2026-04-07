@@ -20,7 +20,7 @@ export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageC
       <main className="mx-auto max-w-7xl px-6 pt-5 pb-12">
         <h1 className="sr-only">Holdings</h1>
 
-        <div className="lg:grid lg:grid-cols-[2fr_1fr] lg:items-start lg:gap-10">
+        <div className="lg:grid lg:grid-cols-[2fr_1fr] lg:items-start lg:gap-24">
           <section className="min-w-0">
             <h2 className="text-lg font-medium text-neutral-900">Your holdings</h2>
             <p className="mt-3 text-sm leading-relaxed text-neutral-600">
@@ -48,7 +48,7 @@ export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageC
             )}
           </section>
 
-          <section className="mt-10 min-w-0 lg:mt-0">
+          <section className="mt-10 min-w-0 lg:mt-0 lg:border-l lg:border-neutral-200 lg:pl-10">
             <h2 className="text-lg font-medium text-neutral-900">New holding</h2>
             <p className="mt-1 text-xs text-neutral-600">Enter a ticker (e.g. NVDA).</p>
             <div className="mt-3">
