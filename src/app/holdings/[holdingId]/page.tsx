@@ -80,16 +80,8 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
   const differenceUsd = totalAcquisitionsUsd - totalDisposalsUsd;
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
-      <nav className="text-sm text-neutral-600">
-        <Link href="/" className="text-[var(--color-accent)] hover:underline">
-          Holdings
-        </Link>
-        <span className="mx-2 text-neutral-400">/</span>
-        <span className="text-neutral-900">{holding.symbol}</span>
-      </nav>
-
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">{holding.symbol}</h1>
+    <>
+      <h1 className="mt-6 text-2xl font-semibold tracking-tight">{holding.symbol}</h1>
 
       <p className="mt-4">
         <Link
@@ -245,6 +237,6 @@ export default async function HoldingDetailPage({ params }: HoldingDetailPagePro
           </div>
         )}
       </section>
-    </main>
+    </>
   );
 }

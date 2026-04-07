@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { buildCalculationTransactionTableModel } from '@/application/calculation/build-calculation-transaction-table';
@@ -67,22 +66,7 @@ export default async function HoldingCalculationPage({
     result !== null && calcError === null ? buildCalculationTransactionTableModel(result) : [];
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
-      <nav className="text-sm text-neutral-600 no-print">
-        <Link href="/" className="text-[var(--color-accent)] hover:underline">
-          Holdings
-        </Link>
-        <span className="mx-2 text-neutral-400">/</span>
-        <Link
-          href={`/holdings/${holdingId}`}
-          className="text-[var(--color-accent)] hover:underline"
-        >
-          {holding.symbol}
-        </Link>
-        <span className="mx-2 text-neutral-400">/</span>
-        <span className="text-neutral-900">Calculation</span>
-      </nav>
-
+    <div className="no-print">
       <CalculationPdfExportProvider>
         <CalculationPageTitleAndExport holdingSymbol={holding.symbol} groups={transactionTableGroups} />
 
@@ -116,6 +100,6 @@ export default async function HoldingCalculationPage({
           <p className="mt-8 text-sm text-neutral-600">Add acquisitions or disposals to run a calculation.</p>
         )}
       </CalculationPdfExportProvider>
-    </main>
+    </div>
   );
 }

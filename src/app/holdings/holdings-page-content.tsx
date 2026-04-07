@@ -15,7 +15,7 @@ type HoldingsPageContentProps = {
  */
 export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageContentProps): React.ReactElement {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
+    <main className="mx-auto max-w-7xl px-6 py-12">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1 pt-2">
           <h1 className="text-2xl font-semibold tracking-tight">Holdings</h1>
