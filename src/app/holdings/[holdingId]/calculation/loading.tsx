@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 
 /**
- * Shown during client navigation while the calculation RSC runs (DB + CGT engine).
+ * Shown during client navigation (route `loading.tsx`) and as the Suspense fallback while the calculation RSC runs.
  */
-export default function HoldingCalculationLoading(): ReactElement {
+export function HoldingCalculationLoadingFallback(): ReactElement {
   return (
     <div className="no-print">
       <p className="mt-6 text-sm font-medium text-neutral-700">Running capital gains calculation…</p>
@@ -26,4 +26,8 @@ export default function HoldingCalculationLoading(): ReactElement {
       </div>
     </div>
   );
+}
+
+export default function HoldingCalculationLoading(): ReactElement {
+  return <HoldingCalculationLoadingFallback />;
 }
