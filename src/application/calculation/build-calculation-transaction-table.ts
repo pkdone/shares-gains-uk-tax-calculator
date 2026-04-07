@@ -4,13 +4,14 @@ import {
 } from '@/application/calculation/acquisition-matching-attribution';
 import type {
   AcquisitionSterlingLine,
-  CalculationLedgerLine,
   DisposalSterlingLine,
   SuccessfulHoldingCalculation,
 } from '@/application/calculation/calculation-types';
+import { compareLedgerLines } from '@/application/ledger/ledger-line-order';
+import type { LedgerLine } from '@/application/ledger/ledger-types';
 import type { CalcEvent, DisposalResult } from '@/domain/schemas/calculation';
 import { computeMatchingOutput } from '@/domain/services/share-matching';
-import { roundMoney2dp } from '@/domain/services/section-104-pool';
+import { roundMoney2dp } from '@/domain/value-objects/money';
 import { ukTaxYearLabelFromDateOnly, ukTaxYearStartDateFromLabel } from '@/domain/services/uk-tax-year';
 
 export type CalculationTransactionLedgerAcquisitionRow = {
@@ -155,21 +156,6 @@ function openingPoolAtTaxYearStart(
   return computeMatchingOutput(prior).finalPool;
 }
 
-function compareLedgerLines(a: CalculationLedgerLine, b: CalculationLedgerLine): number {
-  const dateCmp = a.data.eventDate.localeCompare(b.data.eventDate);
-  if (dateCmp !== 0) {
-    return dateCmp;
-  }
-
-  const kindRank = (k: CalculationLedgerLine['kind']): number => (k === 'ACQUISITION' ? 0 : 1);
-  const kindDiff = kindRank(a.kind) - kindRank(b.kind);
-  if (kindDiff !== 0) {
-    return kindDiff;
-  }
-
-  return a.data.id.localeCompare(b.data.id);
-}
-
 function poolSnapshotAfterAcquisitionForDate(params: {
   readonly eventDate: string;
   readonly output: SuccessfulHoldingCalculation['output'];
@@ -189,7 +175,7 @@ function poolSnapshotAfterAcquisitionForDate(params: {
 
 function pushAcquisitionLedgerRow(params: {
   readonly calc: SuccessfulHoldingCalculation;
-  readonly line: Extract<CalculationLedgerLine, { kind: 'ACQUISITION' }>;
+  readonly line: Extract<LedgerLine, { kind: 'ACQUISITION' }>;
   readonly taxYearLabel: string;
   readonly eventDate: string;
   readonly into: CalculationTransactionLedgerRow[];
@@ -221,7 +207,7 @@ function pushAcquisitionLedgerRow(params: {
 
 function pushDisposalLedgerRow(params: {
   readonly calc: SuccessfulHoldingCalculation;
-  readonly line: Extract<CalculationLedgerLine, { kind: 'DISPOSAL' }>;
+  readonly line: Extract<LedgerLine, { kind: 'DISPOSAL' }>;
   readonly taxYearLabel: string;
   readonly eventDate: string;
   readonly into: CalculationTransactionLedgerRow[];
@@ -274,10 +260,10 @@ export function buildCalculationTransactionTableModel(
     const linesOnDate = sortedLines.filter((l) => l.data.eventDate === date);
     const taxYearLabel = ukTaxYearLabelFromDateOnly(date);
     const acquisitionLines = linesOnDate.filter(
-      (l): l is Extract<CalculationLedgerLine, { kind: 'ACQUISITION' }> => l.kind === 'ACQUISITION',
+      (l): l is Extract<LedgerLine, { kind: 'ACQUISITION' }> => l.kind === 'ACQUISITION',
     );
     const disposalLines = linesOnDate.filter(
-      (l): l is Extract<CalculationLedgerLine, { kind: 'DISPOSAL' }> => l.kind === 'DISPOSAL',
+      (l): l is Extract<LedgerLine, { kind: 'DISPOSAL' }> => l.kind === 'DISPOSAL',
     );
 
     const ledgerRows: CalculationTransactionLedgerRow[] = [];

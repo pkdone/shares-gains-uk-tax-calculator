@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useRef, useState } from 'react';
 
-import { deleteHoldingAction, type FormActionState } from '@/app/holdings/actions';
+import { deleteHoldingAction } from '@/app/holdings/actions';
+import type { FormActionState } from '@/app/holdings/types';
 
 type HoldingDeleteButtonProps = {
   readonly holdingId: string;

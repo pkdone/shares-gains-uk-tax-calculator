@@ -4,6 +4,7 @@ import type {
   ShareAcquisitionRepository,
 } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
+import { requireHoldingForUser } from '@/application/holding/require-holding';
 import { DomainError } from '@/shared/errors/app-error';
 
 export async function addAcquisition(
@@ -11,10 +12,7 @@ export async function addAcquisition(
   acquisitionRepository: ShareAcquisitionRepository,
   input: CreateShareAcquisition,
 ): Promise<ShareAcquisition> {
-  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
-  if (holding === null) {
-    throw new DomainError('Holding not found');
-  }
+  const holding = await requireHoldingForUser(holdingRepository, input.holdingId, input.userId);
 
   if (input.symbol !== holding.symbol) {
     throw new DomainError('Symbol must match this holding.');

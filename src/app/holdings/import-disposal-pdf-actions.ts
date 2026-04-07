@@ -1,20 +1,18 @@
 'use server';
 
-import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { commitEtradeStockPlanOrdersPdfImport } from '@/application/import/commit-etrade-stock-plan-orders-pdf-import';
 import { buildEtradePdfDisposalImportPreview } from '@/application/import/preview-etrade-stock-plan-orders-pdf-import';
 import { shareDisposalPdfImportDraftSchema } from '@/domain/schemas/share-disposal';
+import { toFormActionError } from '@/app/holdings/action-error';
+import { revalidateHoldingSurfaces } from '@/app/holdings/revalidate-holding-caches';
 import { pdfBufferToText } from '@/infrastructure/import/pdf-buffer-to-text';
-import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
-import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
-import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
-import { DomainError } from '@/shared/errors/app-error';
-
-const holdingRepo = new MongoHoldingRepository();
-const disposalRepo = new MongoShareDisposalRepository();
+import {
+  holdingRepository as holdingRepo,
+  shareDisposalRepository as disposalRepo,
+} from '@/infrastructure/repositories/composition-root';
 
 export type EtradePdfDisposalImportPreviewState = {
   readonly error?: string;
@@ -137,15 +135,9 @@ export async function commitEtradePdfDisposalImportAction(
         drafts: draftsResult.data,
       },
     );
-    revalidatePath('/');
-    revalidatePath('/holdings');
-    revalidatePath(`/holdings/${holdingId}`);
-    revalidateTag(holdingCalculationCacheTag(holdingId));
+    revalidateHoldingSurfaces(holdingId);
     return { ok: true, inserted, skippedDuplicates };
   } catch (err) {
-    if (err instanceof DomainError) {
-      return { error: err.message };
-    }
-    return { error: err instanceof Error ? err.message : 'Import failed' };
+    return toFormActionError(err, 'Import failed');
   }
 }

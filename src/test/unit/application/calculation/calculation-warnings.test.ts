@@ -1,5 +1,5 @@
 import { buildMaterialCalculationWarnings, mergeCalculationWarnings } from '@/application/calculation/calculation-warnings';
-import type { CalculationLedgerLine } from '@/application/calculation/calculation-types';
+import type { LedgerLine } from '@/application/ledger/ledger-types';
 
 describe('buildMaterialCalculationWarnings', () => {
   it('returns empty when nothing material applies', () => {
@@ -11,7 +11,7 @@ describe('buildMaterialCalculationWarnings', () => {
   });
 
   it('warns when a date has both acquisitions and disposals', () => {
-    const ledgerLines: CalculationLedgerLine[] = [
+    const ledgerLines: LedgerLine[] = [
       {
         kind: 'ACQUISITION',
         data: {

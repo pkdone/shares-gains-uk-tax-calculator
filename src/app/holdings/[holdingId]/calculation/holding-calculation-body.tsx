@@ -4,10 +4,12 @@ import type { ReactElement } from 'react';
 
 import { buildCalculationTransactionTableModel } from '@/application/calculation/build-calculation-transaction-table';
 import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
-import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
-import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
-import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
-import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
+import {
+  fxRateRepository,
+  holdingRepository,
+  shareAcquisitionRepository as acquisitionRepository,
+  shareDisposalRepository as disposalRepository,
+} from '@/infrastructure/repositories/composition-root';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { logInfo } from '@/shared/app-logger';
 import { DomainError } from '@/shared/errors/app-error';
@@ -18,11 +20,6 @@ import { CalculationPdfExportProvider } from '@/app/holdings/[holdingId]/calcula
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 import { FxRateLedgerColumnDisclosure } from '@/app/holdings/[holdingId]/calculation/fx-rate-ledger-column-disclosure';
 import { MatchingAcquisitionsDisclosure } from '@/app/holdings/[holdingId]/calculation/matching-acquisitions-disclosure';
-
-const holdingRepository = new MongoHoldingRepository();
-const acquisitionRepository = new MongoShareAcquisitionRepository();
-const disposalRepository = new MongoShareDisposalRepository();
-const fxRateRepository = new MongoFxRateRepository();
 
 type HoldingCalculationBodyProps = {
   readonly holdingId: string;

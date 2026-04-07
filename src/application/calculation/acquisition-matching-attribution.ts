@@ -1,5 +1,5 @@
 import type { DisposalResult } from '@/domain/schemas/calculation';
-import { roundMoney2dp } from '@/domain/services/section-104-pool';
+import { roundMoney2dp } from '@/domain/value-objects/money';
 
 export type AcquisitionMatchingAttribution = {
   readonly sameDayQuantity: number;

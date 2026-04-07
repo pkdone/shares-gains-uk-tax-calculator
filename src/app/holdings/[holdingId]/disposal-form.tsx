@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 
-import { addDisposalAction, type FormActionState } from '@/app/holdings/actions';
+import { addDisposalAction } from '@/app/holdings/actions';
+import type { FormActionState } from '@/app/holdings/types';
 import { buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 const priceUsd = new Intl.NumberFormat('en-US', {

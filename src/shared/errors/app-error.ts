@@ -4,27 +4,22 @@
 export class AppError extends Error {
   readonly code?: string;
 
-  constructor(message: string, code?: string) {
-    super(message);
+  constructor(message: string, code?: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = 'AppError';
     this.code = code;
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
-export type ErrorOptions = { readonly cause?: unknown };
-
 /**
  * Invalid environment or application configuration.
  */
 export class ConfigurationError extends AppError {
   constructor(message: string, options?: ErrorOptions) {
-    super(message, 'CONFIG_INVALID');
+    super(message, 'CONFIG_INVALID', options);
     this.name = 'ConfigurationError';
     Object.setPrototypeOf(this, new.target.prototype);
-    if (options?.cause !== undefined) {
-      this.cause = options.cause;
-    }
   }
 }
 
@@ -33,12 +28,9 @@ export class ConfigurationError extends AppError {
  */
 export class ValidationError extends AppError {
   constructor(message: string, options?: ErrorOptions) {
-    super(message, 'VALIDATION_FAILED');
+    super(message, 'VALIDATION_FAILED', options);
     this.name = 'ValidationError';
     Object.setPrototypeOf(this, new.target.prototype);
-    if (options?.cause !== undefined) {
-      this.cause = options.cause;
-    }
   }
 }
 
@@ -47,12 +39,9 @@ export class ValidationError extends AppError {
  */
 export class DomainError extends AppError {
   constructor(message: string, options?: ErrorOptions) {
-    super(message, 'DOMAIN_RULE');
+    super(message, 'DOMAIN_RULE', options);
     this.name = 'DomainError';
     Object.setPrototypeOf(this, new.target.prototype);
-    if (options?.cause !== undefined) {
-      this.cause = options.cause;
-    }
   }
 }
 
@@ -61,12 +50,9 @@ export class DomainError extends AppError {
  */
 export class PersistenceError extends AppError {
   constructor(message: string, options?: ErrorOptions) {
-    super(message, 'PERSISTENCE_FAILED');
+    super(message, 'PERSISTENCE_FAILED', options);
     this.name = 'PersistenceError';
     Object.setPrototypeOf(this, new.target.prototype);
-    if (options?.cause !== undefined) {
-      this.cause = options.cause;
-    }
   }
 }
 
@@ -75,11 +61,8 @@ export class PersistenceError extends AppError {
  */
 export class ImportError extends AppError {
   constructor(message: string, options?: ErrorOptions) {
-    super(message, 'IMPORT_FAILED');
+    super(message, 'IMPORT_FAILED', options);
     this.name = 'ImportError';
     Object.setPrototypeOf(this, new.target.prototype);
-    if (options?.cause !== undefined) {
-      this.cause = options.cause;
-    }
   }
 }

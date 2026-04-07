@@ -4,43 +4,13 @@ import type { ShareDisposalRepository } from '@/domain/repositories/share-dispos
 import type { FxRateRepository } from '@/domain/repositories/fx-rate-repository';
 import type { CalcEvent } from '@/domain/schemas/calculation';
 import { calculateGainsForSymbol } from '@/domain/services/cgt-calculator';
-import { DomainError } from '@/shared/errors/app-error';
-
-import type { CalculationLedgerLine, SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
+import type { SuccessfulHoldingCalculation } from '@/application/calculation/calculation-types';
 import { buildMaterialCalculationWarnings, mergeCalculationWarnings } from '@/application/calculation/calculation-warnings';
 import { buildCalcAcquisitionFromShareAcquisition } from '@/application/calculation/convert-acquisition-fx';
 import { buildCalcDisposalFromShareDisposal } from '@/application/calculation/convert-disposal-fx';
-
-function compareCalcEvents(a: CalcEvent, b: CalcEvent): number {
-  const dateCmp = a.data.eventDate.localeCompare(b.data.eventDate);
-  if (dateCmp !== 0) {
-    return dateCmp;
-  }
-
-  if (a.kind === b.kind) {
-    return 0;
-  }
-
-  return a.kind === 'acquisition' ? -1 : 1;
-}
-
-function compareLedgerLines(
-  a: SuccessfulHoldingCalculation['ledgerLines'][number],
-  b: SuccessfulHoldingCalculation['ledgerLines'][number],
-): number {
-  const dateCmp = a.data.eventDate.localeCompare(b.data.eventDate);
-  if (dateCmp !== 0) {
-    return dateCmp;
-  }
-
-  const kindRank = (k: (typeof a)['kind']): number => (k === 'ACQUISITION' ? 0 : 1);
-  const kindDiff = kindRank(a.kind) - kindRank(b.kind);
-  if (kindDiff !== 0) {
-    return kindDiff;
-  }
-
-  return a.data.id.localeCompare(b.data.id);
-}
+import { compareCalcEvents, compareLedgerLines } from '@/application/ledger/ledger-line-order';
+import { requireHoldingForUser } from '@/application/holding/require-holding';
+import type { LedgerLine } from '@/application/ledger/ledger-types';
 
 export async function runCalculationForHoldingSymbol(params: {
   readonly holdingRepository: HoldingRepository;
@@ -55,10 +25,7 @@ export async function runCalculationForHoldingSymbol(params: {
   const { holdingRepository, acquisitionRepository, disposalRepository, fxRateRepository, input } =
     params;
 
-  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
-  if (holding === null) {
-    throw new DomainError('Holding not found');
-  }
+  const holding = await requireHoldingForUser(holdingRepository, input.holdingId, input.userId);
 
   const symbol = holding.symbol;
 
@@ -72,7 +39,7 @@ export async function runCalculationForHoldingSymbol(params: {
   const fxByDisposalId: SuccessfulHoldingCalculation['fxByDisposalId'] = {};
   const sterlingByAcquisitionId: SuccessfulHoldingCalculation['sterlingByAcquisitionId'] = {};
   const sterlingByDisposalId: SuccessfulHoldingCalculation['sterlingByDisposalId'] = {};
-  const ledgerLines: CalculationLedgerLine[] = [];
+  const ledgerLines: LedgerLine[] = [];
 
   for (const acquisition of acquisitions) {
     if (acquisition.symbol !== symbol) {

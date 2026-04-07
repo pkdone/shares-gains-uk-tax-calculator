@@ -4,9 +4,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { AppHeader, formatSessionDisplayName } from '@/app/app-header';
 import { HoldingLayoutChrome } from '@/app/holdings/[holdingId]/holding-layout-chrome';
 import { requireVerifiedSessionUser } from '@/infrastructure/auth/session';
-import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
-
-const holdingRepository = new MongoHoldingRepository();
+import { holdingRepository } from '@/infrastructure/repositories/composition-root';
 
 type HoldingLayoutProps = {
   readonly children: ReactNode;

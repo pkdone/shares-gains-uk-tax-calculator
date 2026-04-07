@@ -1,3 +1,4 @@
+import { roundMoney2dp } from '@/domain/value-objects/money';
 import { DomainError } from '@/shared/errors/app-error';
 
 export type Section104Pool = {
@@ -5,13 +6,6 @@ export type Section104Pool = {
   /** Pool of allowable cost (GBP), held to 2 decimal places where applicable. */
   readonly costGbp: number;
 };
-
-/**
- * Round to two decimal places (pence).
- */
-export function roundMoney2dp(value: number): number {
-  return Math.round(value * 100) / 100;
-}
 
 export function createEmptyPool(): Section104Pool {
   return { shares: 0, costGbp: 0 };
