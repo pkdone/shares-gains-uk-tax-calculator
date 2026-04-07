@@ -15,7 +15,6 @@ import { logInfo } from '@/shared/app-logger';
 import { DomainError } from '@/domain/errors/domain-error';
 
 import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
-import { CalculationPageTitleAndExport } from '@/app/holdings/[holdingId]/calculation/calculation-page-title-and-export';
 import { CalculationPdfExportProvider } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 import { FxRateLedgerColumnDisclosure } from '@/app/holdings/[holdingId]/calculation/fx-rate-ledger-column-disclosure';
@@ -81,25 +80,16 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
   return (
     <div className="no-print w-full min-w-0">
       <CalculationPdfExportProvider>
-        {/*
-          min-w-0: flex/grid children default to min-width:auto and can force horizontal overflow past
-          the max-w-7xl main column; keep the export control aligned to the main content edge.
-        */}
-        <div className="mb-8 mt-6 flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-          <div className="min-w-0 w-full shrink-0 space-y-4 lg:w-3/4">
-            <MatchingAcquisitionsDisclosure />
-            <FxRateLedgerColumnDisclosure
-              acquisitionRows={
-                result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
-              }
-              disposalRows={
-                result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
-              }
-            />
-          </div>
-          <div className="flex min-w-0 w-full shrink-0 justify-end lg:w-auto lg:max-w-none lg:pt-0">
-            <CalculationPageTitleAndExport holdingSymbol={holding.symbol} groups={transactionTableGroups} />
-          </div>
+        <div className="mb-8 mt-6 min-w-0 w-full space-y-4">
+          <MatchingAcquisitionsDisclosure />
+          <FxRateLedgerColumnDisclosure
+            acquisitionRows={
+              result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
+            }
+            disposalRows={
+              result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
+            }
+          />
         </div>
 
         {hasLedgerData ? (

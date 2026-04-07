@@ -2,9 +2,15 @@
 
 import { useCallback, type ReactElement } from 'react';
 
-import { buildComputationPackPdfSingleTaxYear } from '@/infrastructure/calculation-pdf/build-calculation-computation-pack-pdf';
+import {
+  buildComputationPackPdfAllYears,
+  buildComputationPackPdfSingleTaxYear,
+} from '@/infrastructure/calculation-pdf/build-calculation-computation-pack-pdf';
 import type { CalculationTransactionTableGroup } from '@/application/calculation/build-calculation-transaction-table';
-import { buildComputationPackPdfFilenameSingleTaxYear } from '@/infrastructure/calculation-pdf/calculation-pdf-filename';
+import {
+  buildComputationPackPdfFilenameAllYears,
+  buildComputationPackPdfFilenameSingleTaxYear,
+} from '@/infrastructure/calculation-pdf/calculation-pdf-filename';
 
 import { useCalculationPdfExportBusy } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
 import { CalculationTaxYearTabs } from '@/app/holdings/[holdingId]/calculation/calculation-tax-year-tabs';
@@ -20,6 +26,24 @@ export function CalculationComputationPackActions({
   holdingSymbol,
 }: CalculationComputationPackActionsProps): ReactElement {
   const { pdfBusy, setPdfBusy } = useCalculationPdfExportBusy();
+
+  const handleExportAllYears = useCallback(() => {
+    setPdfBusy(true);
+    try {
+      const generatedAt = new Date();
+      const bytes = buildComputationPackPdfAllYears({
+        holdingSymbol,
+        groups,
+        generatedAt,
+      });
+      downloadPdf(
+        bytes,
+        buildComputationPackPdfFilenameAllYears({ holdingSymbol, generatedDate: generatedAt }),
+      );
+    } finally {
+      setPdfBusy(false);
+    }
+  }, [groups, holdingSymbol, setPdfBusy]);
 
   const handleExportThisTaxYear = useCallback(
     (group: CalculationTransactionTableGroup) => {
@@ -50,6 +74,7 @@ export function CalculationComputationPackActions({
       groups={groups}
       holdingSymbol={holdingSymbol}
       pdfBusy={pdfBusy}
+      onExportAllYears={handleExportAllYears}
       onExportThisTaxYear={handleExportThisTaxYear}
     />
   );

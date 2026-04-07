@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 
 import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
 import type {
@@ -229,7 +229,7 @@ function AcquisitionOutcomeSection({
   const hasPool = poolShares !== undefined && poolCost !== undefined;
 
   return (
-    <div className="rounded-md border border-neutral-200/80 bg-white px-3 py-2">
+    <div className="rounded-md bg-white/90 px-3 py-2 ring-1 ring-neutral-200/45">
       <h4 className="text-xs font-medium text-neutral-700">CGT acquisition summary</h4>
       <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div>
@@ -285,7 +285,7 @@ function CgtDisposalOutcomeSection({
   const netProceeds = r.grossProceedsGbp - r.disposalFeesGbp;
 
   return (
-    <div className="rounded-md border border-red-200/90 bg-red-50/40 px-3 py-2 text-red-900">
+    <div className="rounded-md bg-red-50/35 px-3 py-2 text-red-900 ring-1 ring-red-200/40">
       <h4 className="text-xs font-medium text-red-800">CGT disposal summary</h4>
       <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div>
@@ -396,8 +396,8 @@ function OutcomeSections({
 
 function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBlock }): ReactElement {
   return (
-    <div className="break-inside-avoid rounded-lg border border-neutral-200 border-l-4 border-l-neutral-400 bg-white">
-      <div className="border-b border-neutral-200/80 bg-white px-3 py-2">
+    <div className="break-inside-avoid rounded-lg bg-white shadow-sm ring-1 ring-neutral-200/55">
+      <div className="border-b border-neutral-200/60 bg-white/90 px-3 py-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Date</span>{' '}
         <span className="text-sm font-medium text-neutral-900">{block.eventDate}</span>
       </div>
@@ -423,9 +423,9 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-semibold text-neutral-900">Outcomes</h3>
-          <div className="mt-2 space-y-3 border-l-2 border-neutral-200 pl-3">
+        <div className="rounded-md bg-neutral-50/70 py-2 pl-1 pr-0">
+          <h3 className="px-2 text-sm font-semibold text-neutral-900">Outcomes</h3>
+          <div className="mt-2 space-y-3 px-2">
             <OutcomeSections outcomes={block.outcomes} />
           </div>
         </div>
@@ -437,32 +437,27 @@ function DateBlockCard({ block }: { readonly block: CalculationTransactionDateBl
 type TaxYearPanelProps = {
   readonly group: CalculationTransactionTableGroup;
   readonly holdingSymbol: string;
-  /** Optional client actions (e.g. PDF export) rendered inside the panel header row. */
-  readonly pdfToolbar?: ReactNode;
 };
 
 /**
  * One tax year’s calculation content (summary, opening pool, date blocks). Used inside tab panels.
  */
-export function TaxYearPanel({ group, holdingSymbol, pdfToolbar }: TaxYearPanelProps): ReactElement {
+export function TaxYearPanel({ group, holdingSymbol }: TaxYearPanelProps): ReactElement {
   return (
-    <div className="rounded-xl border border-neutral-200/90 bg-[#ededed] p-4 shadow-sm sm:p-5">
-      <div className="border-b border-neutral-200/90 pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="mt-0 min-w-0 flex-1 text-base text-neutral-800">
-            <span className="text-neutral-600">
-              Net realised gain/loss for {holdingSymbol} holding in GBP:{' '}
-            </span>
-            <span
-              className={`text-lg font-bold tabular-nums tracking-tight ${taxYearNetGainLossTextClassName(
-                group.totalNetRealisedGainOrLossGbp,
-              )}`}
-            >
-              £{money.format(group.totalNetRealisedGainOrLossGbp)}
-            </span>
-          </p>
-          {pdfToolbar ? <div className="no-print shrink-0">{pdfToolbar}</div> : null}
-        </div>
+    <div className="rounded-xl bg-neutral-100/90 p-4 ring-1 ring-neutral-200/60 sm:p-5">
+      <div className="border-b border-neutral-200/70 pb-3">
+        <p className="mt-0 min-w-0 text-base text-neutral-800">
+          <span className="text-neutral-600">
+            Net realised gain/loss for {holdingSymbol} holding in GBP:{' '}
+          </span>
+          <span
+            className={`text-lg font-bold tabular-nums tracking-tight ${taxYearNetGainLossTextClassName(
+              group.totalNetRealisedGainOrLossGbp,
+            )}`}
+          >
+            £{money.format(group.totalNetRealisedGainOrLossGbp)}
+          </span>
+        </p>
         <p className="mb-0 mt-3 text-xs text-neutral-600">
           Section 104 pool at the start of this tax year (6 April), after all earlier recorded events for this holding:
         </p>

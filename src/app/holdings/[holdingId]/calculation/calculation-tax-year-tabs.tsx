@@ -22,6 +22,7 @@ type CalculationTaxYearTabsProps = {
   readonly groups: readonly CalculationTransactionTableGroup[];
   readonly holdingSymbol: string;
   readonly pdfBusy: boolean;
+  readonly onExportAllYears: () => void;
   readonly onExportThisTaxYear: (group: CalculationTransactionTableGroup) => void;
 };
 
@@ -29,6 +30,7 @@ export function CalculationTaxYearTabs({
   groups,
   holdingSymbol,
   pdfBusy,
+  onExportAllYears,
   onExportThisTaxYear,
 }: CalculationTaxYearTabsProps): ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -102,6 +104,31 @@ export function CalculationTaxYearTabs({
 
   return (
     <div className="mt-4">
+      <div className="no-print mb-3 flex min-w-0 flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          className={buttonPrimaryClassName}
+          disabled={groups.length === 0 || pdfBusy}
+          aria-busy={pdfBusy}
+          onClick={() => {
+            onExportAllYears();
+          }}
+        >
+          Export all tax years (PDF)
+        </button>
+        <button
+          type="button"
+          className={buttonPrimaryClassName}
+          disabled={pdfBusy}
+          aria-busy={pdfBusy}
+          onClick={() => {
+            onExportThisTaxYear(selected);
+          }}
+        >
+          Export this tax year (PDF)
+        </button>
+      </div>
+
       <div className="flex min-w-0 items-stretch gap-1">
         <div
           ref={tabScrollRef}
@@ -179,23 +206,7 @@ export function CalculationTaxYearTabs({
         id={`calc-ty-panel-${selected.taxYearLabel}`}
         aria-labelledby={`calc-ty-tab-${selected.taxYearLabel}`}
       >
-        <TaxYearPanel
-          group={selected}
-          holdingSymbol={holdingSymbol}
-          pdfToolbar={
-            <button
-              type="button"
-              className={buttonPrimaryClassName}
-              disabled={pdfBusy}
-              aria-busy={pdfBusy}
-              onClick={() => {
-                onExportThisTaxYear(selected);
-              }}
-            >
-              Export this tax year (PDF)
-            </button>
-          }
-        />
+        <TaxYearPanel group={selected} holdingSymbol={holdingSymbol} />
       </div>
     </div>
   );
