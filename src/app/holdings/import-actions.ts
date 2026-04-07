@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { commitEtradeByBenefitImport } from '@/application/import/commit-etrade-by-benefit-import';
@@ -8,6 +8,7 @@ import { filterEtradeDraftsForHoldingSymbol } from '@/application/import/filter-
 import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-etrade-by-benefit-type-import';
 import { shareAcquisitionImportUsdSchema } from '@/domain/schemas/share-acquisition';
 import { readXlsxForEtradeByBenefitTypeImport } from '@/infrastructure/import/read-xlsx-sheet';
+import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
@@ -129,5 +130,6 @@ export async function commitEtradeImportAction(
   revalidatePath('/');
   revalidatePath('/holdings');
   revalidatePath(`/holdings/${holdingId}`);
+  revalidateTag(holdingCalculationCacheTag(holdingId));
   return { ok: true };
 }

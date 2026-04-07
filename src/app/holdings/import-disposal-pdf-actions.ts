@@ -1,12 +1,13 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { commitEtradeStockPlanOrdersPdfImport } from '@/application/import/commit-etrade-stock-plan-orders-pdf-import';
 import { buildEtradePdfDisposalImportPreview } from '@/application/import/preview-etrade-stock-plan-orders-pdf-import';
 import { shareDisposalPdfImportDraftSchema } from '@/domain/schemas/share-disposal';
 import { pdfBufferToText } from '@/infrastructure/import/pdf-buffer-to-text';
+import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
 import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
@@ -139,6 +140,7 @@ export async function commitEtradePdfDisposalImportAction(
     revalidatePath('/');
     revalidatePath('/holdings');
     revalidatePath(`/holdings/${holdingId}`);
+    revalidateTag(holdingCalculationCacheTag(holdingId));
     return { ok: true, inserted, skippedDuplicates };
   } catch (err) {
     if (err instanceof DomainError) {

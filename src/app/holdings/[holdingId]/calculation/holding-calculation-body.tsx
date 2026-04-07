@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { notFound } from 'next/navigation';
 import type { ReactElement } from 'react';
 
@@ -11,6 +12,7 @@ import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { logInfo } from '@/shared/app-logger';
 import { DomainError } from '@/shared/errors/app-error';
 
+import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
 import { CalculationPageTitleAndExport } from '@/app/holdings/[holdingId]/calculation/calculation-page-title-and-export';
 import { CalculationPdfExportProvider } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
@@ -50,16 +52,22 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
 
   if (hasLedgerData) {
     try {
-      result = await runCalculationForHoldingSymbol({
-        holdingRepository,
-        acquisitionRepository,
-        disposalRepository,
-        fxRateRepository,
-        input: {
-          holdingId,
-          userId,
-        },
-      });
+      const runCached = unstable_cache(
+        async () =>
+          runCalculationForHoldingSymbol({
+            holdingRepository,
+            acquisitionRepository,
+            disposalRepository,
+            fxRateRepository,
+            input: {
+              holdingId,
+              userId,
+            },
+          }),
+        ['holding-calculation-v1', holdingId, userId],
+        { tags: [holdingCalculationCacheTag(holdingId)] },
+      );
+      result = await runCached();
     } catch (err) {
       calcError = err instanceof DomainError ? err.message : 'Calculation failed';
     }
