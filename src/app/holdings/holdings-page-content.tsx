@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
+import { AppHeader } from '@/app/app-header';
 import { CreateHoldingForm } from '@/app/holdings/create-holding-form';
 import { HoldingDeleteButton } from '@/app/holdings/holding-delete-button';
-import { UserAccountMenu } from '@/app/user-account-menu';
 import type { Holding } from '@/domain/schemas/holding';
 
 type HoldingsPageContentProps = {
@@ -15,13 +15,10 @@ type HoldingsPageContentProps = {
  */
 export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageContentProps): React.ReactElement {
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1 pt-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Holdings</h1>
-        </div>
-        <UserAccountMenu displayName={userDisplayName} />
-      </div>
+    <>
+      <AppHeader userDisplayName={userDisplayName} />
+      <main className="mx-auto max-w-7xl px-6 py-12">
+        <h1 className="text-2xl font-semibold tracking-tight">Holdings</h1>
       <p className="mt-2 text-pretty text-sm leading-relaxed text-neutral-600">
         A holding tracks acquisitions and disposals for a specific stock symbol, showing the capital gains for that holding
         in each tax year.
@@ -57,6 +54,7 @@ export function HoldingsPageContent({ holdings, userDisplayName }: HoldingsPageC
           </ul>
         )}
       </section>
-    </main>
+      </main>
+    </>
   );
 }
