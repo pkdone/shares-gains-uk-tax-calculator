@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { stockSymbolSchema } from '@/domain/schemas/stock-symbol';
 import { shareAcquisitionManualUsdSchema } from '@/domain/schemas/share-acquisition';
 import { shareDisposalBaseSchema } from '@/domain/schemas/share-disposal';
-import { roundMoney2dp } from '@/domain/services/section-104-pool';
+import { roundMoney2dp } from '@/domain/value-objects/money';
 
 /** Server action / form payload: create holding (symbol only; user from session). */
 export const createHoldingFormSchema = z.object({
@@ -18,7 +18,7 @@ export function formDataString(formData: FormData, key: string): string {
   return v.trim();
 }
 
-function coerceNumber(formData: FormData, key: string): unknown {
+function coerceNumber(formData: FormData, key: string): number | string | undefined {
   const v = formData.get(key);
   if (v === null || v === '') {
     return undefined;

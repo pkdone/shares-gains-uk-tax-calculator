@@ -3,7 +3,8 @@ import type { ShareDisposalRepository } from '@/domain/repositories/share-dispos
 import type { ShareDisposalPdfImportDraft } from '@/domain/schemas/share-disposal';
 
 import { computeEtradeDisposalImportFingerprint } from '@/application/import/hash-etrade-disposal-import-fingerprint';
-import { DomainError } from '@/shared/errors/app-error';
+import { requireHoldingForUser } from '@/application/holding/require-holding';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export async function commitEtradeStockPlanOrdersPdfImport(
   holdingRepository: HoldingRepository,
@@ -18,10 +19,7 @@ export async function commitEtradeStockPlanOrdersPdfImport(
     throw new DomainError('Nothing to import');
   }
 
-  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
-  if (holding === null) {
-    throw new DomainError('Holding not found');
-  }
+  const holding = await requireHoldingForUser(holdingRepository, input.holdingId, input.userId);
 
   const holdingSymbolUpper = holding.symbol.trim().toUpperCase();
 

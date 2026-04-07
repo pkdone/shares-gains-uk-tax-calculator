@@ -2,9 +2,9 @@ import {
   addAcquisition,
   createEmptyPool,
   disposeFromPool,
-  roundMoney2dp,
 } from '@/domain/services/section-104-pool';
-import { DomainError } from '@/shared/errors/app-error';
+import { roundMoney2dp } from '@/domain/value-objects/money';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('section-104-pool', () => {
   it('starts empty', () => {

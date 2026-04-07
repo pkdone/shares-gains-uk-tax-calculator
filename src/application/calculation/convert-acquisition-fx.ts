@@ -2,7 +2,7 @@ import type { FxRateRepository } from '@/domain/repositories/fx-rate-repository'
 import type { CalcAcquisition } from '@/domain/schemas/calculation';
 import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import { resolveUsdPerGbpFromLookup } from '@/domain/services/fx-lookup';
-import { roundMoney2dp } from '@/domain/services/section-104-pool';
+import { roundMoney2dp } from '@/domain/value-objects/money';
 
 import type { AcquisitionSterlingLine, FxAppliedToAcquisition } from '@/application/calculation/calculation-types';
 

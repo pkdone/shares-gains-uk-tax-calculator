@@ -1,14 +1,14 @@
-import type { CalculationLedgerLine } from '@/application/calculation/calculation-types';
+import type { LedgerLine } from '@/application/ledger/ledger-types';
 /**
  * Warnings when the calculation table layout could hide or obscure material facts.
  */
 export function buildMaterialCalculationWarnings(params: {
-  readonly ledgerLines: readonly CalculationLedgerLine[];
+  readonly ledgerLines: readonly LedgerLine[];
 }): readonly string[] {
   const { ledgerLines } = params;
   const warnings: string[] = [];
 
-  const linesByDate = new Map<string, CalculationLedgerLine[]>();
+  const linesByDate = new Map<string, LedgerLine[]>();
   for (const line of ledgerLines) {
     const d = line.data.eventDate;
     const existing = linesByDate.get(d);

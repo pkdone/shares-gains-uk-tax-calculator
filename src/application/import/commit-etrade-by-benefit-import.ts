@@ -1,7 +1,8 @@
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareAcquisitionImportUsd } from '@/domain/schemas/share-acquisition';
-import { DomainError } from '@/shared/errors/app-error';
+import { requireHoldingForUser } from '@/application/holding/require-holding';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export async function commitEtradeByBenefitImport(
   holdingRepository: HoldingRepository,
@@ -16,10 +17,7 @@ export async function commitEtradeByBenefitImport(
     throw new DomainError('Nothing to import');
   }
 
-  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
-  if (holding === null) {
-    throw new DomainError('Holding not found');
-  }
+  const holding = await requireHoldingForUser(holdingRepository, input.holdingId, input.userId);
 
   for (const d of input.drafts) {
     if (d.symbol !== holding.symbol) {

@@ -4,30 +4,18 @@ import { useCallback, type ReactElement } from 'react';
 
 import {
   buildComputationPackPdfAllYears,
-} from '@/application/calculation/build-calculation-computation-pack-pdf';
+} from '@/infrastructure/calculation-pdf/build-calculation-computation-pack-pdf';
 import type { CalculationTransactionTableGroup } from '@/application/calculation/build-calculation-transaction-table';
-import { buildComputationPackPdfFilenameAllYears } from '@/application/calculation/calculation-pdf-filename';
+import { buildComputationPackPdfFilenameAllYears } from '@/infrastructure/calculation-pdf/calculation-pdf-filename';
 
 import { useCalculationPdfExportBusy } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
 import { buttonPrimaryClassName } from '@/app/ui/button-variants';
+import { downloadPdf } from '@/app/ui/download-pdf';
 
 type CalculationPageTitleAndExportProps = {
   readonly holdingSymbol: string;
   readonly groups: readonly CalculationTransactionTableGroup[];
 };
-
-function downloadPdf(bytes: Uint8Array, filename: string): void {
-  const bufferCopy = new Uint8Array(bytes.byteLength);
-  bufferCopy.set(bytes);
-  const blob = new Blob([bufferCopy], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.rel = 'noopener';
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
 
 export function CalculationPageTitleAndExport({
   holdingSymbol,

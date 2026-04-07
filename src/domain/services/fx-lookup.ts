@@ -1,5 +1,5 @@
 import type { FxRate } from '@/domain/schemas/fx-rate';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export type FxRateResolution = {
   readonly usdPerGbp: number;

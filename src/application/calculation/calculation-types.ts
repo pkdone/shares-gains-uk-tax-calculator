@@ -1,6 +1,5 @@
+import type { LedgerLine } from '@/application/ledger/ledger-types';
 import type { CalcOutput } from '@/domain/schemas/calculation';
-import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
-import type { ShareDisposal } from '@/domain/schemas/share-disposal';
 
 /** FX metadata for an `import_usd` acquisition used when building calculation input. */
 export type FxAppliedToAcquisition = {
@@ -33,14 +32,10 @@ export type DisposalSterlingLine = {
   readonly feesGbp: number;
 };
 
-export type CalculationLedgerLine =
-  | { readonly kind: 'ACQUISITION'; readonly data: ShareAcquisition }
-  | { readonly kind: 'DISPOSAL'; readonly data: ShareDisposal };
-
 export type SuccessfulHoldingCalculation = {
   readonly output: CalcOutput;
   /** Ledger lines for this holding symbol, sorted for display (date, kind, id). */
-  readonly ledgerLines: readonly CalculationLedgerLine[];
+  readonly ledgerLines: readonly LedgerLine[];
   /** Sterling per acquisition row (same conversion as the calculation engine). */
   readonly sterlingByAcquisitionId: Record<string, AcquisitionSterlingLine>;
   /** Sterling per disposal row (same conversion as the calculation engine). */

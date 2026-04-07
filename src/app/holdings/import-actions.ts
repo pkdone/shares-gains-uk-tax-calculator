@@ -1,21 +1,19 @@
 'use server';
 
-import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { commitEtradeByBenefitImport } from '@/application/import/commit-etrade-by-benefit-import';
 import { filterEtradeDraftsForHoldingSymbol } from '@/application/import/filter-etrade-drafts-for-holding-symbol';
 import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-etrade-by-benefit-type-import';
 import { shareAcquisitionImportUsdSchema } from '@/domain/schemas/share-acquisition';
+import { toFormActionError } from '@/app/holdings/action-error';
+import { revalidateHoldingSurfaces } from '@/app/holdings/revalidate-holding-caches';
 import { readXlsxForEtradeByBenefitTypeImport } from '@/infrastructure/import/read-xlsx-sheet';
-import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
-import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
-import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
-import { DomainError } from '@/shared/errors/app-error';
-
-const holdingRepo = new MongoHoldingRepository();
-const acquisitionRepo = new MongoShareAcquisitionRepository();
+import {
+  holdingRepository as holdingRepo,
+  shareAcquisitionRepository as acquisitionRepo,
+} from '@/infrastructure/repositories/composition-root';
 
 export type EtradeImportPreviewState = {
   readonly error?: string;
@@ -121,15 +119,9 @@ export async function commitEtradeImportAction(
       drafts: draftsResult.data,
     });
   } catch (err) {
-    if (err instanceof DomainError) {
-      return { error: err.message };
-    }
-    return { error: err instanceof Error ? err.message : 'Import failed' };
+    return toFormActionError(err, 'Import failed');
   }
 
-  revalidatePath('/');
-  revalidatePath('/holdings');
-  revalidatePath(`/holdings/${holdingId}`);
-  revalidateTag(holdingCalculationCacheTag(holdingId));
+  revalidateHoldingSurfaces(holdingId);
   return { ok: true };
 }

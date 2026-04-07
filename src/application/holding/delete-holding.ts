@@ -1,7 +1,8 @@
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
-import { DomainError } from '@/shared/errors/app-error';
+import { requireHoldingForUser } from '@/application/holding/require-holding';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export type DeleteHoldingInput = {
   readonly holdingId: string;
@@ -14,10 +15,7 @@ export async function deleteHolding(
   disposalRepository: ShareDisposalRepository,
   input: DeleteHoldingInput,
 ): Promise<void> {
-  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
-  if (holding === null) {
-    throw new DomainError('Holding not found');
-  }
+  await requireHoldingForUser(holdingRepository, input.holdingId, input.userId);
 
   await acquisitionRepository.deleteAllForHoldingUser(input.holdingId, input.userId);
   await disposalRepository.deleteAllForHoldingUser(input.holdingId, input.userId);

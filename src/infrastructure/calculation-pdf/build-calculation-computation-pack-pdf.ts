@@ -15,11 +15,7 @@ import type { AcquisitionMatchingAttribution } from '@/application/calculation/a
 import type { MatchingSource } from '@/domain/schemas/calculation';
 import { formatUkTaxYearLabelForDisplay } from '@/domain/services/uk-tax-year';
 
-type JsPDFWithAutoTable = jsPDF & {
-  readonly lastAutoTable?: {
-    readonly finalY: number;
-  };
-};
+import { linesFromJspdfSplitTextToSize } from './lines-from-jspdf-split-text-to-size';
 
 const MARGIN_MM = 14;
 const PAGE_BOTTOM_MM = 297 - MARGIN_MM;
@@ -52,7 +48,7 @@ function sortedThirtyDayByDisposal(m: AcquisitionMatchingAttribution) {
   return [...m.thirtyDayByDisposal].sort((a, b) => a.disposalDate.localeCompare(b.disposalDate));
 }
 
-function getFinalY(doc: JsPDFWithAutoTable): number {
+function getFinalY(doc: jsPDF): number {
   const y = doc.lastAutoTable?.finalY;
   if (y === undefined) {
     return MARGIN_MM;
@@ -69,14 +65,7 @@ function ensureSpace(doc: jsPDF, currentY: number, neededMm: number): number {
 }
 
 function splitTextToLines(doc: jsPDF, text: string, maxWidth: number): string[] {
-  const raw: unknown = doc.splitTextToSize(text, maxWidth);
-  if (typeof raw === 'string') {
-    return [raw];
-  }
-  if (Array.isArray(raw)) {
-    return raw.map((line) => String(line));
-  }
-  return [text];
+  return linesFromJspdfSplitTextToSize(doc.splitTextToSize(text, maxWidth));
 }
 
 function writeWrappedLines(
@@ -179,7 +168,7 @@ function addLedgerTable(
     horizontalPageBreak: true,
   });
 
-  return getFinalY(doc as JsPDFWithAutoTable) + 6;
+  return getFinalY(doc) + 6;
 }
 
 function addAcquisitionMatchingTables(
@@ -230,7 +219,7 @@ function addAcquisitionMatchingTables(
       margin: { left: MARGIN_MM, right: MARGIN_MM },
       showFoot: 'lastPage',
     });
-    y = getFinalY(doc as JsPDFWithAutoTable) + 6;
+    y = getFinalY(doc) + 6;
   }
 
   y = ensureSpace(doc, y, 16);
@@ -367,7 +356,7 @@ function addCgtDisposalOutcome(
     horizontalPageBreak: true,
   });
 
-  return getFinalY(doc as JsPDFWithAutoTable) + 6;
+  return getFinalY(doc) + 6;
 }
 
 function addOutcomes(

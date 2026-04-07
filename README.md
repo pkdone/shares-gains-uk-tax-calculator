@@ -104,10 +104,12 @@ Integration tests need a **reachable** Atlas URI and will run `db:init` logic in
 
 ## Docker
 
-Build (uses a dummy `MONGODB_URI` only for the Next.js compile step; override at runtime):
+Build (uses a dummy `MONGODB_URI` only for the Next.js compile step; override at runtime). **`BETTER_AUTH_SECRET` must be supplied at build time** (no default in the Dockerfile):
 
 ```bash
-docker build -f docker/Dockerfile -t shares-gains-uk-tax-calculator:latest .
+docker build -f docker/Dockerfile \
+  --build-arg BETTER_AUTH_SECRET='your-at-least-32-character-secret-here' \
+  -t shares-gains-uk-tax-calculator:latest .
 ```
 
 Run with your Atlas URI (run **`db:init`** and **`fetch:fx-rates`** against that database before traffic, e.g. from a CI job or an init container):

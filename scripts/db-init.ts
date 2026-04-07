@@ -1,19 +1,12 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
+import { logInfo, logScriptEnd } from '../src/shared/app-logger';
 
-import { logError, logInfo, logScriptEnd } from '../src/shared/app-logger';
+import { assertMongoUriForScripts, loadScriptEnv } from './lib/script-env';
+import { reportScriptFailure } from './lib/script-main';
 
-config({ path: resolve(process.cwd(), '.env.local') });
-config({ path: resolve(process.cwd(), '.env') });
-
-const FALLBACK_JEST_URI = 'mongodb://127.0.0.1:27017/jest-fallback';
+loadScriptEnv();
 
 async function main(): Promise<void> {
-  if (!process.env.MONGODB_URI || process.env.MONGODB_URI === FALLBACK_JEST_URI) {
-    throw new Error(
-      'MONGODB_URI is not set. Copy .env.example to .env.local and set your MongoDB Atlas URI.',
-    );
-  }
+  assertMongoUriForScripts();
 
   const { createConnectedMongoClient } = await import('../src/infrastructure/persistence/mongodb-client');
   const { initMongoDatabase, MANAGED_COLLECTION_NAMES } = await import(
@@ -57,9 +50,4 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((err: unknown) => {
-  const message = err instanceof Error ? err.message : String(err);
-  logError(message);
-  logScriptEnd();
-  process.exitCode = 1;
-});
+void main().catch(reportScriptFailure);

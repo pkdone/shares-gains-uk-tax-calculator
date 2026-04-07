@@ -2,7 +2,7 @@ import type { FxRateRepository } from '@/domain/repositories/fx-rate-repository'
 import type { CalcDisposal } from '@/domain/schemas/calculation';
 import type { ShareDisposal } from '@/domain/schemas/share-disposal';
 import { resolveUsdPerGbpFromLookup } from '@/domain/services/fx-lookup';
-import { roundMoney2dp } from '@/domain/services/section-104-pool';
+import { roundMoney2dp } from '@/domain/value-objects/money';
 
 import type { DisposalSterlingLine, FxAppliedToDisposal } from '@/application/calculation/calculation-types';
 

@@ -1,5 +1,5 @@
 import { calculateGainsForSymbol } from '@/domain/services/cgt-calculator';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('calculateGainsForSymbol', () => {
   it('reproduces HS284 Example 3 (penny precision) for 2023-24 disposals', () => {

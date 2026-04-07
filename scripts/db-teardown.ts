@@ -1,12 +1,11 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
+import { MongoServerError } from 'mongodb';
 
-import { logError, logInfo, logScriptEnd } from '../src/shared/app-logger';
+import { logInfo, logScriptEnd } from '../src/shared/app-logger';
 
-config({ path: resolve(process.cwd(), '.env.local') });
-config({ path: resolve(process.cwd(), '.env') });
+import { assertMongoUriForScripts, loadScriptEnv } from './lib/script-env';
+import { reportScriptFailure } from './lib/script-main';
 
-const FALLBACK_JEST_URI = 'mongodb://127.0.0.1:27017/jest-fallback';
+loadScriptEnv();
 
 /**
  * Drops managed application collections and Better Auth collections in the same database.
@@ -19,11 +18,7 @@ async function main(): Promise<void> {
     );
   }
 
-  if (!process.env.MONGODB_URI || process.env.MONGODB_URI === FALLBACK_JEST_URI) {
-    throw new Error(
-      'MONGODB_URI is not set. Copy .env.example to .env.local and set your MongoDB Atlas URI.',
-    );
-  }
+  assertMongoUriForScripts();
 
   const { createConnectedMongoClient } = await import('../src/infrastructure/persistence/mongodb-client');
   const { BETTER_AUTH_COLLECTION_NAMES } = await import(
@@ -35,7 +30,7 @@ async function main(): Promise<void> {
   try {
     const db = client.db();
     /** Drop dependent data first (no FK enforcement, but logical order). */
-    const appDropOrder = [...MANAGED_COLLECTION_NAMES].reverse();
+    const appDropOrder = [...MANAGED_COLLECTION_NAMES].toReversed();
     /** Session/account before user; verification and rateLimit are independent. */
     const authDropOrder = [...BETTER_AUTH_COLLECTION_NAMES];
     const dropOrder = [...appDropOrder, ...authDropOrder];
@@ -51,8 +46,7 @@ async function main(): Promise<void> {
         await db.collection(name).drop();
         logInfo(`  Dropped: ${name}`);
       } catch (err: unknown) {
-        const code = err && typeof err === 'object' && 'code' in err ? (err as { code?: number }).code : undefined;
-        if (code === 26) {
+        if (err instanceof MongoServerError && err.code === 26) {
           logInfo(`  Skipped (not found): ${name}`);
           continue;
         }
@@ -66,9 +60,4 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((err: unknown) => {
-  const message = err instanceof Error ? err.message : String(err);
-  logError(message);
-  logScriptEnd();
-  process.exitCode = 1;
-});
+void main().catch(reportScriptFailure);

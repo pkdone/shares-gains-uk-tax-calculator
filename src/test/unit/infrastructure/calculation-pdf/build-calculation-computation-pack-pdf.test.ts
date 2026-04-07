@@ -1,7 +1,7 @@
 import {
   buildComputationPackPdfAllYears,
   buildComputationPackPdfSingleTaxYear,
-} from '@/application/calculation/build-calculation-computation-pack-pdf';
+} from '@/infrastructure/calculation-pdf/build-calculation-computation-pack-pdf';
 import type { CalculationTransactionTableGroup } from '@/application/calculation/build-calculation-transaction-table';
 
 describe('build-calculation-computation-pack-pdf', () => {

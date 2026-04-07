@@ -40,29 +40,8 @@ export async function requireVerifiedSessionUser(): Promise<VerifiedSessionUser>
   return requireVerifiedSessionUserInternal();
 }
 
-/**
- * For Route Handlers: returns the verified user id or null (no session / unverified).
- */
-export async function getVerifiedUserIdFromRequest(request: Request): Promise<string | null> {
-  const auth = await getAuth();
-  const data = await auth.api.getSession({ headers: request.headers });
-  if (!data?.user || !data.session || !data.user.emailVerified) {
-    return null;
-  }
-  return data.user.id;
-}
-
 function callbackUrlFromHeaders(h: Headers): string {
   return h.get('x-pathname') ?? '/';
-}
-
-/**
- * Returns the current session payload from Better Auth, or null if none.
- */
-export async function getSessionOptional() {
-  const auth = await getAuth();
-  const h = await headers();
-  return auth.api.getSession({ headers: h });
 }
 
 /**

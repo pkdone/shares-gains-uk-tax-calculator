@@ -2,7 +2,8 @@
 
 import { useActionState } from 'react';
 
-import { createHoldingAction, type FormActionState } from '@/app/holdings/actions';
+import { createHoldingAction } from '@/app/holdings/actions';
+import type { FormActionState } from '@/app/holdings/types';
 import { buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 export function CreateHoldingForm(): React.ReactElement {

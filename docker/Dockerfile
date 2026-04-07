@@ -17,10 +17,12 @@ ARG NEXT_PUBLIC_BETTER_AUTH_URL=http://127.0.0.1:3000/api/auth
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
 ARG BETTER_AUTH_URL=http://127.0.0.1:3000/api/auth
 ENV BETTER_AUTH_URL=${BETTER_AUTH_URL}
-ARG BETTER_AUTH_SECRET=docker-build-placeholder-secret-min-32-chars!!
+# No default: a known placeholder in the image would allow session forgery if runtime override is forgotten.
+ARG BETTER_AUTH_SECRET
 ENV BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
 ENV AUTH_EMAIL_PROVIDER=noop
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN test -n "${BETTER_AUTH_SECRET}" || (echo "docker build requires --build-arg BETTER_AUTH_SECRET=... (min 32 chars)" >&2 && exit 1)
 RUN npm run build
 
 FROM node:22-alpine AS runner

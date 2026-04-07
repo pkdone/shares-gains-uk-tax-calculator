@@ -3,7 +3,7 @@ import {
   getAeaGbpForTaxYearLabel,
   getShareCgtRatePercent,
 } from '@/domain/services/cgt-config';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('getAeaGbpForTaxYearLabel', () => {
   it('returns PRD values for key years', () => {

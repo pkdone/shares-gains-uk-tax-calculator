@@ -1,5 +1,5 @@
 import { resolveUsdPerGbpFromLookup } from '@/domain/services/fx-lookup';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('resolveUsdPerGbpFromLookup', () => {
   it('uses exact date when rate row matches event date', () => {

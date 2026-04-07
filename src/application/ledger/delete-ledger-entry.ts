@@ -1,7 +1,8 @@
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
-import { DomainError } from '@/shared/errors/app-error';
+import { requireHoldingForUser } from '@/application/holding/require-holding';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export type LedgerEntryKind = 'ACQUISITION' | 'DISPOSAL';
 
@@ -18,10 +19,7 @@ export async function deleteLedgerEntry(
   disposalRepository: ShareDisposalRepository,
   input: DeleteLedgerEntryInput,
 ): Promise<void> {
-  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
-  if (holding === null) {
-    throw new DomainError('Holding not found');
-  }
+  await requireHoldingForUser(holdingRepository, input.holdingId, input.userId);
 
   const deleted =
     input.kind === 'ACQUISITION'

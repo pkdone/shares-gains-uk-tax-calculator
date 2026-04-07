@@ -4,17 +4,15 @@ import type {
   ShareDisposalRepository,
 } from '@/domain/repositories/share-disposal-repository';
 import type { ShareDisposal } from '@/domain/schemas/share-disposal';
-import { DomainError } from '@/shared/errors/app-error';
+import { requireHoldingForUser } from '@/application/holding/require-holding';
+import { DomainError } from '@/domain/errors/domain-error';
 
 export async function addDisposal(
   holdingRepository: HoldingRepository,
   disposalRepository: ShareDisposalRepository,
   input: CreateShareDisposal,
 ): Promise<ShareDisposal> {
-  const holding = await holdingRepository.findByIdForUser(input.holdingId, input.userId);
-  if (holding === null) {
-    throw new DomainError('Holding not found');
-  }
+  const holding = await requireHoldingForUser(holdingRepository, input.holdingId, input.userId);
 
   if (input.symbol !== holding.symbol) {
     throw new DomainError('Symbol must match this holding.');

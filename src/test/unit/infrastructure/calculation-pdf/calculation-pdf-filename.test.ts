@@ -2,7 +2,7 @@ import {
   buildComputationPackPdfFilenameAllYears,
   buildComputationPackPdfFilenameSingleTaxYear,
   sanitizeHoldingSymbolForFilename,
-} from '@/application/calculation/calculation-pdf-filename';
+} from '@/infrastructure/calculation-pdf/calculation-pdf-filename';
 
 describe('sanitizeHoldingSymbolForFilename', () => {
   it('passes through safe characters', () => {

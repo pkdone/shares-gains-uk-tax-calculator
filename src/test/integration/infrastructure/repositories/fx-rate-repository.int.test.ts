@@ -1,6 +1,6 @@
 import { disconnectMongoClient, getMongoClient } from '@/infrastructure/persistence/mongodb-client';
 import { COLLECTION_FX_RATES } from '@/infrastructure/persistence/schema-registry';
-import { MongoFxRateRepository } from '@/infrastructure/repositories/mongo-fx-rate-repository';
+import { fxRateRepository as repo } from '@/infrastructure/repositories/composition-root';
 import { ensureTestDatabase } from '@/test/integration/helpers/ensure-test-database';
 
 describe('MongoFxRateRepository', () => {
@@ -15,7 +15,6 @@ describe('MongoFxRateRepository', () => {
   });
 
   it('upserts, finds by date, and finds latest on or before', async () => {
-    const repo = new MongoFxRateRepository();
     const d1 = '2099-06-01';
     const d2 = '2099-06-02';
 

@@ -20,7 +20,7 @@ All application-thrown operational errors extend `AppError` in `src/shared/error
 |-------|--------|-----|
 | `ConfigurationError` | `CONFIG_INVALID` | Invalid or missing environment / config |
 | `ValidationError` | `VALIDATION_FAILED` | Input or transport validation failed (Zod, etc.) |
-| `DomainError` | `DOMAIN_RULE` | Business invariant or domain rule violated |
+| `DomainError` (`src/domain/errors/domain-error.ts`, extends `AppError`) | `DOMAIN_RULE` | Business invariant or domain rule violated |
 | `PersistenceError` | `PERSISTENCE_FAILED` | MongoDB or repository unexpected failure |
 | `ImportError` | `IMPORT_FAILED` | File/import pipeline failures (reserved for Milestone 3+) |
 

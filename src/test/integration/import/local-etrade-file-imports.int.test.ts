@@ -25,9 +25,11 @@ import {
   COLLECTION_DISPOSALS,
   COLLECTION_HOLDINGS,
 } from '@/infrastructure/persistence/schema-registry';
-import { MongoHoldingRepository } from '@/infrastructure/repositories/mongo-holding-repository';
-import { MongoShareAcquisitionRepository } from '@/infrastructure/repositories/mongo-share-acquisition-repository';
-import { MongoShareDisposalRepository } from '@/infrastructure/repositories/mongo-share-disposal-repository';
+import {
+  holdingRepository as holdingRepo,
+  shareAcquisitionRepository as acquisitionRepo,
+  shareDisposalRepository as disposalRepo,
+} from '@/infrastructure/repositories/composition-root';
 import { logWarn } from '@/shared/app-logger';
 import { ensureTestDatabase } from '@/test/integration/helpers/ensure-test-database';
 
@@ -53,8 +55,6 @@ describe('local E*Trade file imports (optional files at repo root)', () => {
       return;
     }
 
-    const holdingRepo = new MongoHoldingRepository();
-    const acquisitionRepo = new MongoShareAcquisitionRepository();
     const userId = `integration-test-xlsx-${Date.now()}`;
 
     const buf = readFileSync(XLSX_LOCAL_PATH);
@@ -108,8 +108,6 @@ describe('local E*Trade file imports (optional files at repo root)', () => {
       return;
     }
 
-    const holdingRepo = new MongoHoldingRepository();
-    const disposalRepo = new MongoShareDisposalRepository();
     const userId = `integration-test-pdf-${Date.now()}`;
 
     const buf = readFileSync(PDF_LOCAL_PATH);

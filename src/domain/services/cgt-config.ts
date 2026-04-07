@@ -1,5 +1,5 @@
 import type { RateTier } from '@/domain/schemas/calculation';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 /**
  * Disposals on or after this date use the post–30 Oct 2024 main CGT rates for shares

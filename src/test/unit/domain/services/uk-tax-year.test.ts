@@ -3,7 +3,7 @@ import {
   ukTaxYearLabelFromDateOnly,
   ukTaxYearStartDateFromLabel,
 } from '@/domain/services/uk-tax-year';
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 describe('ukTaxYearLabelFromDateOnly', () => {
   it('labels 5 April as end of prior tax year', () => {

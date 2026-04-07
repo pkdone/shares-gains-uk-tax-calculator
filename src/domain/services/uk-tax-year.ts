@@ -1,4 +1,4 @@
-import { DomainError } from '@/shared/errors/app-error';
+import { DomainError } from '@/domain/errors/domain-error';
 
 /**
  * UK tax year label (e.g. `2024-25`) for the period 6 April–5 April inclusive,

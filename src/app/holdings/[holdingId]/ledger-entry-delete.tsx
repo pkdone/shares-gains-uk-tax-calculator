@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useRef, useState } from 'react';
 
-import { deleteLedgerEntryAction, type FormActionState } from '@/app/holdings/actions';
+import { deleteLedgerEntryAction } from '@/app/holdings/actions';
+import type { FormActionState } from '@/app/holdings/types';
 
 type LedgerEntryDeleteProps = {
   readonly holdingId: string;
