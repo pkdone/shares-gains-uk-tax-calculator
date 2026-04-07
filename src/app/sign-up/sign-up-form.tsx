@@ -39,9 +39,19 @@ export function SignUpForm(): React.ReactElement {
 
   if (done) {
     return (
-      <p className="text-sm text-neutral-700">
-        Check your email for a verification link. After you verify, you can sign in.
-      </p>
+      <div>
+        <p className="text-sm text-neutral-700">
+          Check your email for a verification link. After you verify, you can sign in.
+        </p>
+        {process.env.NODE_ENV === 'development' ? (
+          <p className="mt-8 text-sm font-bold text-red-600">
+            DEVELOPMENT: real email is not sent. Copy the verification URL from the terminal where{' '}
+            <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">npm run dev</code> is running
+            (look for the line starting with{' '}
+            <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">[dev] NOOP EMAIL</code>).
+          </p>
+        ) : null}
+      </div>
     );
   }
 
