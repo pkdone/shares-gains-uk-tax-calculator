@@ -187,32 +187,26 @@ Layering is described in [docs/adrs/001-folder-structure-and-ddd-layering.md](do
 
 The image uses Next.js **standalone** output ([`next.config.ts`](next.config.ts)). Build uses a dummy `MONGODB_URI` for the compile step; override at **runtime** with `-e MONGODB_URI=...`.
 
-**`BETTER_AUTH_SECRET` must be supplied at build time** (no default in the Dockerfile):
+The Dockerfile uses a **build-time placeholder** for `BETTER_AUTH_SECRET` so the secret is not passed as a Docker build argument (which can leak into image history). **Override with the real secret at runtime:**
 
 ```bash
-docker build -f docker/Dockerfile \
-  --build-arg BETTER_AUTH_SECRET='your-at-least-32-character-secret-here' \
-  -t shares-gains-uk-tax-calculator:latest .
+docker run --rm -p 3000:3000 \
+  -e MONGODB_URI='mongodb+srv://...' \
+  -e BETTER_AUTH_SECRET='your-at-least-32-character-secret-here' \
+  shares-gains-uk-tax-calculator:latest
 ```
 
-`NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, and `BETTER_AUTH_URL` are **baked into the client bundle at build time** (Dockerfile defaults use `http://127.0.0.1:3000`). If the app is served at a different origin (e.g. `https://app.example.com`), rebuild with matching arguments so Better Auth and client-side URLs stay correct:
+`NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, and `BETTER_AUTH_URL` are **baked into the client bundle at build time** (Dockerfile defaults use `http://127.0.0.1:3000`). If the app is served at a different origin (e.g. `https://app.example.com`), rebuild with matching `--build-arg` values so Better Auth and client-side URLs stay correct:
 
 ```bash
 docker build -f docker/Dockerfile \
-  --build-arg BETTER_AUTH_SECRET='your-at-least-32-character-secret-here' \
   --build-arg NEXT_PUBLIC_APP_URL='https://app.example.com' \
   --build-arg NEXT_PUBLIC_BETTER_AUTH_URL='https://app.example.com/api/auth' \
   --build-arg BETTER_AUTH_URL='https://app.example.com/api/auth' \
   -t shares-gains-uk-tax-calculator:latest .
 ```
 
-Run with your Atlas URI (run **`db:init`** and **`fetch:fx-rates`** against that database before traffic, e.g. from a CI job or an init container). **`MONGODB_URI` is not baked into the image** — pass it at runtime. If the container is served at an origin other than the build-time defaults (`http://127.0.0.1:3000`), pass matching `-e` values for `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, and `BETTER_AUTH_URL`, or rebuild the image with `--build-arg` as shown above.
-
-```bash
-docker run --rm -p 3000:3000 \
-  -e MONGODB_URI='mongodb+srv://...' \
-  shares-gains-uk-tax-calculator:latest
-```
+Run **`db:init`** and **`fetch:fx-rates`** against that database before traffic (e.g. from a CI job or an init container). **`MONGODB_URI` is not baked into the image** — pass it at runtime. If the container is served at an origin other than the build-time defaults (`http://127.0.0.1:3000`), pass matching `-e` values for `NEXT_PUBLIC_*` / `BETTER_AUTH_URL` only if you did not bake the correct origins at build time (or rebuild with `--build-arg` as above).
 
 ## Security and operations
 

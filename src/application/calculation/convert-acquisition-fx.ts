@@ -1,4 +1,5 @@
 import type { FxRateRepository } from '@/domain/repositories/fx-rate-repository';
+import type { FxRate } from '@/domain/schemas/fx-rate';
 import type { CalcAcquisition } from '@/domain/schemas/calculation';
 import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import { resolveUsdPerGbpFromLookup } from '@/domain/services/fx-lookup';
@@ -9,14 +10,23 @@ import type { AcquisitionSterlingLine, FxAppliedToAcquisition } from '@/applicat
 export async function buildCalcAcquisitionFromShareAcquisition(params: {
   readonly acquisition: ShareAcquisition;
   readonly fxRateRepository: FxRateRepository;
+  /**
+   * When set (e.g. calculation run), avoids per-row FX queries. Must contain `acquisition.eventDate`.
+   */
+  readonly fxRateByEventDate?: ReadonlyMap<string, FxRate | null>;
 }): Promise<{
   readonly data: CalcAcquisition;
   readonly sterling: AcquisitionSterlingLine;
   readonly fx: FxAppliedToAcquisition;
 }> {
-  const { acquisition, fxRateRepository } = params;
+  const { acquisition, fxRateRepository, fxRateByEventDate } = params;
 
-  const rateRow = await fxRateRepository.findLatestOnOrBefore(acquisition.eventDate);
+  let rateRow: FxRate | null;
+  if (fxRateByEventDate === undefined) {
+    rateRow = await fxRateRepository.findLatestOnOrBefore(acquisition.eventDate);
+  } else {
+    rateRow = fxRateByEventDate.get(acquisition.eventDate) ?? null;
+  }
   const resolution = resolveUsdPerGbpFromLookup({
     eventDate: acquisition.eventDate,
     rate: rateRow,

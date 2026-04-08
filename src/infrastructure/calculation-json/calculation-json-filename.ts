@@ -1,12 +1,13 @@
-import { sanitizeHoldingSymbolForFilename } from '@/infrastructure/calculation-pdf/calculation-pdf-filename';
+import {
+  buildComputationPackFilenameAllYears,
+  buildComputationPackFilenameSingleTaxYear,
+} from '@/infrastructure/calculation-export/calculation-export-filename';
 
 export function buildComputationPackJsonFilenameAllYears(params: {
   readonly holdingSymbol: string;
   readonly generatedDate: Date;
 }): string {
-  const sym = sanitizeHoldingSymbolForFilename(params.holdingSymbol);
-  const iso = params.generatedDate.toISOString().slice(0, 10);
-  return `capital-gains-${sym}-all-tax-years-${iso}.json`;
+  return buildComputationPackFilenameAllYears({ ...params, extension: '.json' });
 }
 
 export function buildComputationPackJsonFilenameSingleTaxYear(params: {
@@ -14,8 +15,5 @@ export function buildComputationPackJsonFilenameSingleTaxYear(params: {
   readonly taxYearLabel: string;
   readonly generatedDate: Date;
 }): string {
-  const sym = sanitizeHoldingSymbolForFilename(params.holdingSymbol);
-  const ty = sanitizeHoldingSymbolForFilename(params.taxYearLabel);
-  const iso = params.generatedDate.toISOString().slice(0, 10);
-  return `capital-gains-${sym}-${ty}-tax-year-${iso}.json`;
+  return buildComputationPackFilenameSingleTaxYear({ ...params, extension: '.json' });
 }

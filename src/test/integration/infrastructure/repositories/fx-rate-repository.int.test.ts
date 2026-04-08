@@ -29,6 +29,11 @@ describe('MongoFxRateRepository', () => {
     const latest = await repo.findLatestOnOrBefore(d2);
     expect(latest?.date).toBe(d2);
 
+    const batch = await repo.findLatestOnOrBeforeForDates([d1, d2, '2099-06-03']);
+    expect(batch.get(d1)?.usdPerGbp).toBe(1.26);
+    expect(batch.get(d2)?.usdPerGbp).toBe(1.27);
+    expect(batch.get('2099-06-03')?.usdPerGbp).toBe(1.27);
+
     const client = await getMongoClient();
     await client.db().collection(COLLECTION_FX_RATES).deleteMany({ date: { $in: [d1, d2] } });
   });

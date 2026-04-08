@@ -22,7 +22,13 @@ export async function sendAuthEmail(payload: AuthEmailPayload): Promise<void> {
   const urlRe = /https?:\/\/[^\s<>"']+/;
   const urlMatch = urlRe.exec(payload.text);
   if (urlMatch) {
-    logWarn(`[dev] NOOP EMAIL — copy this URL into the browser: ${urlMatch[0]}`);
+    if (env.NODE_ENV === 'production') {
+      logWarn(
+        'Auth email (noop): verification/reset URL omitted from logs in production. Configure SMTP (AUTH_EMAIL_PROVIDER=smtp) for real delivery.',
+      );
+    } else {
+      logWarn(`[dev] NOOP EMAIL — copy this URL into the browser: ${urlMatch[0]}`);
+    }
   } else {
     logInfo(`Auth email (noop) full text: ${payload.text}`);
   }

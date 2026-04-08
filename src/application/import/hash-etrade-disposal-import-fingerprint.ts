@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { formatEtradeDisposalImportFingerprintMaterial } from '@/domain/services/etrade-stock-plan-orders-pdf';
+import { formatEtradeDisposalImportFingerprintMaterial } from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
 
 export function hashEtradeDisposalImportFingerprint(material: string): string {
   return createHash('sha256').update(material, 'utf8').digest('hex');

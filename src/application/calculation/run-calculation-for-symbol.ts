@@ -8,9 +8,11 @@ import type { SuccessfulHoldingCalculation } from '@/application/calculation/cal
 import { buildMaterialCalculationWarnings, mergeCalculationWarnings } from '@/application/calculation/calculation-warnings';
 import { buildCalcAcquisitionFromShareAcquisition } from '@/application/calculation/convert-acquisition-fx';
 import { buildCalcDisposalFromShareDisposal } from '@/application/calculation/convert-disposal-fx';
-import { compareCalcEvents, compareLedgerLines } from '@/application/ledger/ledger-line-order';
+import {
+  mergeCalcEventsSorted,
+  mergeLedgerLinesSorted,
+} from '@/application/ledger/ledger-line-order';
 import { requireHoldingForUser } from '@/application/holding/require-holding';
-import type { LedgerLine } from '@/application/ledger/ledger-types';
 
 export async function runCalculationForHoldingSymbol(params: {
   readonly holdingRepository: HoldingRepository;
@@ -34,45 +36,46 @@ export async function runCalculationForHoldingSymbol(params: {
     disposalRepository.listByHoldingForUser(input.holdingId, input.userId),
   ]);
 
-  const events: CalcEvent[] = [];
+  const acqForSymbol = acquisitions.filter((a) => a.symbol === symbol);
+  const dispForSymbol = disposals.filter((d) => d.symbol === symbol);
+
+  const eventDates = [
+    ...acqForSymbol.map((a) => a.eventDate),
+    ...dispForSymbol.map((d) => d.eventDate),
+  ];
+  const fxRateByEventDate = await fxRateRepository.findLatestOnOrBeforeForDates(eventDates);
+
+  const acquisitionEvents: Extract<CalcEvent, { kind: 'acquisition' }>[] = [];
+  const disposalEvents: Extract<CalcEvent, { kind: 'disposal' }>[] = [];
   const fxByAcquisitionId: SuccessfulHoldingCalculation['fxByAcquisitionId'] = {};
   const fxByDisposalId: SuccessfulHoldingCalculation['fxByDisposalId'] = {};
   const sterlingByAcquisitionId: SuccessfulHoldingCalculation['sterlingByAcquisitionId'] = {};
   const sterlingByDisposalId: SuccessfulHoldingCalculation['sterlingByDisposalId'] = {};
-  const ledgerLines: LedgerLine[] = [];
 
-  for (const acquisition of acquisitions) {
-    if (acquisition.symbol !== symbol) {
-      continue;
-    }
-
+  for (const acquisition of acqForSymbol) {
     const built = await buildCalcAcquisitionFromShareAcquisition({
       acquisition,
       fxRateRepository,
+      fxRateByEventDate,
     });
-    events.push({ kind: 'acquisition', data: built.data });
+    acquisitionEvents.push({ kind: 'acquisition', data: built.data });
     sterlingByAcquisitionId[acquisition.id] = built.sterling;
-    ledgerLines.push({ kind: 'ACQUISITION', data: acquisition });
     fxByAcquisitionId[built.fx.acquisitionId] = built.fx;
   }
 
-  for (const disposal of disposals) {
-    if (disposal.symbol !== symbol) {
-      continue;
-    }
-
+  for (const disposal of dispForSymbol) {
     const built = await buildCalcDisposalFromShareDisposal({
       disposal,
       fxRateRepository,
+      fxRateByEventDate,
     });
-    events.push({ kind: 'disposal', data: built.data });
+    disposalEvents.push({ kind: 'disposal', data: built.data });
     sterlingByDisposalId[disposal.id] = built.sterling;
     fxByDisposalId[built.fx.disposalId] = built.fx;
-    ledgerLines.push({ kind: 'DISPOSAL', data: disposal });
   }
 
-  events.sort(compareCalcEvents);
-  ledgerLines.sort(compareLedgerLines);
+  const events = mergeCalcEventsSorted(acquisitionEvents, disposalEvents);
+  const ledgerLines = mergeLedgerLinesSorted(acqForSymbol, dispForSymbol);
 
   const output = calculateGainsForSymbol({
     symbol,

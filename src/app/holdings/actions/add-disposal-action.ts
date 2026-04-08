@@ -26,8 +26,13 @@ export async function addDisposalAction(
 
   const parsed = parseDisposalForm(formData, holding.symbol);
   if (!parsed.success) {
-    const first = parsed.error.flatten().formErrors[0] ?? Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-    return { error: first ?? 'Invalid disposal' };
+    const flat = parsed.error.flatten();
+    const first =
+      flat.formErrors[0] ?? Object.values(flat.fieldErrors)[0]?.[0] ?? 'Invalid disposal';
+    return {
+      error: first,
+      fieldErrors: flat.fieldErrors,
+    };
   }
 
   try {

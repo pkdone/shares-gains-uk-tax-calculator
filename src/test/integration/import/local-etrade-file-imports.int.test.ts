@@ -16,7 +16,7 @@ import { commitEtradeStockPlanOrdersPdfImport } from '@/application/import/commi
 import { filterEtradeDraftsForHoldingSymbol } from '@/application/import/filter-etrade-drafts-for-holding-symbol';
 import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-etrade-by-benefit-type-import';
 import { buildEtradePdfDisposalImportPreview } from '@/application/import/preview-etrade-stock-plan-orders-pdf-import';
-import { parseEtradeStockPlanOrdersPdfText } from '@/domain/services/etrade-stock-plan-orders-pdf';
+import { parseEtradeStockPlanOrdersPdfText } from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
 import { pdfBufferToText } from '@/infrastructure/import/pdf-buffer-to-text';
 import { readXlsxForEtradeByBenefitTypeImport } from '@/infrastructure/import/read-xlsx-sheet';
 import { disconnectMongoClient, getMongoClient } from '@/infrastructure/persistence/mongodb-client';
@@ -58,7 +58,7 @@ describe('local E*Trade file imports (optional files at repo root)', () => {
     const userId = `integration-test-xlsx-${Date.now()}`;
 
     const buf = readFileSync(XLSX_LOCAL_PATH);
-    const grid = readXlsxForEtradeByBenefitTypeImport(buf);
+    const grid = await readXlsxForEtradeByBenefitTypeImport(buf);
     const { drafts, errors, notices } = previewEtradeByBenefitTypeImport(grid);
 
     expect(errors.length).toBe(0);

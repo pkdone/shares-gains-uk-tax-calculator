@@ -5,6 +5,13 @@
 
 export type JsonSchemaNode = Record<string, unknown>;
 
+/**
+ * True for plain JSON objects (not arrays, not null). Narrows `unknown` from schema traversal.
+ */
+export function isJsonSchemaObject(node: unknown): node is JsonSchemaNode {
+  return typeof node === 'object' && node !== null && !Array.isArray(node);
+}
+
 const UNSUPPORTED_ROOT_KEYS = new Set(['$schema', 'definitions']);
 
 /**
@@ -31,7 +38,11 @@ function stripUnsupported(node: unknown): void {
     return;
   }
 
-  const obj = node as JsonSchemaNode;
+  if (!isJsonSchemaObject(node)) {
+    return;
+  }
+
+  const obj = node;
   for (const key of Object.keys(obj)) {
     if (UNSUPPORTED_ROOT_KEYS.has(key)) {
       delete obj[key];
@@ -61,7 +72,11 @@ function convertConstToEnum(node: unknown): void {
     return;
   }
 
-  const obj = node as JsonSchemaNode;
+  if (!isJsonSchemaObject(node)) {
+    return;
+  }
+
+  const obj = node;
   if ('const' in obj && obj.const !== undefined) {
     obj.enum = [obj.const];
     delete obj.const;
@@ -84,7 +99,11 @@ function convertIntegerToNumber(node: unknown): void {
     return;
   }
 
-  const obj = node as JsonSchemaNode;
+  if (!isJsonSchemaObject(node)) {
+    return;
+  }
+
+  const obj = node;
   if (obj.type === 'integer') {
     obj.type = 'number';
   }
@@ -106,7 +125,11 @@ function normalizeDateStringsToBsonDate(node: unknown): void {
     return;
   }
 
-  const obj = node as JsonSchemaNode;
+  if (!isJsonSchemaObject(node)) {
+    return;
+  }
+
+  const obj = node;
   const propKeys = ['createdAt', 'updatedAt'];
   for (const key of propKeys) {
     const prop = obj.properties as JsonSchemaNode | undefined;
@@ -133,7 +156,8 @@ export function withObjectIdFields(
   fields: readonly string[],
 ): JsonSchemaNode {
   const out = structuredClone(schema);
-  const props = (out.properties ?? {}) as JsonSchemaNode;
+  const rawProps = out.properties;
+  const props = isJsonSchemaObject(rawProps) ? rawProps : {};
   const required = new Set<string>([...((out.required as string[] | undefined) ?? [])]);
 
   for (const f of fields) {
@@ -162,11 +186,12 @@ export function injectBsonObjectIdsIntoEachAnyOfBranch(
   }
 
   for (const branch of branches) {
-    if (branch === null || typeof branch !== 'object') {
+    if (!isJsonSchemaObject(branch)) {
       continue;
     }
-    const b = branch as JsonSchemaNode;
-    const props = (b.properties ?? {}) as JsonSchemaNode;
+    const b = branch;
+    const rawBranchProps = b.properties;
+    const props = isJsonSchemaObject(rawBranchProps) ? { ...rawBranchProps } : {};
     const required = new Set<string>([...((b.required as string[] | undefined) ?? [])]);
 
     for (const name of objectIdFieldNames) {

@@ -8,7 +8,10 @@ import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-e
 import { shareAcquisitionImportUsdSchema } from '@/domain/schemas/share-acquisition';
 import { toFormActionError } from '@/app/holdings/action-error';
 import { revalidateHoldingSurfaces } from '@/app/holdings/revalidate-holding-caches';
-import { readXlsxForEtradeByBenefitTypeImport } from '@/infrastructure/import/read-xlsx-sheet';
+import {
+  readXlsxForEtradeByBenefitTypeImport,
+  XLSX_IMPORT_MAX_BYTES,
+} from '@/infrastructure/import/read-xlsx-sheet';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import {
   holdingRepository as holdingRepo,
@@ -43,6 +46,10 @@ export async function previewEtradeImportAction(
     return { error: 'Choose an XLSX file to upload.' };
   }
 
+  if (file.size > XLSX_IMPORT_MAX_BYTES) {
+    return { error: `File is too large (max ${Math.floor(XLSX_IMPORT_MAX_BYTES / (1024 * 1024))}MB).` };
+  }
+
   let buffer: Buffer;
   try {
     buffer = Buffer.from(await file.arrayBuffer());
@@ -52,7 +59,7 @@ export async function previewEtradeImportAction(
 
   let grid: string[][];
   try {
-    grid = readXlsxForEtradeByBenefitTypeImport(buffer);
+    grid = await readXlsxForEtradeByBenefitTypeImport(buffer);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to parse workbook';
     return { error: msg };

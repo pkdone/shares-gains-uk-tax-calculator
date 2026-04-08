@@ -6,6 +6,13 @@ function mockFxRepo(latest: { date: string; usdPerGbp: number } | null): FxRateR
   return {
     findByDate: jest.fn(),
     findLatestOnOrBefore: jest.fn().mockResolvedValue(latest),
+    findLatestOnOrBeforeForDates: jest.fn(async (dates: readonly string[]) => {
+      const m = new Map<string, typeof latest>();
+      for (const d of dates) {
+        m.set(d, latest);
+      }
+      return await Promise.resolve(m);
+    }),
     upsertMany: jest.fn(),
   };
 }

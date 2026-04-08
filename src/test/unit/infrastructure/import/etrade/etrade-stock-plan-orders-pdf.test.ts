@@ -2,7 +2,7 @@ import {
   formatEtradeDisposalImportFingerprintMaterial,
   isSellRestrictedStockOrderType,
   parseEtradeStockPlanOrdersPdfText,
-} from '@/domain/services/etrade-stock-plan-orders-pdf';
+} from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
 
 describe('isSellRestrictedStockOrderType', () => {
   it('accepts Sell Restricted Stock variants', () => {

@@ -1,6 +1,6 @@
 import type { ShareDisposalPdfImportDraft } from '@/domain/schemas/share-disposal';
-import type { EtradeStockPlanOrderParsedDraft } from '@/domain/services/etrade-stock-plan-orders-pdf';
-import { parseEtradeStockPlanOrdersPdfText } from '@/domain/services/etrade-stock-plan-orders-pdf';
+import type { EtradeStockPlanOrderParsedDraft } from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
+import { parseEtradeStockPlanOrdersPdfText } from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
 
 import { filterEtradeDisposalDraftsForHoldingSymbol } from '@/application/import/filter-etrade-disposal-drafts-for-holding-symbol';
 import { computeEtradeDisposalImportFingerprint } from '@/application/import/hash-etrade-disposal-import-fingerprint';

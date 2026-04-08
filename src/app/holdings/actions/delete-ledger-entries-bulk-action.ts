@@ -1,6 +1,6 @@
 'use server';
 
-import { deleteLedgerEntry } from '@/application/ledger/delete-ledger-entry';
+import { deleteLedgerEntriesBulk } from '@/application/ledger/delete-ledger-entries-bulk';
 import { toFormActionError } from '@/app/holdings/action-error';
 import { bulkDeleteLedgerEntriesRowsSchema } from '@/app/holdings/form-parsing';
 import { revalidateHoldingDetailAndCalculation } from '@/app/holdings/revalidate-holding-caches';
@@ -43,18 +43,15 @@ export async function deleteLedgerEntriesBulkAction(
   const userId = await requireVerifiedUserId();
   const entries = rowsParsed.data;
 
-  for (const row of entries) {
-    try {
-      await deleteLedgerEntry(holdingRepo, acquisitionRepo, disposalRepo, {
-        holdingId,
-        userId,
-        kind: row.kind,
-        entryId: row.entryId,
-      });
-    } catch (err) {
-      revalidateHoldingDetailAndCalculation(holdingId);
-      return toFormActionError(err, 'Failed to delete one or more entries');
-    }
+  try {
+    await deleteLedgerEntriesBulk(holdingRepo, acquisitionRepo, disposalRepo, {
+      holdingId,
+      userId,
+      entries,
+    });
+  } catch (err) {
+    revalidateHoldingDetailAndCalculation(holdingId);
+    return toFormActionError(err, 'Failed to delete one or more entries');
   }
 
   revalidateHoldingDetailAndCalculation(holdingId);
