@@ -114,11 +114,14 @@ export function CalculationTaxYearTabs({
   };
 
   return (
-    <div className="mt-4">
-      <div className="no-print mb-3 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
-        <fieldset className="min-w-0 border-0 p-0" aria-busy={exportBusy}>
-          <legend className="mb-1.5 block text-sm font-medium text-neutral-800">Export format</legend>
-          <div className="flex flex-wrap gap-4">
+    <div className="mt-3">
+      <div className="no-print mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <fieldset
+          className="min-w-0 border-0 p-0"
+          aria-busy={exportBusy}
+          aria-label="Choose PDF or JSON for the downloaded report"
+        >
+          <div className="flex flex-col gap-2">
             <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
               <input
                 id={pdfRadioId}
