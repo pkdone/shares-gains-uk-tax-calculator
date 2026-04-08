@@ -40,44 +40,42 @@ export function MatchingAcquisitionsDisclosure(): ReactElement {
             className="border-t border-neutral-200 bg-neutral-50/80 px-4 pb-4 pt-3"
           >
             <p className="text-neutral-600">
-              These rules apply to every acquisition and disposal for this holding (e.g. vesting, buys, sells). Under
-              HMRC, the Section 104 pool is the pooled holding of shares of the same class in the same company, where
-              allowable costs are averaged until same-day or 30-day identification applies.
+              These rules apply to every acquisition and disposal for this holding, including vesting, buys and sells.
+              Under HMRC rules, shares of the same class in the same company are usually grouped into a Section 104
+              pool, where allowable cost is averaged unless same-day or 30-day matching applies. For RSU vesting
+              events, the acquisition cost used for CGT is the vest-date market value in sterling.
             </p>
             <p className="mt-3 text-neutral-800">
-              <strong>How each date appears below:</strong> Results are grouped by tax year, then by calendar date. For
-              each date, the <strong>ledger</strong> comes first (USD columns are for reference; sterling is what feeds
-              CGT), then <strong>outcomes</strong> underneath—pool position and CGT summaries for that date. Several
-              acquisitions on the same day are aggregated for matching before the Section 104 pool is updated; the pool
-              outcome under the ledger is the position <em>after</em> that step.
+              <strong>How results are shown below:</strong> entries are grouped by tax year and then by calendar date.
+              For each date, the ledger appears first, followed by the outcomes for that date. USD columns are shown for
+              reference only; CGT calculations use sterling. Where several acquisitions occur on the same day, they are
+              grouped for matching before the Section 104 pool is updated. The pool position shown beneath the ledger is
+              the position after that step.
             </p>
             <p className="mt-3 text-neutral-800">
-              <strong>Date order vs matching order:</strong> the table is sorted by calendar date for readability. The
-              engine does <em>not</em> process disposals in that visual order. For each disposal it applies HMRC
-              identification in a fixed sequence: same-day acquisitions, then acquisitions in the 30 calendar days{' '}
-              <em>after</em> that disposal, then the Section 104 pool—regardless of where those acquisition dates appear
-              in the list.
+              <strong>Display order is not matching order:</strong> entries are shown in calendar order for readability,
+              but disposals are matched using HMRC identification rules, not the visual order of the table.
             </p>
             <p className="mt-3 text-neutral-800">
-              <strong>Matching</strong> means HMRC <strong>identification</strong>: for each disposal, which lots of
-              shares the disposal is treated as selling against. The order is:
+              For each disposal, matching is applied in this order:
             </p>
             <ol className="mt-2 list-decimal space-y-2 pl-5 text-neutral-800">
               <li>
-                <strong>Same day</strong> — acquisitions on the same calendar day as the disposal (HMRC same-day rule),
-                before the Section 104 pool.
+                <strong>Same day</strong> — acquisitions on the same calendar day as the disposal.
               </li>
               <li>
-                <strong>30-day</strong> — acquisitions in the 30 calendar days <em>after</em> the disposal
-                (bed-and-breakfast / 30-day rule). This can produce a different gain or loss than if the shares had
-                come only from the pool. Acquisitions that occurred <em>before</em> the disposal are not in this bucket
-                for that sale.
+                <strong>30-day rule</strong> — acquisitions in the 30 calendar days after the disposal. Earlier
+                acquisitions are not matched under this rule.
               </li>
               <li>
-                <strong>Section 104 pool</strong> — whatever quantity is left is matched against the running pooled
-                holding (including average cost).
+                <strong>Section 104 pool</strong> — any remaining quantity is matched against the running pooled holding
+                using average allowable cost.
               </li>
             </ol>
+            <p className="mt-3 text-neutral-800">
+              The 30-day rule can produce a different gain or loss than if the shares had been matched only against the
+              Section 104 pool.
+            </p>
           </div>
         ) : null}
       </div>
