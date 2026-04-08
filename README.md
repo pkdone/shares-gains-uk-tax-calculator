@@ -2,7 +2,7 @@
 
 # Shares Gains UK Tax Calculator
 
-UK capital gains workflow for calculating capital gains HMRC tax liabilities as a result of US employer awarded RSUs vesting and being disposed of, where the source trading system is E*TRADE. The app **calculates capital gains and losses for each holding (stock ticker)** you import, for each tax year. It does not calculate your overall annual CGT liability because other disposals, brought-forward losses, reliefs, and your rate position, which are not tracked by this application, change what you owe overall. 
+UK capital gains workflow for taxpayers with US employer equity compensation (especially RSUs and related share disposals). Imports include **E\*TRADE** / Morgan Stanley at Work–style sources; the product is not limited to one broker. The app **calculates capital gains and losses for each holding (stock ticker)** you import, grouped by UK tax year. It does **not** calculate your overall annual CGT liability: other disposals, brought-forward losses, reliefs, and your rate band—which this application does not track—can change what you owe in total.
 
 ## Table of contents
 
@@ -53,7 +53,7 @@ UK capital gains workflow for calculating capital gains HMRC tax liabilities as 
    npm run dev
    ```
 
-6. Open [http://localhost:3000](http://localhost:3000), check [http://localhost:3000/api/health](http://localhost:3000/api/health) (`db` should be `connected`), then sign up (see [Sign up and email verification (development)](#sign-up-and-email-verification-development)).
+6. Open a browser to the origin you set in `NEXT_PUBLIC_APP_URL` (see [.env.example](.env.example)), then visit **`/api/health`** on that origin (`db` should be `connected`), then sign up (see [Sign up and email verification (development)](#sign-up-and-email-verification-development)).
 
 **Suggested order for any new environment:** configure `.env.local` → `db:init` → `fetch:fx-rates` → `npm run dev`.
 
@@ -71,12 +71,12 @@ Copy [.env.example](.env.example) to `.env.local` for local development. The app
 |----------|---------|
 | `NODE_ENV` | `development`, `production`, or `test` (default `development`). |
 | `MONGODB_URI` | Atlas connection string; **database name must appear in the URI path** (e.g. `.../mydb?...`). |
-| `NEXT_PUBLIC_APP_URL` | Public site origin **without** trailing slash (e.g. `http://localhost:3000`). |
+| `NEXT_PUBLIC_APP_URL` | Public site origin **without** trailing slash; must match where the app is served (see [.env.example](.env.example)). |
 | `NEXT_PUBLIC_BETTER_AUTH_URL` | Better Auth API base URL for the browser; **must be identical** to `BETTER_AUTH_URL` and include `/api/auth`. |
 | `BETTER_AUTH_URL` | Same value as `NEXT_PUBLIC_BETTER_AUTH_URL` (full URL including `/api/auth`). |
 | `BETTER_AUTH_SECRET` | Session signing secret; **at least 32 characters** (e.g. `openssl rand -base64 32`). |
 | `AUTH_EMAIL_PROVIDER` | `noop` (default) logs auth links via the app logger; `smtp` is reserved for a future provider. |
-| `ALLOW_DB_TEARDOWN` | Set to `1` **only** when running `npm run db:teardown` (destructive). Do not set in production. |
+| `ALLOW_DB_TEARDOWN` | Set to `1` **only** when running `npm run db:teardown` (destructive). Required by that script; it is **not** read by the app at startup. Do not set in production. |
 
 ## MongoDB Atlas (first-time)
 
@@ -113,15 +113,15 @@ For container or hosted deployments, run **`db:init`** and **`fetch:fx-rates`** 
 npm run dev
 ```
 
-Useful URLs:
+Useful paths (under the origin from `NEXT_PUBLIC_APP_URL`; default dev port is **3000**):
 
-| URL | Notes |
-|-----|--------|
-| [http://localhost:3000](http://localhost:3000) | Home |
-| [http://localhost:3000/sign-up](http://localhost:3000/sign-up) | Register |
-| [http://localhost:3000/sign-in](http://localhost:3000/sign-in) | Sign in |
-| [http://localhost:3000/holdings](http://localhost:3000/holdings) | Holdings (requires verified email) |
-| [http://localhost:3000/api/health](http://localhost:3000/api/health) | Health check (`db` is `connected` when Atlas is reachable and the database is provisioned) |
+| Path | Notes |
+|------|-------|
+| `/` | Home |
+| `/sign-up` | Register |
+| `/sign-in` | Sign in |
+| `/holdings` | Holdings (requires verified email) |
+| `/api/health` | Health check (`db` is `connected` when Atlas is reachable and the database is provisioned) |
 
 ### Sign up and email verification (development)
 
@@ -142,13 +142,13 @@ For production, configure a real transactional email provider and set `AUTH_EMAI
 npm run validate
 ```
 
-Runs `build`, `lint`, `npm test`, and `npm run test:integration`. **Build** loads the same env as Next.js (`/.env.local`); set `MONGODB_URI` plus Better Auth variables so config validation passes. For CI without secrets, pass placeholders for the build step only, for example:
+Runs `build`, `lint`, `npm test`, and `npm run test:integration`. **`npm run validate`** runs the full suite including integration tests, so it needs the same **real** `MONGODB_URI` as `npm run test:integration` (see **Tests** below). **`npm run build`** alone loads the same env files as Next.js (`.env.local`, then `.env` at the project root); set `MONGODB_URI` plus Better Auth variables so config validation passes. For CI without secrets, pass placeholders for the build step only, for example:
 
 ```bash
 MONGODB_URI='mongodb://127.0.0.1:27017/ci-build' \
-NEXT_PUBLIC_APP_URL='http://localhost:3000' \
-NEXT_PUBLIC_BETTER_AUTH_URL='http://localhost:3000/api/auth' \
-BETTER_AUTH_URL='http://localhost:3000/api/auth' \
+NEXT_PUBLIC_APP_URL='https://ci-build.example' \
+NEXT_PUBLIC_BETTER_AUTH_URL='https://ci-build.example/api/auth' \
+BETTER_AUTH_URL='https://ci-build.example/api/auth' \
 BETTER_AUTH_SECRET='0123456789abcdef0123456789abcdef' \
 npm run build
 ```
@@ -162,7 +162,7 @@ npm run start
 **Tests**
 
 - **Unit** tests live under `src/test/unit/` and run with `npm test`.
-- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (included in **`npm run validate`**). They require a **reachable** MongoDB at a **real** `MONGODB_URI` in `.env.local` (or exported in CI). Jest applies a localhost placeholder only when `MONGODB_URI` is unset so config validation can load — that placeholder is **not** sufficient for integration tests that hit Atlas. Each integration suite calls `ensureTestDatabase()` in `beforeAll` to apply the same provisioning as `npm run db:init`.
+- **Integration** tests under `src/test/integration/` run with `npm run test:integration` (included in **`npm run validate`**). They require a **reachable** MongoDB at a **real** `MONGODB_URI` in `.env.local` (or exported in CI). Jest sets `mongodb://127.0.0.1:27017/jest-fallback` only when `MONGODB_URI` is unset so config validation can load — that URI is **not** sufficient for integration tests (and `db:*` scripts refuse it). Each integration suite calls `ensureTestDatabase()` in `beforeAll` to apply the same provisioning as `npm run db:init`.
 
 ## Project layout
 
@@ -206,10 +206,12 @@ docker build -f docker/Dockerfile \
   -t shares-gains-uk-tax-calculator:latest .
 ```
 
-Run with your Atlas URI (run **`db:init`** and **`fetch:fx-rates`** against that database before traffic, e.g. from a CI job or an init container):
+Run with your Atlas URI (run **`db:init`** and **`fetch:fx-rates`** against that database before traffic, e.g. from a CI job or an init container). **`MONGODB_URI` is not baked into the image** — pass it at runtime. If the container is served at an origin other than the build-time defaults (`http://127.0.0.1:3000`), pass matching `-e` values for `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, and `BETTER_AUTH_URL`, or rebuild the image with `--build-arg` as shown above.
 
 ```bash
-docker run --rm -p 3000:3000 -e MONGODB_URI='mongodb+srv://...' shares-gains-uk-tax-calculator:latest
+docker run --rm -p 3000:3000 \
+  -e MONGODB_URI='mongodb+srv://...' \
+  shares-gains-uk-tax-calculator:latest
 ```
 
 ## Security and operations
