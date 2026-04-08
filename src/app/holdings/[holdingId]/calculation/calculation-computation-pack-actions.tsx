@@ -60,6 +60,7 @@ export function CalculationComputationPackActions({
           buildComputationPackPdfFilenameSingleTaxYear({
             holdingSymbol,
             taxYearLabel: group.taxYearLabel,
+            generatedDate: generatedAt,
           }),
         );
       } finally {

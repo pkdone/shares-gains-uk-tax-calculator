@@ -49,7 +49,7 @@ export function HoldingDeleteButton({ holdingId, symbol }: HoldingDeleteButtonPr
     <div className="flex shrink-0 items-center gap-2">
       <button
         type="button"
-        className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
+        className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs font-normal text-red-800 hover:bg-red-50"
         onClick={onOpen}
       >
         Delete holding
