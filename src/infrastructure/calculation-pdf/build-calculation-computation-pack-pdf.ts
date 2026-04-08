@@ -14,6 +14,7 @@ import { formatGbpAmount, formatUsdCurrency } from '@/application/calculation/ca
 import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
 import type { MatchingSource } from '@/domain/schemas/calculation';
 import { formatUkTaxYearLabelForDisplay } from '@/domain/services/uk-tax-year';
+import { CALCULATION_EXPORT_FX_ASSUMPTION_NOTE } from '@/shared/calculation-export-fx-assumption-note';
 
 import { linesFromJspdfSplitTextToSize } from './lines-from-jspdf-split-text-to-size';
 
@@ -101,11 +102,9 @@ function addTitleBlock(doc: jsPDF, holdingSymbol: string, generatedAt: Date): nu
 
   doc.setFontSize(FONT_SMALL);
   doc.setTextColor(60, 60, 60);
-  const fxNote =
-    'Sterling amounts for USD-denominated ledger rows use Bank of England USD/GBP (XUDLUSS) spot rates.';
   /** Extra space before the first tax year section (body starts below the header block). */
   const gapAfterFxNoteMm = 12;
-  y = writeWrappedLines(doc, fxNote, MARGIN_MM, y + 2, maxW) + gapAfterFxNoteMm;
+  y = writeWrappedLines(doc, CALCULATION_EXPORT_FX_ASSUMPTION_NOTE, MARGIN_MM, y + 2, maxW) + gapAfterFxNoteMm;
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(FONT_BODY);
 

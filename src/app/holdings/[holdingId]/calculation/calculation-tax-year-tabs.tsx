@@ -5,6 +5,7 @@ import {
   type ReactElement,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react';
@@ -14,29 +15,39 @@ import { formatUkTaxYearLabelForDisplay } from '@/domain/services/uk-tax-year';
 
 import { buttonPrimaryClassName, buttonSecondaryClassName } from '@/app/ui/button-variants';
 
+import type { ComputationPackExportFormat } from '@/app/holdings/[holdingId]/calculation/computation-pack-export-format';
+
 import { TaxYearPanel } from './calculation-result-detail';
 
 const TAX_YEAR_TAB_SCROLL_ID = 'calc-tax-year-tab-scroll';
 
+const EXPORT_FORMAT_RADIO_NAME = 'computation-pack-export-format';
+
 type CalculationTaxYearTabsProps = {
   readonly groups: readonly CalculationTransactionTableGroup[];
   readonly holdingSymbol: string;
-  readonly pdfBusy: boolean;
-  readonly onExportAllYears: () => void;
-  readonly onExportThisTaxYear: (group: CalculationTransactionTableGroup) => void;
+  readonly exportBusy: boolean;
+  readonly onExportAllYears: (format: ComputationPackExportFormat) => void;
+  readonly onExportThisTaxYear: (
+    group: CalculationTransactionTableGroup,
+    format: ComputationPackExportFormat,
+  ) => void;
 };
 
 export function CalculationTaxYearTabs({
   groups,
   holdingSymbol,
-  pdfBusy,
+  exportBusy,
   onExportAllYears,
   onExportThisTaxYear,
 }: CalculationTaxYearTabsProps): ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [exportFormat, setExportFormat] = useState<ComputationPackExportFormat>('pdf');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const tabScrollRef = useRef<HTMLDivElement>(null);
   const [showMoreYears, setShowMoreYears] = useState(false);
+  const pdfRadioId = useId();
+  const jsonRadioId = useId();
 
   const updateMoreYearsVisibility = useCallback((): void => {
     const el = tabScrollRef.current;
@@ -103,30 +114,70 @@ export function CalculationTaxYearTabs({
   };
 
   return (
-    <div className="mt-4">
-      <div className="no-print mb-3 flex min-w-0 flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          className={buttonPrimaryClassName}
-          disabled={groups.length === 0 || pdfBusy}
-          aria-busy={pdfBusy}
-          onClick={() => {
-            onExportAllYears();
-          }}
+    <div className="mt-3">
+      <div className="no-print mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <fieldset
+          className="min-w-0 border-0 p-0"
+          aria-busy={exportBusy}
+          aria-label="Choose PDF or JSON for the downloaded report"
         >
-          Export all tax years (PDF)
-        </button>
-        <button
-          type="button"
-          className={buttonPrimaryClassName}
-          disabled={pdfBusy}
-          aria-busy={pdfBusy}
-          onClick={() => {
-            onExportThisTaxYear(selected);
-          }}
-        >
-          Export this tax year (PDF)
-        </button>
+          <div className="flex flex-col gap-2">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+              <input
+                id={pdfRadioId}
+                type="radio"
+                className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+                name={EXPORT_FORMAT_RADIO_NAME}
+                value="pdf"
+                checked={exportFormat === 'pdf'}
+                disabled={exportBusy}
+                onChange={() => {
+                  setExportFormat('pdf');
+                }}
+              />
+              PDF
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+              <input
+                id={jsonRadioId}
+                type="radio"
+                className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+                name={EXPORT_FORMAT_RADIO_NAME}
+                value="json"
+                checked={exportFormat === 'json'}
+                disabled={exportBusy}
+                onChange={() => {
+                  setExportFormat('json');
+                }}
+              />
+              JSON
+            </label>
+          </div>
+        </fieldset>
+        <div className="flex min-w-0 flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            className={buttonPrimaryClassName}
+            disabled={groups.length === 0 || exportBusy}
+            aria-busy={exportBusy}
+            onClick={() => {
+              onExportAllYears(exportFormat);
+            }}
+          >
+            Export all tax years
+          </button>
+          <button
+            type="button"
+            className={buttonPrimaryClassName}
+            disabled={exportBusy}
+            aria-busy={exportBusy}
+            onClick={() => {
+              onExportThisTaxYear(selected, exportFormat);
+            }}
+          >
+            Export this tax year
+          </button>
+        </div>
       </div>
 
       <div className="flex min-w-0 items-stretch gap-1">
@@ -141,40 +192,40 @@ export function CalculationTaxYearTabs({
             aria-label="Tax years"
             aria-orientation="horizontal"
           >
-          {groups.map((g, i) => {
-            const tabId = `calc-ty-tab-${g.taxYearLabel}`;
-            const panelId = `calc-ty-panel-${g.taxYearLabel}`;
-            const label = formatUkTaxYearLabelForDisplay(g.taxYearLabel);
-            const isSelected = i === selectedIndex;
+            {groups.map((g, i) => {
+              const tabId = `calc-ty-tab-${g.taxYearLabel}`;
+              const panelId = `calc-ty-panel-${g.taxYearLabel}`;
+              const label = formatUkTaxYearLabelForDisplay(g.taxYearLabel);
+              const isSelected = i === selectedIndex;
 
-            return (
-              <button
-                key={g.taxYearLabel}
-                ref={(el) => {
-                  tabRefs.current[i] = el;
-                }}
-                type="button"
-                role="tab"
-                id={tabId}
-                aria-selected={isSelected}
-                aria-controls={panelId}
-                tabIndex={isSelected ? 0 : -1}
-                className={`shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
-                  isSelected
-                    ? 'border-[var(--color-accent)] bg-neutral-50 font-semibold text-neutral-900'
-                    : 'border-transparent font-medium text-neutral-600 hover:bg-neutral-50/80 hover:text-neutral-900'
-                }`}
-                onClick={() => {
-                  setSelectedIndex(i);
-                }}
-                onKeyDown={(e) => {
-                  handleTabKeyDown(i, e);
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={g.taxYearLabel}
+                  ref={(el) => {
+                    tabRefs.current[i] = el;
+                  }}
+                  type="button"
+                  role="tab"
+                  id={tabId}
+                  aria-selected={isSelected}
+                  aria-controls={panelId}
+                  tabIndex={isSelected ? 0 : -1}
+                  className={`shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
+                    isSelected
+                      ? 'border-[var(--color-accent)] bg-neutral-50 font-semibold text-neutral-900'
+                      : 'border-transparent font-medium text-neutral-600 hover:bg-neutral-50/80 hover:text-neutral-900'
+                  }`}
+                  onClick={() => {
+                    setSelectedIndex(i);
+                  }}
+                  onKeyDown={(e) => {
+                    handleTabKeyDown(i, e);
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
         {showMoreYears ? (
