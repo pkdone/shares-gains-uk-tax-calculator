@@ -63,9 +63,9 @@ export function FxRateLedgerColumnDisclosure({
           >
             <FxRateLedgerLegendBody />
             <p className="mt-3 text-sm text-neutral-700">
-              <strong>Sterling vs USD:</strong> CGT amounts are computed in sterling using this app’s Bank of England
-              daily spot series and the rules summarised in this panel. USD amounts in the ledger are for reference only and may
-              not match your broker’s statement or intraday rates.
+              <strong>Sterling vs USD:</strong> CGT is calculated in sterling. USD amounts are shown in the ledger for
+              reference only. Sterling conversions use Bank of England daily spot rates, so the USD figures shown here may
+              not match broker statements or intraday execution prices exactly.
             </p>
             <p className="mt-3 text-sm text-neutral-700">
               {hasFxModal ? (
@@ -77,16 +77,14 @@ export function FxRateLedgerColumnDisclosure({
                     onClick={openModal}
                   >
                     View FX applied (USD)
-                  </button>
-                  <span className="text-neutral-600">
-                    {' '}
-                    opens a full table of the rate date and value used for each acquisition and disposal conversion.
-                  </span>
+                  </button>{' '}
+                  shows the rate date and rate used for each acquisition and disposal conversion.
                 </>
               ) : (
                 <span className="text-neutral-600">
-                  When a calculation has run, the <strong>FX rate</strong> column in the calculation results uses these
-                  colours, and you can open the full rate table from the link in this section.
+                  These colours match the <strong>FX rate</strong> column in the results ledger. When a calculation has
+                  run, use <strong className="text-neutral-700">View FX applied (USD)</strong> in this section to see the
+                  rate date and rate used for each acquisition and disposal conversion.
                 </span>
               )}
             </p>
