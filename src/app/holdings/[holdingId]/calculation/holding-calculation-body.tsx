@@ -15,7 +15,7 @@ import { logInfo } from '@/shared/app-logger';
 import { DomainError } from '@/domain/errors/domain-error';
 
 import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
-import { CalculationPdfExportProvider } from '@/app/holdings/[holdingId]/calculation/calculation-pdf-export-context';
+import { CalculationExportProvider } from '@/app/holdings/[holdingId]/calculation/calculation-export-context';
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 import { FxRateLedgerColumnDisclosure } from '@/app/holdings/[holdingId]/calculation/fx-rate-ledger-column-disclosure';
 import { MatchingAcquisitionsDisclosure } from '@/app/holdings/[holdingId]/calculation/matching-acquisitions-disclosure';
@@ -79,7 +79,7 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
 
   return (
     <div className="no-print w-full min-w-0">
-      <CalculationPdfExportProvider>
+      <CalculationExportProvider>
         <div className="mb-8 mt-6 min-w-0 w-full space-y-4">
           <MatchingAcquisitionsDisclosure />
           <FxRateLedgerColumnDisclosure
@@ -111,7 +111,7 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
         ) : (
           <p className="mt-8 text-sm text-neutral-600">Add acquisitions or disposals to run a calculation.</p>
         )}
-      </CalculationPdfExportProvider>
+      </CalculationExportProvider>
     </div>
   );
 }
