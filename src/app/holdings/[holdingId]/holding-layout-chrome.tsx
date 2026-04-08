@@ -27,7 +27,7 @@ export function HoldingLayoutChrome({ holdingId }: HoldingLayoutChromeProps): Re
     ].join(' ');
 
   return (
-    <header className="no-print mt-4">
+    <header className="no-print mt-8">
       <nav aria-label="Holding views" className="flex gap-6 border-b border-neutral-200">
         <Link href={ledgerHref} className={tabClass(isLedger)} prefetch>
           Ledger

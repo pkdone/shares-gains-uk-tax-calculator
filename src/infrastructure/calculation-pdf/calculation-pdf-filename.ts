@@ -17,8 +17,10 @@ export function buildComputationPackPdfFilenameAllYears(params: {
 export function buildComputationPackPdfFilenameSingleTaxYear(params: {
   readonly holdingSymbol: string;
   readonly taxYearLabel: string;
+  readonly generatedDate: Date;
 }): string {
   const sym = sanitizeHoldingSymbolForFilename(params.holdingSymbol);
   const ty = sanitizeHoldingSymbolForFilename(params.taxYearLabel);
-  return `capital-gains-${sym}-tax-year-${ty}.pdf`;
+  const iso = params.generatedDate.toISOString().slice(0, 10);
+  return `capital-gains-${sym}-${ty}-tax-year-${iso}.pdf`;
 }

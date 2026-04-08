@@ -17,13 +17,15 @@ describe('sanitizeHoldingSymbolForFilename', () => {
 });
 
 describe('buildComputationPackPdfFilenameSingleTaxYear', () => {
-  it('includes canonical tax year label', () => {
+  it('includes canonical tax year label and ISO date from generatedDate', () => {
+    const d = new Date('2026-04-06T12:00:00.000Z');
     expect(
       buildComputationPackPdfFilenameSingleTaxYear({
         holdingSymbol: 'MDB',
         taxYearLabel: '2024-25',
+        generatedDate: d,
       }),
-    ).toBe('capital-gains-MDB-tax-year-2024-25.pdf');
+    ).toBe('capital-gains-MDB-2024-25-tax-year-2026-04-06.pdf');
   });
 });
 

@@ -260,9 +260,9 @@ function AcquisitionOutcomeSection({
               : '—'}
           </dd>
         </div>
-        <div className="sm:col-span-2 lg:col-span-4">
+        <div className="mt-1.5 sm:col-span-2 lg:col-span-4">
           <dt className="text-xs font-semibold text-neutral-800">Matching</dt>
-          <dd className="text-xs text-neutral-600">
+          <dd className="mt-1.5 text-xs text-neutral-600">
             {row.acquisitionMatching === undefined ? (
               acquisitionMatchingFallbackNote(row)
             ) : (
