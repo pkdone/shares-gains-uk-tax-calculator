@@ -43,12 +43,12 @@ export function FxRateLedgerColumnDisclosure(): ReactElement {
           >
             <FxRateLedgerLegendBody />
             <p className="mt-3 text-sm text-neutral-700">
-              <strong>Sterling vs USD:</strong> CGT is calculated in sterling. USD amounts are shown in the ledger for
-              reference only. Sterling conversions use Bank of England daily spot rates, so the USD figures shown here may
-              not match broker statements or intraday execution prices exactly.
+              These colours match the <strong>FX rate</strong> column in the results ledger.
             </p>
             <p className="mt-3 text-sm text-neutral-700">
-              These colours match the <strong>FX rate</strong> column in the results ledger.
+              <strong>Sterling vs USD:</strong> CGT is calculated in sterling. USD amounts are shown for reference only.
+              Sterling conversions use Bank of England daily spot rates, so the USD figures shown here may
+              not match broker statements or intraday execution prices exactly.
             </p>
           </div>
         ) : null}
