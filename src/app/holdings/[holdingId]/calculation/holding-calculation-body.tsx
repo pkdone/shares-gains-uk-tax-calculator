@@ -82,14 +82,7 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
       <CalculationExportProvider>
         <div className="mb-8 mt-6 min-w-0 w-full space-y-4">
           <MatchingAcquisitionsDisclosure />
-          <FxRateLedgerColumnDisclosure
-            acquisitionRows={
-              result !== null && calcError === null ? Object.values(result.fxByAcquisitionId) : undefined
-            }
-            disposalRows={
-              result !== null && calcError === null ? Object.values(result.fxByDisposalId) : undefined
-            }
-          />
+          <FxRateLedgerColumnDisclosure />
         </div>
 
         {hasLedgerData ? (

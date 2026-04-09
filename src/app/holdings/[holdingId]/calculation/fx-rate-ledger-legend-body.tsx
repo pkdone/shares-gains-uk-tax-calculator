@@ -43,7 +43,8 @@ export function FxRateLedgerLegendBody(): ReactElement {
         />
         <span>
           <span className="font-medium text-orange-700">Orange</span> — the most recent earlier published Bank of England
-          rate was used, for example where no rate was published for the transaction date.
+          rate was used, for example where no rate was published for the transaction date (e.g., weekends, bank
+          holidays).
         </span>
       </li>
     </ul>
