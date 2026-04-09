@@ -288,6 +288,37 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
     }
   }
 
+  async deleteManyByIdsForHoldingUser(
+    holdingId: string,
+    userId: string,
+    ids: readonly string[],
+  ): Promise<number> {
+    if (!ObjectId.isValid(holdingId) || ids.length === 0) {
+      return 0;
+    }
+
+    const objectIds: ObjectId[] = [];
+    for (const id of ids) {
+      if (!ObjectId.isValid(id)) {
+        return 0;
+      }
+      objectIds.push(new ObjectId(id));
+    }
+
+    try {
+      const client = await getMongoClient();
+      const coll = client.db().collection<AcquisitionDoc>(COLLECTION_ACQUISITIONS);
+      const res = await coll.deleteMany({
+        _id: { $in: objectIds },
+        holdingId: new ObjectId(holdingId),
+        userId,
+      });
+      return res.deletedCount;
+    } catch (err) {
+      throw new PersistenceError('Failed to delete acquisitions', { cause: err });
+    }
+  }
+
   async deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number> {
     if (!ObjectId.isValid(holdingId)) {
       return 0;

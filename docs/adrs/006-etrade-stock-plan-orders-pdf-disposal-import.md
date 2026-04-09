@@ -37,4 +37,4 @@ Calendar date from the **first `Order Executed`** line (MM/DD/YYYY segment), sto
 ## Related
 
 - ADR-005 (`docs/adrs/005-import-pipeline-design.md`) — updated non-goals for disposal PDF.
-- `src/domain/services/etrade-stock-plan-orders-pdf.ts`, `src/application/import/preview-etrade-stock-plan-orders-pdf-import.ts`, `src/app/holdings/import-disposal-pdf-actions.ts`.
+- `src/infrastructure/import/etrade/etrade-stock-plan-orders-pdf.ts`, `src/application/import/preview-etrade-stock-plan-orders-pdf-import.ts`, `src/app/holdings/import-disposal-pdf-actions.ts`.

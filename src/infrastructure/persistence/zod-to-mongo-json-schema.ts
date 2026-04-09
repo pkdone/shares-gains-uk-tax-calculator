@@ -1,7 +1,8 @@
-import type { ZodType } from 'zod';
+import type { ZodType, ZodTypeAny } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import {
+  isJsonSchemaObject,
   sanitizeJsonSchemaForMongo,
   withObjectIdFields,
   type JsonSchemaNode,
@@ -16,13 +17,17 @@ export type ZodToMongoOptions = {
  * Converts a Zod object schema to a MongoDB-compatible `$jsonSchema` object.
  */
 export function zodSchemaToMongoJsonSchema(
-  schema: ZodType,
+  schema: ZodTypeAny,
   options?: ZodToMongoOptions,
 ): JsonSchemaNode {
-  const raw = zodToJsonSchema(schema, {
+  const generated = zodToJsonSchema(schema as ZodType, {
     target: 'jsonSchema7',
     $refStrategy: 'none',
-  }) as JsonSchemaNode;
+  });
+  if (!isJsonSchemaObject(generated)) {
+    throw new Error('zodToJsonSchema did not return a JSON object');
+  }
+  const raw: JsonSchemaNode = generated;
 
   const withoutSchemaRoot = { ...raw };
   delete withoutSchemaRoot.$schema;

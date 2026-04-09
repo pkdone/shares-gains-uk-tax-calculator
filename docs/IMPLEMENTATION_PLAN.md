@@ -591,7 +591,7 @@ The **Stock Plan Orders** PDF text includes **Est. Gross Proceeds** and per-fee 
 | `src/domain/schemas/share-acquisition.ts` | modify — economics discriminated union |
 | `src/infrastructure/persistence/schemas/acquisition-record.ts` | modify |
 | `src/infrastructure/import/read-xlsx-sheet.ts` | create |
-| `src/domain/services/etrade-by-benefit-type-parser.ts` (or under `domain/import/`) | create |
+| `src/infrastructure/import/etrade/by-benefit-type/` (E\*Trade By Benefit Type XLSX parser) | in place |
 | `src/application/import/*.ts` | create — preview / commit |
 | `src/app/holdings/[holdingId]/*` | modify — import UI, ledger display |
 | `src/test/unit/...` | create — parser / normaliser tests |

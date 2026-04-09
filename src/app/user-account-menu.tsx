@@ -38,7 +38,8 @@ export function UserAccountMenu({ displayName }: UserAccountMenuProps): ReactEle
     }
 
     const onDocPointerDown = (event: PointerEvent): void => {
-      if (containerRef.current?.contains(event.target as Node)) {
+      const target = event.target;
+      if (target instanceof Node && containerRef.current?.contains(target)) {
         return;
       }
       setOpen(false);

@@ -37,6 +37,15 @@ export interface ShareAcquisitionRepository {
   deleteByIdForHoldingUser(holdingId: string, userId: string, id: string): Promise<boolean>;
 
   /**
+   * Deletes many acquisitions by id scoped to holding and user. Returns the number removed.
+   */
+  deleteManyByIdsForHoldingUser(
+    holdingId: string,
+    userId: string,
+    ids: readonly string[],
+  ): Promise<number>;
+
+  /**
    * Removes all acquisitions for this holding and user (e.g. when deleting the holding).
    */
   deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number>;

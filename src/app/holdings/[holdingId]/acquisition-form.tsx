@@ -12,6 +12,13 @@ const priceUsd = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
+function firstFieldError(
+  fieldErrors: FormActionState['fieldErrors'],
+  key: string,
+): string | undefined {
+  return fieldErrors?.[key]?.[0];
+}
+
 type AcquisitionFormProps = {
   readonly holdingId: string;
   readonly holdingSymbol: string;
@@ -63,9 +70,19 @@ export function AcquisitionForm({
           name="eventDate"
           type="date"
           required
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
+            firstFieldError(state?.fieldErrors, 'eventDate') === undefined
+              ? 'border-neutral-300'
+              : 'border-red-500'
+          }`}
           disabled={pending}
+          aria-invalid={firstFieldError(state?.fieldErrors, 'eventDate') !== undefined}
         />
+        {firstFieldError(state?.fieldErrors, 'eventDate') === undefined ? null : (
+          <span className="mt-1 block text-xs text-red-600" role="alert">
+            {firstFieldError(state?.fieldErrors, 'eventDate')}
+          </span>
+        )}
       </label>
       <label className="text-sm text-neutral-700">
         Quantity
@@ -79,9 +96,19 @@ export function AcquisitionForm({
           onChange={(e) => {
             setQuantityStr(e.target.value);
           }}
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
+            firstFieldError(state?.fieldErrors, 'quantity') === undefined
+              ? 'border-neutral-300'
+              : 'border-red-500'
+          }`}
           disabled={pending}
+          aria-invalid={firstFieldError(state?.fieldErrors, 'quantity') !== undefined}
         />
+        {firstFieldError(state?.fieldErrors, 'quantity') === undefined ? null : (
+          <span className="mt-1 block text-xs text-red-600" role="alert">
+            {firstFieldError(state?.fieldErrors, 'quantity')}
+          </span>
+        )}
       </label>
       <div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-2">
         <label className="text-sm text-neutral-700">
@@ -96,9 +123,19 @@ export function AcquisitionForm({
             onChange={(e) => {
               setPriceStr(e.target.value);
             }}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
+              firstFieldError(state?.fieldErrors, 'considerationUsd') === undefined
+                ? 'border-neutral-300'
+                : 'border-red-500'
+            }`}
             disabled={pending}
+            aria-invalid={firstFieldError(state?.fieldErrors, 'considerationUsd') !== undefined}
           />
+          {firstFieldError(state?.fieldErrors, 'considerationUsd') === undefined ? null : (
+            <span className="mt-1 block text-xs text-red-600" role="alert">
+              {firstFieldError(state?.fieldErrors, 'considerationUsd')}
+            </span>
+          )}
         </label>
         <label className="text-sm text-neutral-700">
           Fees ($)
@@ -108,9 +145,19 @@ export function AcquisitionForm({
             required
             min="0"
             step="0.01"
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
+              firstFieldError(state?.fieldErrors, 'feesUsd') === undefined
+                ? 'border-neutral-300'
+                : 'border-red-500'
+            }`}
             disabled={pending}
+            aria-invalid={firstFieldError(state?.fieldErrors, 'feesUsd') !== undefined}
           />
+          {firstFieldError(state?.fieldErrors, 'feesUsd') === undefined ? null : (
+            <span className="mt-1 block text-xs text-red-600" role="alert">
+              {firstFieldError(state?.fieldErrors, 'feesUsd')}
+            </span>
+          )}
         </label>
       </div>
       <div className="text-sm text-neutral-700 sm:col-span-2">

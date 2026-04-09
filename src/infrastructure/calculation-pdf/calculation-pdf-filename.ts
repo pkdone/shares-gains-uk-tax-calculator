@@ -1,17 +1,16 @@
-/**
- * Sanitises a holding ticker for use in PDF download filenames (cross-platform).
- */
-export function sanitizeHoldingSymbolForFilename(symbol: string): string {
-  return symbol.replace(/[^a-zA-Z0-9._-]/g, '_');
-}
+import {
+  buildComputationPackFilenameAllYears,
+  buildComputationPackFilenameSingleTaxYear,
+  sanitizeHoldingSymbolForFilename,
+} from '@/infrastructure/calculation-export/calculation-export-filename';
+
+export { sanitizeHoldingSymbolForFilename };
 
 export function buildComputationPackPdfFilenameAllYears(params: {
   readonly holdingSymbol: string;
   readonly generatedDate: Date;
 }): string {
-  const sym = sanitizeHoldingSymbolForFilename(params.holdingSymbol);
-  const iso = params.generatedDate.toISOString().slice(0, 10);
-  return `capital-gains-${sym}-all-tax-years-${iso}.pdf`;
+  return buildComputationPackFilenameAllYears({ ...params, extension: '.pdf' });
 }
 
 export function buildComputationPackPdfFilenameSingleTaxYear(params: {
@@ -19,8 +18,5 @@ export function buildComputationPackPdfFilenameSingleTaxYear(params: {
   readonly taxYearLabel: string;
   readonly generatedDate: Date;
 }): string {
-  const sym = sanitizeHoldingSymbolForFilename(params.holdingSymbol);
-  const ty = sanitizeHoldingSymbolForFilename(params.taxYearLabel);
-  const iso = params.generatedDate.toISOString().slice(0, 10);
-  return `capital-gains-${sym}-${ty}-tax-year-${iso}.pdf`;
+  return buildComputationPackFilenameSingleTaxYear({ ...params, extension: '.pdf' });
 }

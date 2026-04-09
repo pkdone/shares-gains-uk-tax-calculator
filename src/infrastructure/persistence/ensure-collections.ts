@@ -47,8 +47,9 @@ export async function initMongoDatabase(db: Db): Promise<void> {
   await db.collection(COLLECTION_APP_USERS).createIndex({ userId: 1 }, { unique: true });
 
   await db.collection(COLLECTION_HOLDINGS).createIndex({ userId: 1, symbol: 1 }, { unique: true });
+  await db.collection(COLLECTION_HOLDINGS).createIndex({ userId: 1, updatedAt: -1 });
 
-  await db.collection(COLLECTION_ACQUISITIONS).createIndex({ holdingId: 1, userId: 1 });
+  await db.collection(COLLECTION_ACQUISITIONS).createIndex({ holdingId: 1, userId: 1, eventDate: 1, _id: 1 });
   await db.collection(COLLECTION_ACQUISITIONS).createIndex(
     { holdingId: 1, userId: 1, symbol: 1, grantNumber: 1, vestPeriod: 1 },
     {
@@ -61,7 +62,7 @@ export async function initMongoDatabase(db: Db): Promise<void> {
       },
     },
   );
-  await db.collection(COLLECTION_DISPOSALS).createIndex({ holdingId: 1, userId: 1 });
+  await db.collection(COLLECTION_DISPOSALS).createIndex({ holdingId: 1, userId: 1, eventDate: 1, _id: 1 });
   await db.collection(COLLECTION_DISPOSALS).createIndex(
     { holdingId: 1, userId: 1, importSourceFingerprint: 1 },
     {

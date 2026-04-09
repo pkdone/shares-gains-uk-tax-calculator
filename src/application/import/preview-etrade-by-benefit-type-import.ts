@@ -1,4 +1,4 @@
-import { parseEtradeByBenefitTypeGrid } from '@/domain/services/etrade-by-benefit-type';
+import { parseEtradeByBenefitTypeGrid } from '@/infrastructure/import/etrade/by-benefit-type';
 import type { ShareAcquisitionImportUsd } from '@/domain/schemas/share-acquisition';
 
 export type EtradePreviewOutcome = {

@@ -26,8 +26,13 @@ export async function addAcquisitionAction(
 
   const parsed = parseAcquisitionForm(formData, holding.symbol);
   if (!parsed.success) {
-    const first = parsed.error.flatten().formErrors[0] ?? Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-    return { error: first ?? 'Invalid acquisition' };
+    const flat = parsed.error.flatten();
+    const first =
+      flat.formErrors[0] ?? Object.values(flat.fieldErrors)[0]?.[0] ?? 'Invalid acquisition';
+    return {
+      error: first,
+      fieldErrors: flat.fieldErrors,
+    };
   }
 
   try {

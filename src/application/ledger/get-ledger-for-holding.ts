@@ -4,8 +4,8 @@ import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acq
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
 import { ukTaxYearLabelFromDateOnly } from '@/domain/services/uk-tax-year';
 
-import { compareLedgerLines } from './ledger-line-order';
-import type { LedgerForHolding, LedgerLine, LedgerTaxYearGroup } from './ledger-types';
+import { mergeLedgerLinesSorted } from './ledger-line-order';
+import type { LedgerForHolding, LedgerTaxYearGroup } from './ledger-types';
 
 export async function getLedgerForHolding(
   holdingRepository: HoldingRepository,
@@ -20,12 +20,7 @@ export async function getLedgerForHolding(
     disposalRepository.listByHoldingForUser(input.holdingId, input.userId),
   ]);
 
-  const lines: LedgerLine[] = [
-    ...acquisitions.map((data) => ({ kind: 'ACQUISITION' as const, data })),
-    ...disposals.map((data) => ({ kind: 'DISPOSAL' as const, data })),
-  ];
-
-  lines.sort(compareLedgerLines);
+  const lines = mergeLedgerLinesSorted(acquisitions, disposals);
 
   const groups = Map.groupBy(lines, (line) => ukTaxYearLabelFromDateOnly(line.data.eventDate));
 

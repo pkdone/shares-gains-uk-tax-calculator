@@ -40,32 +40,34 @@ export function CalculationComputationPackActions({
   const handleExportAllYears = useCallback(
     (format: ComputationPackExportFormat) => {
       setExportBusy(true);
-      try {
-        const generatedAt = new Date();
-        if (format === 'pdf') {
-          const bytes = buildComputationPackPdfAllYears({
-            holdingSymbol,
-            groups,
-            generatedAt,
-          });
-          downloadPdf(
-            bytes,
-            buildComputationPackPdfFilenameAllYears({ holdingSymbol, generatedDate: generatedAt }),
-          );
-        } else {
-          const bytes = buildComputationPackJsonAllYears({
-            holdingSymbol,
-            groups,
-            generatedAt,
-          });
-          downloadJson(
-            bytes,
-            buildComputationPackJsonFilenameAllYears({ holdingSymbol, generatedDate: generatedAt }),
-          );
+      queueMicrotask(() => {
+        try {
+          const generatedAt = new Date();
+          if (format === 'pdf') {
+            const bytes = buildComputationPackPdfAllYears({
+              holdingSymbol,
+              groups,
+              generatedAt,
+            });
+            downloadPdf(
+              bytes,
+              buildComputationPackPdfFilenameAllYears({ holdingSymbol, generatedDate: generatedAt }),
+            );
+          } else {
+            const bytes = buildComputationPackJsonAllYears({
+              holdingSymbol,
+              groups,
+              generatedAt,
+            });
+            downloadJson(
+              bytes,
+              buildComputationPackJsonFilenameAllYears({ holdingSymbol, generatedDate: generatedAt }),
+            );
+          }
+        } finally {
+          setExportBusy(false);
         }
-      } finally {
-        setExportBusy(false);
-      }
+      });
     },
     [groups, holdingSymbol, setExportBusy],
   );
@@ -73,40 +75,42 @@ export function CalculationComputationPackActions({
   const handleExportThisTaxYear = useCallback(
     (group: CalculationTransactionTableGroup, format: ComputationPackExportFormat) => {
       setExportBusy(true);
-      try {
-        const generatedAt = new Date();
-        if (format === 'pdf') {
-          const bytes = buildComputationPackPdfSingleTaxYear({
-            holdingSymbol,
-            group,
-            generatedAt,
-          });
-          downloadPdf(
-            bytes,
-            buildComputationPackPdfFilenameSingleTaxYear({
+      queueMicrotask(() => {
+        try {
+          const generatedAt = new Date();
+          if (format === 'pdf') {
+            const bytes = buildComputationPackPdfSingleTaxYear({
               holdingSymbol,
-              taxYearLabel: group.taxYearLabel,
-              generatedDate: generatedAt,
-            }),
-          );
-        } else {
-          const bytes = buildComputationPackJsonSingleTaxYear({
-            holdingSymbol,
-            group,
-            generatedAt,
-          });
-          downloadJson(
-            bytes,
-            buildComputationPackJsonFilenameSingleTaxYear({
+              group,
+              generatedAt,
+            });
+            downloadPdf(
+              bytes,
+              buildComputationPackPdfFilenameSingleTaxYear({
+                holdingSymbol,
+                taxYearLabel: group.taxYearLabel,
+                generatedDate: generatedAt,
+              }),
+            );
+          } else {
+            const bytes = buildComputationPackJsonSingleTaxYear({
               holdingSymbol,
-              taxYearLabel: group.taxYearLabel,
-              generatedDate: generatedAt,
-            }),
-          );
+              group,
+              generatedAt,
+            });
+            downloadJson(
+              bytes,
+              buildComputationPackJsonFilenameSingleTaxYear({
+                holdingSymbol,
+                taxYearLabel: group.taxYearLabel,
+                generatedDate: generatedAt,
+              }),
+            );
+          }
+        } finally {
+          setExportBusy(false);
         }
-      } finally {
-        setExportBusy(false);
-      }
+      });
     },
     [holdingSymbol, setExportBusy],
   );

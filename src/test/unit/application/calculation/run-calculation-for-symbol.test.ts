@@ -75,6 +75,14 @@ describe('runCalculationForHoldingSymbol', () => {
   const fxRateRepository: FxRateRepository = {
     findByDate: jest.fn(),
     findLatestOnOrBefore: jest.fn().mockResolvedValue({ date: '2015-04-01', usdPerGbp: 1.25 }),
+    findLatestOnOrBeforeForDates: jest.fn(async (dates: readonly string[]) => {
+      const rate = { date: '2015-04-01', usdPerGbp: 1.25 };
+      const m = new Map<string, typeof rate | null>();
+      for (const d of dates) {
+        m.set(d, rate);
+      }
+      return await Promise.resolve(m);
+    }),
     upsertMany: jest.fn(),
   };
 

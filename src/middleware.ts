@@ -5,8 +5,18 @@ function isProtectedPath(pathname: string): boolean {
   return pathname === '/' || pathname.startsWith('/holdings');
 }
 
-/** Matches Better Auth default cookie name (`better-auth.session_token`). */
-const SESSION_COOKIE = 'better-auth.session_token';
+/** Better Auth session cookies (plain and `__Secure-` prefixed over HTTPS). */
+const SESSION_COOKIE_NAMES = ['better-auth.session_token', '__Secure-better-auth.session_token'] as const;
+
+function readSessionToken(request: NextRequest): string | undefined {
+  for (const name of SESSION_COOKIE_NAMES) {
+    const v = request.cookies.get(name)?.value;
+    if (v !== undefined && v.length > 0) {
+      return v;
+    }
+  }
+  return undefined;
+}
 
 export function middleware(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
@@ -15,8 +25,8 @@ export function middleware(request: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
-  const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value;
-  if (sessionCookie === undefined || sessionCookie.length === 0) {
+  const sessionCookie = readSessionToken(request);
+  if (sessionCookie === undefined) {
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
     url.searchParams.set('callbackUrl', `${pathname}${search}`);

@@ -5,7 +5,7 @@ import {
   normaliseTickerForLookup,
   parseEtradeByBenefitTypeGrid,
   parseNumberCell,
-} from '@/domain/services/etrade-by-benefit-type';
+} from '@/infrastructure/import/etrade/by-benefit-type';
 
 describe('isVestDataRowForIndexing', () => {
   const col = {
