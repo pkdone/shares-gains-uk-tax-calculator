@@ -73,8 +73,8 @@ export function MatchingAcquisitionsDisclosure(): ReactElement {
               </li>
             </ol>
             <p className="mt-3 text-neutral-800">
-              The 30-day rule can produce a different gain or loss than if the shares had been matched only against the
-              Section 104 pool.
+              The same-day and 30-day rules can produce a different gain or loss than if the shares had been matched only
+              against the Section 104 pool.
             </p>
           </div>
         ) : null}

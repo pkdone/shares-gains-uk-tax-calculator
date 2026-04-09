@@ -6,11 +6,7 @@ import { AcquisitionForm } from '@/app/holdings/[holdingId]/acquisition-form';
 import { DisposalForm } from '@/app/holdings/[holdingId]/disposal-form';
 import { EtradeImportSection } from '@/app/holdings/[holdingId]/etrade-import-section';
 import { EtradePdfDisposalImportSection } from '@/app/holdings/[holdingId]/etrade-pdf-disposal-import-section';
-import {
-  buttonModalCloseClassName,
-  buttonPrimaryClassName,
-  buttonSecondaryClassName,
-} from '@/app/ui/button-variants';
+import { buttonModalCloseClassName, buttonPrimaryClassName } from '@/app/ui/button-variants';
 
 type HoldingLedgerActionsProps = {
   readonly holdingId: string;
@@ -121,7 +117,7 @@ export function HoldingLedgerActions({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className={buttonSecondaryClassName}
+              className={buttonPrimaryClassName}
               onClick={() => {
                 openModal('import');
               }}
@@ -130,7 +126,7 @@ export function HoldingLedgerActions({
             </button>
             <button
               type="button"
-              className={buttonSecondaryClassName}
+              className={buttonPrimaryClassName}
               onClick={() => {
                 openModal('pdfImport');
               }}
