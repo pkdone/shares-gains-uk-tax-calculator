@@ -1,17 +1,22 @@
 import { MongoClient, type Db } from 'mongodb';
 
-import { MANAGED_COLLECTION_NAMES } from '@/infrastructure/persistence/ensure-collections';
+import { MANAGED_COLLECTION_NAMES } from '@/infrastructure/persistence/collection-names';
 import { env } from '@/shared/config/env';
 import { ConfigurationError } from '@/shared/errors/app-error';
 
-/** Shared driver options for app and one-off scripts. */
+/** Shared driver options for app and Next.js scripts. */
 export const MONGODB_CLIENT_OPTIONS = {
   connectTimeoutMS: 10_000,
   serverSelectionTimeoutMS: 10_000,
 } as const;
 
-let client: MongoClient | undefined;
-let schemaPresenceVerified = false;
+const GLOBAL_MONGO_KEY = '__sharesGainsMongoClientPromise__' as const;
+
+type GlobalWithMongo = typeof globalThis & {
+  [GLOBAL_MONGO_KEY]?: Promise<MongoClient>;
+};
+
+let productionClientPromise: Promise<MongoClient> | undefined;
 
 /**
  * Connects to MongoDB using {@link env.MONGODB_URI} without validating collections or running DDL.
@@ -39,21 +44,33 @@ export async function assertExpectedCollectionsExist(db: Db): Promise<void> {
 /**
  * Returns a singleton MongoDB client connected with {@link env.MONGODB_URI}.
  * On first connection, verifies managed collections exist (does not create them).
+ *
+ * Uses one shared connection promise so concurrent callers await the same connect, and in
+ * development caches the promise on `globalThis` so Fast Refresh does not orphan clients.
  */
 export async function getMongoClient(): Promise<MongoClient> {
-  if (client) {
-    return client;
+  let pending: Promise<MongoClient> | undefined;
+  if (process.env.NODE_ENV === 'development') {
+    pending = (globalThis as GlobalWithMongo)[GLOBAL_MONGO_KEY];
+  } else {
+    pending = productionClientPromise;
   }
 
-  const next = await createConnectedMongoClient();
+  if (!pending) {
+    pending = (async () => {
+      const next = await createConnectedMongoClient();
+      await assertExpectedCollectionsExist(next.db());
+      return next;
+    })();
 
-  if (!schemaPresenceVerified) {
-    await assertExpectedCollectionsExist(next.db());
-    schemaPresenceVerified = true;
+    if (process.env.NODE_ENV === 'development') {
+      (globalThis as GlobalWithMongo)[GLOBAL_MONGO_KEY] = pending;
+    } else {
+      productionClientPromise = pending;
+    }
   }
 
-  client = next;
-  return client;
+  return pending;
 }
 
 /**
@@ -73,9 +90,25 @@ export async function pingMongoDb(): Promise<boolean> {
  * Closes the singleton client. Intended for tests and graceful shutdown.
  */
 export async function disconnectMongoClient(): Promise<void> {
-  if (client) {
-    await client.close();
-    client = undefined;
+  let pending: Promise<MongoClient> | undefined;
+  if (process.env.NODE_ENV === 'development') {
+    pending = (globalThis as GlobalWithMongo)[GLOBAL_MONGO_KEY];
+  } else {
+    pending = productionClientPromise;
   }
-  schemaPresenceVerified = false;
+
+  if (!pending) {
+    return;
+  }
+
+  try {
+    const client = await pending;
+    await client.close();
+  } finally {
+    if (process.env.NODE_ENV === 'development') {
+      delete (globalThis as GlobalWithMongo)[GLOBAL_MONGO_KEY];
+    } else {
+      productionClientPromise = undefined;
+    }
+  }
 }

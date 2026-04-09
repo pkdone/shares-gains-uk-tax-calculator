@@ -32,7 +32,7 @@ function stripUnsupported(node: unknown): void {
   }
 
   if (Array.isArray(node)) {
-    for (const item of node) {
+    for (const item of node as unknown[]) {
       stripUnsupported(item);
     }
     return;
@@ -66,7 +66,7 @@ function convertConstToEnum(node: unknown): void {
   }
 
   if (Array.isArray(node)) {
-    for (const item of node) {
+    for (const item of node as unknown[]) {
       convertConstToEnum(item);
     }
     return;
@@ -93,7 +93,7 @@ function convertIntegerToNumber(node: unknown): void {
   }
 
   if (Array.isArray(node)) {
-    for (const item of node) {
+    for (const item of node as unknown[]) {
       convertIntegerToNumber(item);
     }
     return;
@@ -119,7 +119,7 @@ function normalizeDateStringsToBsonDate(node: unknown): void {
   }
 
   if (Array.isArray(node)) {
-    for (const item of node) {
+    for (const item of node as unknown[]) {
       normalizeDateStringsToBsonDate(item);
     }
     return;
@@ -132,12 +132,12 @@ function normalizeDateStringsToBsonDate(node: unknown): void {
   const obj = node;
   const propKeys = ['createdAt', 'updatedAt'];
   for (const key of propKeys) {
-    const prop = obj.properties as JsonSchemaNode | undefined;
-    if (!prop || typeof prop !== 'object' || !(key in prop)) {
+    const rawProps = obj.properties;
+    if (!isJsonSchemaObject(rawProps) || !Object.hasOwn(rawProps, key)) {
       continue;
     }
-    const field = prop[key] as JsonSchemaNode;
-    if (field.type === 'string') {
+    const field = rawProps[key];
+    if (isJsonSchemaObject(field) && field.type === 'string') {
       delete field.type;
       field.bsonType = 'date';
     }

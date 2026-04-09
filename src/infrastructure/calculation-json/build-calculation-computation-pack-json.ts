@@ -1,5 +1,5 @@
 import type { CalculationTransactionTableGroup } from '@/application/calculation/build-calculation-transaction-table';
-import { CALCULATION_EXPORT_FX_ASSUMPTION_NOTE } from '@/shared/calculation-export-fx-assumption-note';
+import { CALCULATION_EXPORT_FX_ASSUMPTION_NOTE } from '@/application/calculation/calculation-export-fx-assumption-note';
 
 export const HOLDING_CAPITAL_GAINS_REPORT_JSON_SCHEMA_VERSION = 1 as const;
 

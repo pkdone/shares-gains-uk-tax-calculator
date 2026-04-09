@@ -51,29 +51,33 @@ export class MongoFxRateRepository implements FxRateRepository {
     }
 
     const uniqueSorted = [...new Set(onOrBeforeDates)].toSorted((a, b) => a.localeCompare(b));
+    const minDate = uniqueSorted[0];
     const maxDate = uniqueSorted.at(-1);
-    if (maxDate === undefined) {
+    if (minDate === undefined || maxDate === undefined) {
       return out;
     }
 
     try {
       const client = await getMongoClient();
       const coll = client.db().collection<FxRateDoc>(COLLECTION_FX_RATES);
-      const rows = await coll
-        .find({ date: { $lte: maxDate } })
+      const baselineDoc = await coll.findOne(
+        { date: { $lte: minDate } },
+        { sort: { date: -1 } },
+      );
+      const windowDocs = await coll
+        .find({ date: { $gt: minDate, $lte: maxDate } })
         .sort({ date: 1 })
         .toArray();
-      const rates = rows.map(mapDoc);
 
       let j = 0;
-      let current: FxRate | null = null;
+      let current: FxRate | null = baselineDoc === null ? null : mapDoc(baselineDoc);
       for (const d of uniqueSorted) {
-        while (j < rates.length) {
-          const row = rates[j];
+        while (j < windowDocs.length) {
+          const row = windowDocs[j];
           if (row === undefined || row.date > d) {
             break;
           }
-          current = row;
+          current = mapDoc(row);
           j += 1;
         }
         out.set(d, current);

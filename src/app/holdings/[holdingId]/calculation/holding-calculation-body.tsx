@@ -1,11 +1,9 @@
-import { unstable_cache } from 'next/cache';
 import { notFound } from 'next/navigation';
 import type { ReactElement } from 'react';
 
 import { buildCalculationTransactionTableModel } from '@/application/calculation/build-calculation-transaction-table';
 import { runCalculationForHoldingSymbol } from '@/application/calculation/run-calculation-for-symbol';
 import {
-  fxRateRepository,
   holdingRepository,
   shareAcquisitionRepository as acquisitionRepository,
   shareDisposalRepository as disposalRepository,
@@ -14,7 +12,7 @@ import { requireVerifiedUserId } from '@/infrastructure/auth/session';
 import { logInfo } from '@/shared/app-logger';
 import { DomainError } from '@/domain/errors/domain-error';
 
-import { holdingCalculationCacheTag } from '@/app/holdings/holding-calculation-cache-tag';
+import { cachedRunCalculationForHoldingSymbol } from '@/app/holdings/[holdingId]/calculation/cached-run-calculation-for-holding-symbol';
 import { CalculationExportProvider } from '@/app/holdings/[holdingId]/calculation/calculation-export-context';
 import { CalculationResultSections } from '@/app/holdings/[holdingId]/calculation/calculation-result-sections';
 import { FxRateLedgerColumnDisclosure } from '@/app/holdings/[holdingId]/calculation/fx-rate-ledger-column-disclosure';
@@ -48,23 +46,7 @@ export async function HoldingCalculationBody({ holdingId }: HoldingCalculationBo
 
   if (hasLedgerData) {
     try {
-      const runCached = unstable_cache(
-        async () =>
-          runCalculationForHoldingSymbol({
-            holdingRepository,
-            acquisitionRepository,
-            disposalRepository,
-            fxRateRepository,
-            input: {
-              holdingId,
-              userId,
-            },
-          }),
-        // Bump version when cached payload shape or warning rules change (invalidates stale entries).
-        ['holding-calculation-v2', holdingId, userId],
-        { tags: [holdingCalculationCacheTag(holdingId)] },
-      );
-      result = await runCached();
+      result = await cachedRunCalculationForHoldingSymbol({ holdingId, userId });
     } catch (err) {
       calcError = err instanceof DomainError ? err.message : 'Calculation failed';
     }

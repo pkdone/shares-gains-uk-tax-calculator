@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { deleteHolding } from '@/application/holding/delete-holding';
 import { DomainError } from '@/domain/errors/domain-error';
 import { disconnectMongoClient, getMongoClient } from '@/infrastructure/persistence/mongodb-client';
+import { runMongoTransaction } from '@/infrastructure/persistence/mongo-transaction';
 import {
   COLLECTION_ACQUISITIONS,
   COLLECTION_DISPOSALS,
@@ -99,7 +100,7 @@ describe('manual ledger repositories', () => {
       feesUsd: 0,
     });
 
-    await deleteHolding(holdingRepo, acquisitionRepo, disposalRepo, {
+    await deleteHolding(runMongoTransaction, holdingRepo, acquisitionRepo, disposalRepo, {
       holdingId: holding.id,
       userId,
     });

@@ -9,16 +9,15 @@ async function main(): Promise<void> {
   assertMongoUriForScripts();
 
   const { createConnectedMongoClient } = await import('../src/infrastructure/persistence/mongodb-client');
-  const { initMongoDatabase, MANAGED_COLLECTION_NAMES } = await import(
-    '../src/infrastructure/persistence/ensure-collections'
-  );
+  const { initMongoDatabase } = await import('../src/infrastructure/persistence/ensure-collections');
   const {
     COLLECTION_ACQUISITIONS,
+    COLLECTION_APP_USERS,
     COLLECTION_DISPOSALS,
     COLLECTION_FX_RATES,
     COLLECTION_HOLDINGS,
-    COLLECTION_APP_USERS,
-  } = await import('../src/infrastructure/persistence/schema-registry');
+    MANAGED_COLLECTION_NAMES,
+  } = await import('../src/infrastructure/persistence/collection-names');
 
   const client = await createConnectedMongoClient();
   try {

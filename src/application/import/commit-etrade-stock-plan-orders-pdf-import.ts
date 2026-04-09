@@ -1,10 +1,18 @@
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
 import type { ShareDisposalPdfImportDraft } from '@/domain/schemas/share-disposal';
-
-import { computeEtradeDisposalImportFingerprint } from '@/application/import/hash-etrade-disposal-import-fingerprint';
 import { requireHoldingForUser } from '@/application/holding/require-holding';
 import { DomainError } from '@/domain/errors/domain-error';
+
+/** Inputs required to compute a stable import fingerprint for PDF-sourced disposals (broker-specific materialisation supplied by the caller). */
+export type PdfDisposalImportFingerprintParams = {
+  readonly holdingId: string;
+  readonly eventDate: string;
+  readonly quantity: number;
+  readonly grossProceedsUsd: number;
+  readonly feesUsd: number;
+  readonly firstOrderExecutedRaw: string;
+};
 
 export async function commitEtradeStockPlanOrdersPdfImport(
   holdingRepository: HoldingRepository,
@@ -13,6 +21,7 @@ export async function commitEtradeStockPlanOrdersPdfImport(
     readonly holdingId: string;
     readonly userId: string;
     readonly drafts: readonly ShareDisposalPdfImportDraft[];
+    readonly computeImportFingerprint: (params: PdfDisposalImportFingerprintParams) => string;
   },
 ): Promise<{ readonly inserted: number; readonly skippedDuplicates: number }> {
   if (input.drafts.length === 0) {
@@ -32,7 +41,7 @@ export async function commitEtradeStockPlanOrdersPdfImport(
     if (d.symbol.trim().toUpperCase() !== holdingSymbolUpper) {
       throw new DomainError('Import drafts must match this holding symbol.');
     }
-    const fingerprint = computeEtradeDisposalImportFingerprint({
+    const fingerprint = input.computeImportFingerprint({
       holdingId: input.holdingId,
       eventDate: d.eventDate,
       quantity: d.quantity,

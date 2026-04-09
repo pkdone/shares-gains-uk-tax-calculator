@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { formatUsdPlainAmount } from '@/application/calculation/calculation-amount-format';
 import {
   commitEtradePdfDisposalImportAction,
   previewEtradePdfDisposalImportAction,
@@ -18,11 +19,6 @@ type EtradePdfDisposalImportSectionProps = {
   readonly onCommitSuccess?: () => void;
 };
 
-const usd = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 export function EtradePdfDisposalImportSection({
   holdingId,
   holdingSymbol,
@@ -30,14 +26,14 @@ export function EtradePdfDisposalImportSection({
   onCommitSuccess,
 }: EtradePdfDisposalImportSectionProps): React.ReactElement {
   const router = useRouter();
-  const [previewState, previewAction, previewPending] = useActionState(
-    previewEtradePdfDisposalImportAction,
-    undefined as EtradePdfDisposalImportPreviewState | undefined,
-  );
-  const [commitState, commitAction, commitPending] = useActionState(
-    commitEtradePdfDisposalImportAction,
-    undefined as EtradePdfDisposalImportCommitState | undefined,
-  );
+  const [previewState, previewAction, previewPending] = useActionState<
+    EtradePdfDisposalImportPreviewState | undefined,
+    FormData
+  >(previewEtradePdfDisposalImportAction, undefined);
+  const [commitState, commitAction, commitPending] = useActionState<
+    EtradePdfDisposalImportCommitState | undefined,
+    FormData
+  >(commitEtradePdfDisposalImportAction, undefined);
 
   useEffect(() => {
     if (commitState?.ok === true) {
@@ -190,8 +186,8 @@ export function EtradePdfDisposalImportSection({
                     <td className="px-3 py-2 tabular-nums">{d.eventDate}</td>
                     <td className="px-3 py-2">{d.symbol}</td>
                     <td className="px-3 py-2 tabular-nums">{d.quantity}</td>
-                    <td className="px-3 py-2 tabular-nums">${usd.format(d.grossProceedsUsd)}</td>
-                    <td className="px-3 py-2 tabular-nums">${usd.format(d.feesUsd)}</td>
+                    <td className="px-3 py-2 tabular-nums">${formatUsdPlainAmount(d.grossProceedsUsd)}</td>
+                    <td className="px-3 py-2 tabular-nums">${formatUsdPlainAmount(d.feesUsd)}</td>
                     <td className="px-3 py-2 text-neutral-600">{d.rawOrderType ?? '—'}</td>
                   </tr>
                 ))}

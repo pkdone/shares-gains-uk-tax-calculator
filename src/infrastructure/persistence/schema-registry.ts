@@ -8,12 +8,21 @@ import {
   type JsonSchemaNode,
 } from '@/infrastructure/persistence/json-schema-for-mongodb';
 import { zodSchemaToMongoJsonSchema } from '@/infrastructure/persistence/zod-to-mongo-json-schema';
+import {
+  COLLECTION_ACQUISITIONS,
+  COLLECTION_APP_USERS,
+  COLLECTION_DISPOSALS,
+  COLLECTION_FX_RATES,
+  COLLECTION_HOLDINGS,
+} from '@/infrastructure/persistence/collection-names';
 
-export const COLLECTION_APP_USERS = 'app_users';
-export const COLLECTION_HOLDINGS = 'holdings';
-export const COLLECTION_ACQUISITIONS = 'acquisitions';
-export const COLLECTION_DISPOSALS = 'disposals';
-export const COLLECTION_FX_RATES = 'fx_rates';
+export {
+  COLLECTION_ACQUISITIONS,
+  COLLECTION_APP_USERS,
+  COLLECTION_DISPOSALS,
+  COLLECTION_FX_RATES,
+  COLLECTION_HOLDINGS,
+} from '@/infrastructure/persistence/collection-names';
 
 const registry: Record<string, JsonSchemaNode> = {};
 

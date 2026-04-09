@@ -1,7 +1,7 @@
 'use server';
 
 import { addAcquisition } from '@/application/ledger/add-acquisition';
-import { toFormActionError } from '@/app/holdings/action-error';
+import { toFormActionError, zodErrorToFormActionFields } from '@/app/holdings/action-error';
 import { revalidateHoldingDetailAndCalculation } from '@/app/holdings/revalidate-holding-caches';
 import type { FormActionState } from '@/app/holdings/types';
 import { formDataString, parseAcquisitionForm } from '@/app/holdings/form-parsing';
@@ -26,13 +26,7 @@ export async function addAcquisitionAction(
 
   const parsed = parseAcquisitionForm(formData, holding.symbol);
   if (!parsed.success) {
-    const flat = parsed.error.flatten();
-    const first =
-      flat.formErrors[0] ?? Object.values(flat.fieldErrors)[0]?.[0] ?? 'Invalid acquisition';
-    return {
-      error: first,
-      fieldErrors: flat.fieldErrors,
-    };
+    return zodErrorToFormActionFields(parsed.error, 'Invalid acquisition');
   }
 
   try {

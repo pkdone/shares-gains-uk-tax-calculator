@@ -26,12 +26,12 @@ This plan should be based on:
 - the current repository state
 - stakeholder answers to unresolved product questions (see Section 3)
 - any future ADRs or architecture notes
-- **`docs/HS284_Example_3_2024.pdf`** — HMRC HS284 Example 3 (2024 artefact in repo); worked example for pool formation, partial disposals, and roll-forward alignment referenced in `docs/PRD.md` **Appendix 4** and **Appendix 5**
+- **`docs/references/HS284_Example_3_2024.pdf`** — HMRC HS284 Example 3 (2024 artefact in repo); worked example for pool formation, partial disposals, and roll-forward alignment referenced in `docs/PRD.md` **Appendix 4** and **Appendix 5**
 - **`docs/references/hs284-example-3-2024-notes.md`** — text companion to the PDF; use for milestones below and to record transcribed figures from the PDF
 
 ### 2.1 When to consult HS284 Example 3 materials
 
-- **Milestone 4 — Calculation engine foundation:** Before and while defining calculation services and unit tests for **Section 104 pooling** and **partial disposal** logic, consult **`docs/HS284_Example_3_2024.pdf`** and **`docs/references/hs284-example-3-2024-notes.md`**. Align test cases and explanations with Example 3 where `docs/PRD.md` requires it (see PRD **Appendix 4**).
+- **Milestone 4 — Calculation engine foundation:** Before and while defining calculation services and unit tests for **Section 104 pooling** and **partial disposal** logic, consult **`docs/references/HS284_Example_3_2024.pdf`** and **`docs/references/hs284-example-3-2024-notes.md`**. Align test cases and explanations with Example 3 where `docs/PRD.md` requires it (see PRD **Appendix 4**).
 - **Any milestone** that claims satisfaction of PRD **Appendix 4** validation points involving HS284 Example 3: re-check the PDF (and update the notes file if you transcribe key figures for regression checks).
 - **Precedence:** `docs/PRD.md` overrides the PDF if they conflict; document deliberate differences in an ADR or PRD change note (per PRD **Appendix 5**).
 
@@ -212,8 +212,8 @@ Target structure after Milestone 1:
 │  │  ├─ 001-folder-structure-and-ddd-layering.md
 │  │  └─ 002-environment-and-configuration-loading.md
 │  ├─ references/
+│  │  ├─ HS284_Example_3_2024.pdf
 │  │  └─ hs284-example-3-2024-notes.md
-│  ├─ HS284_Example_3_2024.pdf
 │  ├─ IMPLEMENTATION_PLAN.md
 │  └─ PRD.md
 ├─ src/

@@ -2,23 +2,16 @@ import type { Db } from 'mongodb';
 
 import {
   COLLECTION_ACQUISITIONS,
+  COLLECTION_APP_USERS,
   COLLECTION_DISPOSALS,
   COLLECTION_FX_RATES,
   COLLECTION_HOLDINGS,
-  COLLECTION_APP_USERS,
-  getJsonSchemaForCollection,
-} from '@/infrastructure/persistence/schema-registry';
+  MANAGED_COLLECTION_NAMES,
+  type ManagedCollectionName,
+} from '@/infrastructure/persistence/collection-names';
+import { getJsonSchemaForCollection } from '@/infrastructure/persistence/schema-registry';
 
-/** Collections provisioned by `initMongoDatabase` / `npm run db:init`. */
-export const MANAGED_COLLECTION_NAMES = [
-  COLLECTION_APP_USERS,
-  COLLECTION_HOLDINGS,
-  COLLECTION_ACQUISITIONS,
-  COLLECTION_DISPOSALS,
-  COLLECTION_FX_RATES,
-] as const;
-
-export type ManagedCollectionName = (typeof MANAGED_COLLECTION_NAMES)[number];
+export { MANAGED_COLLECTION_NAMES, type ManagedCollectionName };
 
 /**
  * Idempotent: creates collections with validators, applies `collMod`, creates indexes.

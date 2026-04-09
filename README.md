@@ -2,7 +2,7 @@
 
 # Shares Gains UK Tax Calculator
 
-UK capital gains workflow for taxpayers with US employer equity compensation (especially RSUs and related share disposals). Imports include **E\*TRADE** / Morgan Stanley at Work–style sources; the product is not limited to one broker. The app **calculates capital gains and losses for each holding (stock ticker)** you import, grouped by UK tax year. It does **not** calculate your overall annual CGT liability: other disposals, brought-forward losses, reliefs, and your rate band—which this application does not track—can change what you owe in total.
+UK capital gains calculation tool for taxpayers with US employer equity compensation (especially RSUs and related share disposals). Imports include E\*TRADE (Morgan Stanley) at Work–style sources, but the tool is not limited to one broker. The app calculates capital gains and losses for each holding (stock ticker) you import, grouped by UK tax year. It does not calculate your overall annual CGT liability because the app does not track other disposals, brought-forward losses, reliefs, and your rate band, which can change what you owe in total.
 
 ## Table of contents
 
@@ -128,7 +128,7 @@ Useful paths (under the origin from `NEXT_PUBLIC_APP_URL`; default dev port is *
 By default **`AUTH_EMAIL_PROVIDER=noop`**: no real email is sent. Verification and password-reset links are still generated; the app logs them through [`src/shared/app-logger.ts`](src/shared/app-logger.ts) (`logInfo` / `logWarn`).
 
 1. Keep the **terminal where `npm run dev` is running** visible. The URL is **not** on the `POST /api/auth/sign-up/email` line — look for a **`[dev] NOOP EMAIL`** line (warn-level output from `logWarn`, easy to spot) or `Auth email (noop) full text:` if no URL was extracted.
-2. Complete **Sign up** in the browser with a **new email**, or use **Resend verification** on `/verify-email` if you already registered. **Re-using an email that already exists** used to produce a success response with **no** verification email (Better Auth’s duplicate-email path); the app now **resends** the verification link for unverified accounts in that case.
+2. Complete **Sign up** in the browser with a **new email**, or use **Resend verification** on `/verify-email` if you already registered. If you re-use an email that already exists and the account is still unverified, the app **resends** the verification link (Better Auth’s duplicate-email path).
 3. **Paste the URL** into the address bar if needed, complete verification, then continue.
 4. Use **Sign in** with the same email and password. Holding routes require a verified email.
 

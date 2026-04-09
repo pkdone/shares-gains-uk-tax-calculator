@@ -1,3 +1,4 @@
+import type { RepositoryWriteOptions } from '@/domain/repositories/repository-write-options';
 import type { ShareDisposal, ShareDisposalBase } from '@/domain/schemas/share-disposal';
 
 export type CreateShareDisposal = ShareDisposalBase & {
@@ -49,10 +50,15 @@ export interface ShareDisposalRepository {
     holdingId: string,
     userId: string,
     ids: readonly string[],
+    options?: RepositoryWriteOptions,
   ): Promise<number>;
 
   /**
    * Removes all disposals for this holding and user (e.g. when deleting the holding).
    */
-  deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number>;
+  deleteAllForHoldingUser(
+    holdingId: string,
+    userId: string,
+    options?: RepositoryWriteOptions,
+  ): Promise<number>;
 }

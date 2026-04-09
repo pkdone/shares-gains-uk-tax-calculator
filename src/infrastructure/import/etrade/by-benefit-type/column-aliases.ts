@@ -86,3 +86,66 @@ export const COLUMN_ALIASES: Readonly<Record<EtradeColumnKey, readonly string[]>
     'settlement type',
   ],
 };
+
+/** Optional columns matched in the By Benefit Type parser (not part of {@link COLUMN_ALIASES}). */
+export const SELLABLE_QTY_ALIASES: readonly string[] = [
+  'sellable qty',
+  'sellable shares',
+  'sellable quantity',
+  'net shares',
+  'shares deposited',
+  'net qty',
+  'qty sellable',
+];
+
+export const GRANTED_QTY_ALIASES: readonly string[] = [
+  'granted qty',
+  'grant quantity',
+  'shares granted',
+  'total granted',
+  'award qty',
+  'award quantity',
+];
+
+export const GRANT_NUMBER_ALIASES: readonly string[] = [
+  'grant number',
+  'grant no',
+  'grant nr',
+  'grant id',
+  'grant #',
+  'award id',
+  'award number',
+  'reference',
+];
+
+export const VEST_PERIOD_ALIASES: readonly string[] = [
+  'vest period',
+  'vesting period',
+  'vest #',
+  'tranche',
+  'installment',
+];
+
+/** Parent grant date only (column C in expanded "By Benefit Type" exports). */
+export const GRANT_DATE_ALIASES: readonly string[] = [
+  'grant date',
+  'grant dt',
+  'date of grant',
+  'award date',
+];
+
+/**
+ * First tranche / vest event date column — **not** Grant Date. When both Grant Date and Vest Date
+ * exist, vest date resolution must use Vest Date so sub-rows read the event from column T, not
+ * empty Grant Date cells in column C.
+ */
+export const VESTING_EVENT_DATE_ALIASES: readonly string[] = [
+  'vest date',
+  'vesting date',
+  'release date',
+  'grant release date',
+  'release dt',
+  'vest dt',
+  'vest period end',
+  'event date',
+];

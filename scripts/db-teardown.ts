@@ -21,16 +21,15 @@ async function main(): Promise<void> {
   assertMongoUriForScripts();
 
   const { createConnectedMongoClient } = await import('../src/infrastructure/persistence/mongodb-client');
-  const { BETTER_AUTH_COLLECTION_NAMES } = await import(
-    '../src/infrastructure/persistence/better-auth-collections'
+  const { BETTER_AUTH_COLLECTION_NAMES, MANAGED_COLLECTION_NAMES } = await import(
+    '../src/infrastructure/persistence/collection-names'
   );
-  const { MANAGED_COLLECTION_NAMES } = await import('../src/infrastructure/persistence/ensure-collections');
 
   const client = await createConnectedMongoClient();
   try {
     const db = client.db();
     /** Drop dependent data first (no FK enforcement, but logical order). */
-    const appDropOrder = [...MANAGED_COLLECTION_NAMES].toReversed();
+    const appDropOrder = MANAGED_COLLECTION_NAMES.toReversed();
     /** Session/account before user; verification and rateLimit are independent. */
     const authDropOrder = [...BETTER_AUTH_COLLECTION_NAMES];
     const dropOrder = [...appDropOrder, ...authDropOrder];

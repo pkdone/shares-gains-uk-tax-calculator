@@ -1,3 +1,4 @@
+import type { RepositoryWriteOptions } from '@/domain/repositories/repository-write-options';
 import type {
   ShareAcquisition,
   ShareAcquisitionBase,
@@ -43,10 +44,15 @@ export interface ShareAcquisitionRepository {
     holdingId: string,
     userId: string,
     ids: readonly string[],
+    options?: RepositoryWriteOptions,
   ): Promise<number>;
 
   /**
    * Removes all acquisitions for this holding and user (e.g. when deleting the holding).
    */
-  deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number>;
+  deleteAllForHoldingUser(
+    holdingId: string,
+    userId: string,
+    options?: RepositoryWriteOptions,
+  ): Promise<number>;
 }

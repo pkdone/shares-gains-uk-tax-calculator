@@ -18,8 +18,8 @@ export type AcquisitionMatchingAttribution = {
 
 /**
  * Sums same-day and 30-day identification against acquisitions on the given date, using
- * disposal results from the matching engine. Tranches without `acquisitionDate` contribute
- * nothing (legacy data).
+ * disposal results from the matching engine. Section 104 pool tranches (no `acquisitionDate`)
+ * do not contribute to this aggregation.
  */
 export function aggregateAcquisitionMatchingAttribution(params: {
   readonly acquisitionDate: string;

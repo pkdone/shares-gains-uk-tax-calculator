@@ -60,6 +60,7 @@ describe('runCalculationForHoldingSymbol', () => {
     upsertImportUsdBatch: jest.fn(),
     listByHoldingForUser: jest.fn().mockResolvedValue(acquisitions),
     deleteByIdForHoldingUser: jest.fn(),
+    deleteManyByIdsForHoldingUser: jest.fn(),
     deleteAllForHoldingUser: jest.fn(),
   };
 
@@ -69,6 +70,7 @@ describe('runCalculationForHoldingSymbol', () => {
     findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
     listByHoldingForUser: jest.fn().mockResolvedValue(disposals),
     deleteByIdForHoldingUser: jest.fn(),
+    deleteManyByIdsForHoldingUser: jest.fn(),
     deleteAllForHoldingUser: jest.fn(),
   };
 

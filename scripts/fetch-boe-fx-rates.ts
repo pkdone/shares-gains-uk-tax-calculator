@@ -11,7 +11,7 @@ async function main(): Promise<void> {
   const { createConnectedMongoClient, disconnectMongoClient } = await import(
     '../src/infrastructure/persistence/mongodb-client'
   );
-  const { COLLECTION_FX_RATES } = await import('../src/infrastructure/persistence/schema-registry');
+  const { COLLECTION_FX_RATES } = await import('../src/infrastructure/persistence/collection-names');
   const { fetchBoeXudlusRates } = await import('../src/infrastructure/fx/boe-fx-client');
   const { fxRateRepository } = await import('../src/infrastructure/repositories/composition-root');
 

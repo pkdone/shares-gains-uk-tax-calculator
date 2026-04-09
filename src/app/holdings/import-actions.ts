@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { commitEtradeByBenefitImport } from '@/application/import/commit-etrade-by-benefit-import';
 import { filterEtradeDraftsForHoldingSymbol } from '@/application/import/filter-etrade-drafts-for-holding-symbol';
-import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-etrade-by-benefit-type-import';
+import { previewEtradeByBenefitTypeImport } from '@/infrastructure/import/etrade/preview-etrade-by-benefit-type-import';
 import { shareAcquisitionImportUsdSchema } from '@/domain/schemas/share-acquisition';
 import { toFormActionError } from '@/app/holdings/action-error';
 import { revalidateHoldingSurfaces } from '@/app/holdings/revalidate-holding-caches';

@@ -4,6 +4,10 @@ import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
+  formatUsdPlainAmount,
+  formatUsdPricePerShare,
+} from '@/application/calculation/calculation-amount-format';
+import {
   commitEtradeImportAction,
   previewEtradeImportAction,
   type EtradeImportCommitState,
@@ -20,16 +24,6 @@ type EtradeImportSectionProps = {
   readonly onCommitSuccess?: () => void;
 };
 
-const usd = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const usdPrice = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 4,
-});
-
 export function EtradeImportSection({
   holdingId,
   holdingSymbol,
@@ -37,14 +31,14 @@ export function EtradeImportSection({
   onCommitSuccess,
 }: EtradeImportSectionProps): React.ReactElement {
   const router = useRouter();
-  const [previewState, previewAction, previewPending] = useActionState(
-    previewEtradeImportAction,
-    undefined as EtradeImportPreviewState | undefined,
-  );
-  const [commitState, commitAction, commitPending] = useActionState(
-    commitEtradeImportAction,
-    undefined as EtradeImportCommitState | undefined,
-  );
+  const [previewState, previewAction, previewPending] = useActionState<
+    EtradeImportPreviewState | undefined,
+    FormData
+  >(previewEtradeImportAction, undefined);
+  const [commitState, commitAction, commitPending] = useActionState<
+    EtradeImportCommitState | undefined,
+    FormData
+  >(commitEtradeImportAction, undefined);
 
   useEffect(() => {
     if (commitState?.ok === true) {
@@ -202,10 +196,10 @@ export function EtradeImportSection({
                     </td>
                     <td className="px-3 py-2 tabular-nums">{d.quantity}</td>
                     <td className="px-3 py-2 tabular-nums text-neutral-700">
-                      ${usdPrice.format(pricePerShare(d.considerationUsd, d.quantity))}
+                      ${formatUsdPricePerShare(pricePerShare(d.considerationUsd, d.quantity))}
                     </td>
-                    <td className="px-3 py-2 tabular-nums">${usd.format(d.considerationUsd)}</td>
-                    <td className="px-3 py-2 tabular-nums">${usd.format(d.feesUsd)}</td>
+                    <td className="px-3 py-2 tabular-nums">${formatUsdPlainAmount(d.considerationUsd)}</td>
+                    <td className="px-3 py-2 tabular-nums">${formatUsdPlainAmount(d.feesUsd)}</td>
                   </tr>
                 ))}
               </tbody>

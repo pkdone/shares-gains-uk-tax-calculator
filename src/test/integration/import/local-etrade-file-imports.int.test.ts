@@ -14,8 +14,9 @@ import { ObjectId } from 'mongodb';
 import { commitEtradeByBenefitImport } from '@/application/import/commit-etrade-by-benefit-import';
 import { commitEtradeStockPlanOrdersPdfImport } from '@/application/import/commit-etrade-stock-plan-orders-pdf-import';
 import { filterEtradeDraftsForHoldingSymbol } from '@/application/import/filter-etrade-drafts-for-holding-symbol';
-import { previewEtradeByBenefitTypeImport } from '@/application/import/preview-etrade-by-benefit-type-import';
-import { buildEtradePdfDisposalImportPreview } from '@/application/import/preview-etrade-stock-plan-orders-pdf-import';
+import { buildEtradePdfDisposalImportPreview } from '@/infrastructure/import/etrade/build-etrade-pdf-disposal-import-preview';
+import { computeEtradeDisposalImportFingerprint } from '@/infrastructure/import/etrade/hash-etrade-disposal-import-fingerprint';
+import { previewEtradeByBenefitTypeImport } from '@/infrastructure/import/etrade/preview-etrade-by-benefit-type-import';
 import { parseEtradeStockPlanOrdersPdfText } from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
 import { pdfBufferToText } from '@/infrastructure/import/pdf-buffer-to-text';
 import { readXlsxForEtradeByBenefitTypeImport } from '@/infrastructure/import/read-xlsx-sheet';
@@ -150,6 +151,7 @@ describe('local E*Trade file imports (optional files at repo root)', () => {
         holdingId: holding.id,
         userId,
         drafts: [...preview.drafts],
+        computeImportFingerprint: computeEtradeDisposalImportFingerprint,
       });
       expect(inserted).toBeGreaterThan(0);
 

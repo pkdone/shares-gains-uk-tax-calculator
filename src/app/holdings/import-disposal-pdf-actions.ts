@@ -3,12 +3,14 @@
 import { z } from 'zod';
 
 import { commitEtradeStockPlanOrdersPdfImport } from '@/application/import/commit-etrade-stock-plan-orders-pdf-import';
-import { buildEtradePdfDisposalImportPreview } from '@/application/import/preview-etrade-stock-plan-orders-pdf-import';
+import { buildEtradePdfDisposalImportPreview } from '@/infrastructure/import/etrade/build-etrade-pdf-disposal-import-preview';
+import { computeEtradeDisposalImportFingerprint } from '@/infrastructure/import/etrade/hash-etrade-disposal-import-fingerprint';
 import { shareDisposalPdfImportDraftSchema } from '@/domain/schemas/share-disposal';
 import { toFormActionError } from '@/app/holdings/action-error';
 import { revalidateHoldingSurfaces } from '@/app/holdings/revalidate-holding-caches';
 import { pdfBufferToText } from '@/infrastructure/import/pdf-buffer-to-text';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
+import { XLSX_IMPORT_MAX_BYTES } from '@/infrastructure/import/read-xlsx-sheet';
 import {
   holdingRepository as holdingRepo,
   shareDisposalRepository as disposalRepo,
@@ -43,6 +45,12 @@ export async function previewEtradePdfDisposalImportAction(
   const file = formData.get('etradePdfFile');
   if (!(file instanceof File) || file.size === 0) {
     return { error: 'Choose a PDF file to upload.' };
+  }
+
+  if (file.size > XLSX_IMPORT_MAX_BYTES) {
+    return {
+      error: `PDF is too large (max ${Math.floor(XLSX_IMPORT_MAX_BYTES / (1024 * 1024))}MB).`,
+    };
   }
 
   let buffer: Buffer;
@@ -133,6 +141,7 @@ export async function commitEtradePdfDisposalImportAction(
         holdingId,
         userId,
         drafts: draftsResult.data,
+        computeImportFingerprint: computeEtradeDisposalImportFingerprint,
       },
     );
     revalidateHoldingSurfaces(holdingId);

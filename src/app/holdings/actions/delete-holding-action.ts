@@ -1,11 +1,12 @@
 'use server';
 
 import { deleteHolding } from '@/application/holding/delete-holding';
-import { toFormActionError } from '@/app/holdings/action-error';
+import { formatZodErrorMessage, toFormActionError } from '@/app/holdings/action-error';
 import { revalidateHoldingSurfaces } from '@/app/holdings/revalidate-holding-caches';
 import type { FormActionState } from '@/app/holdings/types';
 import { deleteHoldingFormSchema } from '@/app/holdings/form-parsing';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
+import { runMongoTransaction } from '@/infrastructure/persistence/mongo-transaction';
 
 import { acquisitionRepo, disposalRepo, holdingRepo } from './repos';
 
@@ -18,17 +19,14 @@ export async function deleteHoldingAction(
   });
 
   if (!parsed.success) {
-    const first =
-      parsed.error.flatten().formErrors[0] ??
-      Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-    return { error: first ?? 'Invalid request' };
+    return { error: formatZodErrorMessage(parsed.error, 'Invalid request') };
   }
 
   const { holdingId } = parsed.data;
   const userId = await requireVerifiedUserId();
 
   try {
-    await deleteHolding(holdingRepo, acquisitionRepo, disposalRepo, {
+    await deleteHolding(runMongoTransaction, holdingRepo, acquisitionRepo, disposalRepo, {
       holdingId,
       userId,
     });

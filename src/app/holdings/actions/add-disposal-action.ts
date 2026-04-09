@@ -1,7 +1,7 @@
 'use server';
 
 import { addDisposal } from '@/application/ledger/add-disposal';
-import { toFormActionError } from '@/app/holdings/action-error';
+import { toFormActionError, zodErrorToFormActionFields } from '@/app/holdings/action-error';
 import { revalidateHoldingDetailAndCalculation } from '@/app/holdings/revalidate-holding-caches';
 import type { FormActionState } from '@/app/holdings/types';
 import { formDataString, parseDisposalForm } from '@/app/holdings/form-parsing';
@@ -26,13 +26,7 @@ export async function addDisposalAction(
 
   const parsed = parseDisposalForm(formData, holding.symbol);
   if (!parsed.success) {
-    const flat = parsed.error.flatten();
-    const first =
-      flat.formErrors[0] ?? Object.values(flat.fieldErrors)[0]?.[0] ?? 'Invalid disposal';
-    return {
-      error: first,
-      fieldErrors: flat.fieldErrors,
-    };
+    return zodErrorToFormActionFields(parsed.error, 'Invalid disposal');
   }
 
   try {

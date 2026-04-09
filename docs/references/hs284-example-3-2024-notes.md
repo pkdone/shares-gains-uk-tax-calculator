@@ -1,6 +1,6 @@
 # HS284 Example 3 (2024) — companion notes
 
-**Companion to:** `docs/HS284_Example_3_2024.pdf`  
+**Companion to:** `docs/references/HS284_Example_3_2024.pdf`  
 **Related PRD:** `docs/PRD.md` — **Appendix 4** (validation), **Appendix 5** (reference materials)
 
 ## Purpose
@@ -19,7 +19,7 @@ Cross-check the product and tests against the PDF for behaviours that `docs/PRD.
 
 ## Key figures and steps (from PDF)
 
-**PDF:** `docs/HS284_Example_3_2024.pdf` — Example 3, pages 1–2 (“Example 3” / “Example 3 continued”).
+**PDF:** `docs/references/HS284_Example_3_2024.pdf` — Example 3, pages 1–2 (“Example 3” / “Example 3 continued”).
 
 ### Narrative (dates and quantities)
 

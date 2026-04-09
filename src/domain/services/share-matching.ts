@@ -61,15 +61,46 @@ function cloneAcqState(acqByDate: Map<string, AcqAgg>): Map<string, AcqAgg> {
   return m;
 }
 
+/**
+ * Immutable take of up to `takeQty` shares from the acquisition aggregate on `date`.
+ */
+function takeFromAcqOnDate(
+  acqRemaining: Map<string, AcqAgg>,
+  date: string,
+  takeQty: number,
+): { readonly next: Map<string, AcqAgg>; readonly costTaken: number; readonly quantityTaken: number } {
+  const cur = acqRemaining.get(date);
+  if (cur === undefined || cur.qty <= 0 || takeQty <= 0) {
+    throw new DomainError('Internal: invalid acquisition take');
+  }
+  const quantityTaken = Math.min(takeQty, cur.qty);
+  const costTaken =
+    quantityTaken === cur.qty ? cur.cost : roundMoney2dp((cur.cost * quantityTaken) / cur.qty);
+  const nextQty = cur.qty - quantityTaken;
+  const nextCost = roundMoney2dp(cur.cost - costTaken);
+  const next = new Map(acqRemaining);
+  if (nextQty <= 0) {
+    next.delete(date);
+  } else {
+    next.set(date, { qty: nextQty, cost: nextCost });
+  }
+  return { next, costTaken, quantityTaken };
+}
+
 type Phase1Row = {
   readonly disp: DispAgg;
   readonly tranches: MatchingTranche[];
   readonly poolQty: number;
 };
 
-function runPhase1(acqRemaining: Map<string, AcqAgg>, dispByDate: Map<string, DispAgg>): Map<string, Phase1Row> {
+function runPhase1(
+  acqRemaining: Map<string, AcqAgg>,
+  dispByDate: Map<string, DispAgg>,
+): { readonly phase1ByDate: Map<string, Phase1Row>; readonly acqRemaining: Map<string, AcqAgg> } {
   const byDate = new Map<string, Phase1Row>();
   const disposalDates = [...dispByDate.keys()].sort((a, b) => a.localeCompare(b));
+
+  let acq = acqRemaining;
 
   for (const d of disposalDates) {
     const disp = dispByDate.get(d);
@@ -80,28 +111,23 @@ function runPhase1(acqRemaining: Map<string, AcqAgg>, dispByDate: Map<string, Di
     let Q = disp.qty;
     const tranches: MatchingTranche[] = [];
 
-    const same = acqRemaining.get(d);
-    if (same && same.qty > 0 && Q > 0) {
+    const same = acq.get(d);
+    if (same !== undefined && same.qty > 0 && Q > 0) {
       const take = Math.min(Q, same.qty);
-      const cost =
-        take === same.qty ? same.cost : roundMoney2dp((same.cost * take) / same.qty);
+      const { next, costTaken, quantityTaken } = takeFromAcqOnDate(acq, d, take);
+      acq = next;
       tranches.push({
         source: 'same-day',
-        quantity: take,
-        allowableCostGbp: cost,
+        quantity: quantityTaken,
+        allowableCostGbp: costTaken,
         acquisitionDate: d,
       });
-      same.qty -= take;
-      same.cost = roundMoney2dp(same.cost - cost);
-      if (same.qty <= 0) {
-        acqRemaining.delete(d);
-      }
-      Q -= take;
+      Q -= quantityTaken;
     }
 
     if (Q > 0) {
       const windowEnd = addDaysIso(d, 30);
-      const candidates = [...acqRemaining.keys()]
+      const candidates = [...acq.keys()]
         .filter((dt) => dt > d && dt <= windowEnd)
         .sort((a, b) => a.localeCompare(b));
 
@@ -109,25 +135,20 @@ function runPhase1(acqRemaining: Map<string, AcqAgg>, dispByDate: Map<string, Di
         if (Q <= 0) {
           break;
         }
-        const st = acqRemaining.get(dt);
-        if (!st || st.qty <= 0) {
+        const st = acq.get(dt);
+        if (st === undefined || st.qty <= 0) {
           continue;
         }
         const take = Math.min(Q, st.qty);
-        const cost =
-          take === st.qty ? st.cost : roundMoney2dp((st.cost * take) / st.qty);
+        const { next, costTaken, quantityTaken } = takeFromAcqOnDate(acq, dt, take);
+        acq = next;
         tranches.push({
           source: 'thirty-day',
-          quantity: take,
-          allowableCostGbp: cost,
+          quantity: quantityTaken,
+          allowableCostGbp: costTaken,
           acquisitionDate: dt,
         });
-        st.qty -= take;
-        st.cost = roundMoney2dp(st.cost - cost);
-        if (st.qty <= 0) {
-          acqRemaining.delete(dt);
-        }
-        Q -= take;
+        Q -= quantityTaken;
       }
     }
 
@@ -139,7 +160,7 @@ function runPhase1(acqRemaining: Map<string, AcqAgg>, dispByDate: Map<string, Di
     byDate.set(d, { disp, tranches, poolQty: Q });
   }
 
-  return byDate;
+  return { phase1ByDate: byDate, acqRemaining: acq };
 }
 
 function buildDisposalResult(params: {
@@ -178,8 +199,7 @@ export function computeMatchingOutput(events: readonly CalcEvent[]): {
   readonly finalPool: { readonly shares: number; readonly costGbp: number };
 } {
   const { acqByDate, dispByDate } = aggregateAcquisitionsAndDisposals(events);
-  const acqRemaining = cloneAcqState(acqByDate);
-  const phase1ByDate = runPhase1(acqRemaining, dispByDate);
+  const { phase1ByDate, acqRemaining } = runPhase1(cloneAcqState(acqByDate), dispByDate);
 
   const allDates = [...new Set([...acqByDate.keys(), ...dispByDate.keys()])].sort((a, b) =>
     a.localeCompare(b),
