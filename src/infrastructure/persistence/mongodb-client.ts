@@ -1,6 +1,6 @@
 import { MongoClient, type Db } from 'mongodb';
 
-import { MANAGED_COLLECTION_NAMES } from '@/infrastructure/persistence/ensure-collections';
+import { MANAGED_COLLECTION_NAMES } from '@/infrastructure/persistence/collection-names';
 import { env } from '@/shared/config/env';
 import { ConfigurationError } from '@/shared/errors/app-error';
 

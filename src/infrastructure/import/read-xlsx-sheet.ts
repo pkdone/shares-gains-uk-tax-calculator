@@ -106,47 +106,29 @@ export function applyMergedRegionsToGrid(grid: string[][], sheet: ExcelJS.Worksh
   return out;
 }
 
-function sheetToJsonRows(sheet: ExcelJS.Worksheet, useFormattedText: boolean): unknown[][] {
-  const rows: unknown[][] = [];
-  sheet.eachRow({ includeEmpty: true }, (row) => {
-    const line: unknown[] = [];
-    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-      while (line.length < colNumber) {
-        line.push('');
-      }
-      line[colNumber - 1] = useFormattedText ? cellDisplayString(cell) : cell.value;
-    });
-    rows.push(line);
-  });
-  return rows;
-}
-
 function sheetToGrid(sheet: ExcelJS.Worksheet | undefined): string[][] {
   if (sheet === undefined) {
     return [];
   }
 
-  const rawRows = sheetToJsonRows(sheet, false);
-  const fmtRows = sheetToJsonRows(sheet, true);
-
-  const maxR = Math.max(rawRows.length, fmtRows.length);
   const merged: string[][] = [];
-  for (let r = 0; r < maxR; r++) {
-    const rawRow = rawRows[r] ?? [];
-    const fmtRow = fmtRows[r] ?? [];
-    const maxC = Math.max(rawRow.length, fmtRow.length);
-    if (maxC > MAX_GRID_COLS) {
-      throw new ImportError(`Spreadsheet row ${r + 1} exceeds maximum width (${MAX_GRID_COLS} columns)`);
+  sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const line: string[] = [];
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      while (line.length < colNumber) {
+        line.push('');
+      }
+      const a = cellToGridStringFromRaw(cell.value);
+      const b = cellDisplayString(cell);
+      line[colNumber - 1] = b.length > 0 ? b : a;
+    });
+    if (line.length > MAX_GRID_COLS) {
+      throw new ImportError(
+        `Spreadsheet row ${String(rowNumber)} exceeds maximum width (${MAX_GRID_COLS} columns)`,
+      );
     }
-    const out: string[] = [];
-    for (let c = 0; c < maxC; c++) {
-      const a = cellToGridStringFromRaw(rawRow[c]);
-      const fmtCell = fmtRow[c];
-      const b = typeof fmtCell === 'string' ? fmtCell : cellToGridStringFromRaw(fmtCell);
-      out.push(b.length > 0 ? b : a);
-    }
-    merged.push(out);
-  }
+    merged.push(line);
+  });
 
   if (merged.length > MAX_GRID_ROWS) {
     throw new ImportError(`Spreadsheet exceeds maximum row count (${MAX_GRID_ROWS})`);

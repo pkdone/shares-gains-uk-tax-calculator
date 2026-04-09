@@ -3,222 +3,12 @@ import { shareAcquisitionImportUsdSchema } from '@/domain/schemas/share-acquisit
 
 import { tryParseSpreadsheetDateCell } from '@/domain/services/date-only-parse';
 
-import { COLUMN_ALIASES, type EtradeColumnKey } from './column-aliases';
+import { findEtradeByBenefitTypeHeaderRow } from './etrade-column-resolution';
+import { createNormaliseHeaderKeyMemo } from './normalise-header-key';
 import type { EtradeColumnIndices, EtradeParseIssue, EtradeParseResult } from './parse-result-types';
 
 /** Match Tax rows to Vest Schedule rows when calendar dates differ slightly (e.g. month-end vs next month). */
 const VEST_SCHEDULE_DATE_FUZZ_DAYS = 14;
-
-const SELLABLE_QTY_ALIASES: readonly string[] = [
-  'sellable qty',
-  'sellable shares',
-  'sellable quantity',
-  'net shares',
-  'shares deposited',
-  'net qty',
-  'qty sellable',
-];
-
-const GRANTED_QTY_ALIASES: readonly string[] = [
-  'granted qty',
-  'grant quantity',
-  'shares granted',
-  'total granted',
-  'award qty',
-  'award quantity',
-];
-
-const GRANT_NUMBER_ALIASES: readonly string[] = [
-  'grant number',
-  'grant no',
-  'grant nr',
-  'grant id',
-  'grant #',
-  'award id',
-  'award number',
-  'reference',
-];
-
-const VEST_PERIOD_ALIASES: readonly string[] = [
-  'vest period',
-  'vesting period',
-  'vest #',
-  'tranche',
-  'installment',
-];
-
-/** Max rows from the top of the sheet to scan for a header line. */
-export const ETRADE_HEADER_SCAN_MAX_ROWS = 45;
-
-/**
- * Normalises a spreadsheet header cell for comparison: trim, NBSP→space, collapse spaces, lowercase,
- * strip trailing `(USD)`-style suffixes and full stops.
- */
-export function normaliseHeaderKey(raw: string): string {
-  let s = raw
-    .replace(/\u00a0/gu, ' ')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/gu, ' ');
-  for (let i = 0; i < 3; i++) {
-    const next = s
-      .replace(/\s*\([^)]{0,120}\)\s*$/u, '')
-      .replace(/\s*\[[^\]]{0,120}\]\s*$/u, '')
-      .replace(/\.+$/u, '')
-      .trim();
-    if (next === s) {
-      break;
-    }
-    s = next;
-  }
-  return s;
-}
-
-/**
- * Resolves an optional column: aliases outer, columns inner, rightmost match wins (same strategy as
- * the required-column resolver — handles expanded layouts with duplicate header names).
- */
-function resolveOptionalColumn(norm: readonly string[], aliases: readonly string[]): number {
-  for (const a of aliases) {
-    let last = -1;
-    for (let i = 0; i < norm.length; i++) {
-      if (norm[i] === a) {
-        last = i;
-      }
-    }
-    if (last >= 0) {
-      return last;
-    }
-  }
-  return -1;
-}
-
-/** Parent grant date only (column C in expanded "By Benefit Type" exports). */
-const GRANT_DATE_ALIASES: readonly string[] = [
-  'grant date',
-  'grant dt',
-  'date of grant',
-  'award date',
-];
-
-/**
- * First tranche / vest event date column — **not** Grant Date. When both Grant Date and Vest Date
- * exist, {@link EtradeColumnIndices.vestDate} must resolve to Vest Date so sub-rows read the event
- * from column T, not empty Grant Date cells in column C.
- */
-const VESTING_EVENT_DATE_ALIASES: readonly string[] = [
-  'vest date',
-  'vesting date',
-  'release date',
-  'grant release date',
-  'release dt',
-  'vest dt',
-  'vest period end',
-  'event date',
-];
-
-/**
- * For Grant Date and Vest Date: prefer the **first** alias that has a column, and within that alias
- * take the **first** (leftmost) match — these are unique per layout, not duplicated like qty columns.
- */
-function resolveFirstHeaderColumn(norm: readonly string[], aliases: readonly string[]): number {
-  for (const a of aliases) {
-    for (let i = 0; i < norm.length; i++) {
-      if (norm[i] === a) {
-        return i;
-      }
-    }
-  }
-  return -1;
-}
-
-function findColumnIndicesWithAliases(headerRow: string[]): EtradeColumnIndices | null {
-  const norm = headerRow.map((c) => normaliseHeaderKey(String(c)));
-
-  const resolve = (key: EtradeColumnKey): number => {
-    const aliases = COLUMN_ALIASES[key];
-    for (const a of aliases) {
-      let last = -1;
-      for (let i = 0; i < norm.length; i++) {
-        if (norm[i] === a) {
-          last = i;
-        }
-      }
-      if (last >= 0) {
-        return last;
-      }
-    }
-    return -1;
-  };
-
-  const rowKind = resolve('rowKind');
-  const symbol = resolve('symbol');
-  const grantDateCol = resolveFirstHeaderColumn(norm, GRANT_DATE_ALIASES);
-  const vestingEventDateCol = resolveFirstHeaderColumn(norm, VESTING_EVENT_DATE_ALIASES);
-  const vestDateFromAliases = resolve('vestDate');
-  let vestDate = vestingEventDateCol;
-  if (vestDate < 0) {
-    vestDate = grantDateCol;
-  }
-  if (vestDate < 0) {
-    vestDate = vestDateFromAliases;
-  }
-  const vestedQty = resolve('vestedQty');
-  const sharesTradedForTaxes = resolve('sharesTradedForTaxes');
-  const taxableGain = resolve('taxableGain');
-  const benefitType = resolve('benefitType');
-
-  if (
-    rowKind < 0 ||
-    symbol < 0 ||
-    vestDate < 0 ||
-    vestedQty < 0 ||
-    sharesTradedForTaxes < 0 ||
-    taxableGain < 0 ||
-    benefitType < 0
-  ) {
-    return null;
-  }
-
-  return {
-    rowKind,
-    symbol,
-    vestDate,
-    vestedQty,
-    sharesTradedForTaxes,
-    taxableGain,
-    benefitType,
-    grantDateCol,
-    sellableQty: resolveOptionalColumn(norm, SELLABLE_QTY_ALIASES),
-    grantedQty: resolveOptionalColumn(norm, GRANTED_QTY_ALIASES),
-    grantNumberCol: resolveOptionalColumn(norm, GRANT_NUMBER_ALIASES),
-    vestPeriodCol: resolveOptionalColumn(norm, VEST_PERIOD_ALIASES),
-  };
-}
-
-/**
- * Finds the first row (within {@link ETRADE_HEADER_SCAN_MAX_ROWS}) that contains all required columns.
- */
-export function findEtradeByBenefitTypeHeaderRow(
-  grid: readonly (readonly string[])[],
-): { readonly headerRowIndex: number; readonly col: EtradeColumnIndices } | null {
-  const limit = Math.min(ETRADE_HEADER_SCAN_MAX_ROWS, grid.length);
-  for (let r = 0; r < limit; r++) {
-    const row = grid[r];
-    if (row === undefined) {
-      continue;
-    }
-    const headerRow = [...row].map((c) => String(c));
-    if (headerRow.every((c) => normaliseHeaderKey(c) === '')) {
-      continue;
-    }
-    const col = findColumnIndicesWithAliases(headerRow);
-    if (col !== null) {
-      return { headerRowIndex: r, col };
-    }
-  }
-  return null;
-}
 
 /**
  * Parses numeric spreadsheet cells, including `$29,203.24` and plain numbers.
@@ -850,12 +640,13 @@ export function parseEtradeByBenefitTypeGrid(grid: readonly (readonly string[])[
 
   const found = findEtradeByBenefitTypeHeaderRow(grid);
   if (found === null) {
+    const memoNorm = createNormaliseHeaderKeyMemo();
     const preview = grid
       .slice(0, 5)
       .map((row, i) => {
         const cells = [...row]
           .slice(0, 12)
-          .map((c) => normaliseHeaderKey(String(c)).slice(0, 40));
+          .map((c) => memoNorm(String(c)).slice(0, 40));
         return `Row ${String(i + 1)}: ${cells.filter((c) => c.length > 0).join(' | ') || '(empty)'}`;
       })
       .join('\n');

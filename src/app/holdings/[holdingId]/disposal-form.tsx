@@ -3,14 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 
+import { formatUsdPlainAmount } from '@/application/calculation/calculation-amount-format';
 import { addDisposalAction } from '@/app/holdings/actions';
 import type { FormActionState } from '@/app/holdings/types';
 import { buttonPrimaryClassName } from '@/app/ui/button-variants';
-
-const priceUsd = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 function firstFieldError(
   fieldErrors: FormActionState['fieldErrors'],
@@ -43,7 +39,7 @@ export function DisposalForm({ holdingId, holdingSymbol, onAfterSuccess }: Dispo
       return '—';
     }
     const v = Math.round(q * p * 100) / 100;
-    return `$${priceUsd.format(v)}`;
+    return `$${formatUsdPlainAmount(v)}`;
   }, [quantityStr, priceStr]);
 
   useEffect(() => {

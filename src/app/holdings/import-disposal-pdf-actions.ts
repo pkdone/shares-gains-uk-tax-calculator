@@ -3,7 +3,8 @@
 import { z } from 'zod';
 
 import { commitEtradeStockPlanOrdersPdfImport } from '@/application/import/commit-etrade-stock-plan-orders-pdf-import';
-import { buildEtradePdfDisposalImportPreview } from '@/application/import/preview-etrade-stock-plan-orders-pdf-import';
+import { buildEtradePdfDisposalImportPreview } from '@/infrastructure/import/etrade/build-etrade-pdf-disposal-import-preview';
+import { computeEtradeDisposalImportFingerprint } from '@/infrastructure/import/etrade/hash-etrade-disposal-import-fingerprint';
 import { shareDisposalPdfImportDraftSchema } from '@/domain/schemas/share-disposal';
 import { toFormActionError } from '@/app/holdings/action-error';
 import { revalidateHoldingSurfaces } from '@/app/holdings/revalidate-holding-caches';
@@ -140,6 +141,7 @@ export async function commitEtradePdfDisposalImportAction(
         holdingId,
         userId,
         drafts: draftsResult.data,
+        computeImportFingerprint: computeEtradeDisposalImportFingerprint,
       },
     );
     revalidateHoldingSurfaces(holdingId);

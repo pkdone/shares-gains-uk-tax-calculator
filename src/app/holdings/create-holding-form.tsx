@@ -1,5 +1,6 @@
 'use client';
 
+import Form from 'next/form';
 import { useActionState } from 'react';
 
 import { createHoldingAction } from '@/app/holdings/actions';
@@ -13,7 +14,7 @@ export function CreateHoldingForm(): React.ReactElement {
   );
 
   return (
-    <form
+    <Form
       action={action}
       className="inline-flex max-w-full flex-col items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
     >
@@ -45,6 +46,6 @@ export function CreateHoldingForm(): React.ReactElement {
       >
         {pending ? 'Creating…' : 'Create holding'}
       </button>
-    </form>
+    </Form>
   );
 }

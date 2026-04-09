@@ -1,5 +1,9 @@
 import type { ReactElement } from 'react';
 
+import {
+  formatGbpAmount,
+  formatUsdCurrency,
+} from '@/application/calculation/calculation-amount-format';
 import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
 import type {
   CalculationTransactionAcquisitionAggregateSummaryRow,
@@ -11,18 +15,6 @@ import type {
   CalculationTransactionTableGroup,
 } from '@/application/calculation/build-calculation-transaction-table';
 import type { MatchingSource } from '@/domain/schemas/calculation';
-
-const money = new Intl.NumberFormat('en-GB', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const usdMoney = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 function fxRateCellClassName(params: {
   readonly fxRate: number | undefined;
@@ -60,7 +52,7 @@ function formatAvgCostPerShareGbp(poolShares: number, poolCostGbp: number): stri
     return '—';
   }
 
-  return `£${money.format(poolCostGbp / poolShares)}`;
+  return `£${formatGbpAmount(poolCostGbp / poolShares)}`;
 }
 
 function taxYearNetGainLossTextClassName(netGbp: number): string {
@@ -77,7 +69,7 @@ function taxYearNetGainLossTextClassName(netGbp: number): string {
 
 function acquisitionMatchingFallbackNote(row: CalculationTransactionAcquisitionAggregateSummaryRow): ReactElement {
   const q = row.totalQuantity;
-  const costLabel = money.format(row.totalCostGbp);
+  const costLabel = formatGbpAmount(row.totalCostGbp);
   const poolSentence = (
     <>
       All <strong className="font-semibold tabular-nums text-neutral-900">{q}</strong> shares (£{costLabel}) from this
@@ -115,7 +107,7 @@ function AcquisitionMatchingDetail(params: {
           <p className="text-[11px] font-semibold text-neutral-600">Same-Day Identification</p>
           <p className="mt-1.5 text-xs text-neutral-600">
             Matched to disposal(s) on <span className="font-medium text-neutral-800">{eventDate}</span>:{' '}
-            <span className="tabular-nums">{m.sameDayQuantity}</span> shares, £{money.format(m.sameDayCostGbp)}{' '}
+            <span className="tabular-nums">{m.sameDayQuantity}</span> shares, £{formatGbpAmount(m.sameDayCostGbp)}{' '}
             allowable cost. These shares do not increase the Section 104 pool (they are identified against that
             disposal).
           </p>
@@ -142,13 +134,13 @@ function AcquisitionMatchingDetail(params: {
                   <tr key={`${r.disposalDate}-${r.quantity}-${r.allowableCostGbp}`} className="border-b border-neutral-100">
                     <td className="py-1.5 pl-2 pr-3 tabular-nums">{r.disposalDate}</td>
                     <td className="py-1.5 pr-3 text-right tabular-nums">{r.quantity}</td>
-                    <td className="py-1.5 pr-2 text-right tabular-nums">£{money.format(r.allowableCostGbp)}</td>
+                    <td className="py-1.5 pr-2 text-right tabular-nums">£{formatGbpAmount(r.allowableCostGbp)}</td>
                   </tr>
                 ))}
                 <tr className="bg-neutral-50/90 font-medium text-neutral-900">
                   <td className="py-1.5 pl-2 pr-3">Total (30-day)</td>
                   <td className="py-1.5 pr-3 text-right tabular-nums">{m.thirtyDayQuantity}</td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums">£{money.format(m.thirtyDayCostGbp)}</td>
+                  <td className="py-1.5 pr-2 text-right tabular-nums">£{formatGbpAmount(m.thirtyDayCostGbp)}</td>
                 </tr>
               </tbody>
             </table>
@@ -160,7 +152,7 @@ function AcquisitionMatchingDetail(params: {
         <p className="mt-1.5 text-xs text-neutral-600">
           Unmatched portion after identification:{' '}
           <span className="tabular-nums font-medium text-neutral-900">{m.netToPoolQuantity}</span> shares, £
-          {money.format(m.netToPoolCostGbp)}. This is what the pool totals in this acquisition summary include from this
+          {formatGbpAmount(m.netToPoolCostGbp)}. This is what the pool totals in this acquisition summary include from this
           date.
         </p>
       </div>
@@ -186,8 +178,8 @@ function LedgerTableRows({
               <td className="px-2 py-1.5 text-neutral-800 sm:px-3 sm:py-2">Acquisition</td>
               <td className="px-2 py-1.5 tabular-nums sm:px-3">{row.eventDate}</td>
               <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{row.quantity}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{usdMoney.format(row.pricePerShareUsd)}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{usdMoney.format(row.combinedUsd)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{formatUsdCurrency(row.pricePerShareUsd)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums sm:px-3">{formatUsdCurrency(row.combinedUsd)}</td>
               <td
                 className={`px-2 py-1.5 text-right tabular-nums sm:px-3 ${fxRateCellClassName({
                   fxRate: row.fxRate,
@@ -197,7 +189,7 @@ function LedgerTableRows({
                 {row.fxRate === undefined ? '—' : row.fxRate.toFixed(4)}
               </td>
               <td className="px-2 py-1.5 text-right tabular-nums font-medium sm:px-3">
-                £{money.format(sterling.totalCostGbp)}
+                £{formatGbpAmount(sterling.totalCostGbp)}
               </td>
             </tr>
           );
@@ -212,8 +204,8 @@ function LedgerTableRows({
             <td className={disposalCellType}>Disposal</td>
             <td className="px-2 py-1.5 tabular-nums text-red-800 sm:px-3">{row.eventDate}</td>
             <td className={disposalCell}>{row.quantity}</td>
-            <td className={disposalCell}>{usdMoney.format(row.pricePerShareUsd)}</td>
-            <td className={disposalCell}>{usdMoney.format(row.combinedUsd)}</td>
+            <td className={disposalCell}>{formatUsdCurrency(row.pricePerShareUsd)}</td>
+            <td className={disposalCell}>{formatUsdCurrency(row.combinedUsd)}</td>
             <td
               className={`px-2 py-1.5 text-right tabular-nums sm:px-3 ${fxRateCellClassName({
                 fxRate: row.fxRate,
@@ -223,7 +215,7 @@ function LedgerTableRows({
               {row.fxRate === undefined ? '—' : row.fxRate.toFixed(4)}
             </td>
             <td className="px-2 py-1.5 text-right tabular-nums font-medium text-red-800 sm:px-3">
-              £{money.format(netGbp)}
+              £{formatGbpAmount(netGbp)}
             </td>
           </tr>
         );
@@ -251,7 +243,7 @@ function AcquisitionOutcomeSection({
         </div>
         <div>
           <dt className="text-xs text-neutral-500">Total cost (£)</dt>
-          <dd className="tabular-nums font-medium text-neutral-900">£{money.format(row.totalCostGbp)}</dd>
+          <dd className="tabular-nums font-medium text-neutral-900">£{formatGbpAmount(row.totalCostGbp)}</dd>
         </div>
         <div>
           <dt className="text-xs text-neutral-500">Pool shares</dt>
@@ -262,7 +254,7 @@ function AcquisitionOutcomeSection({
         <div>
           <dt className="text-xs text-neutral-500">Pool cost (£)</dt>
           <dd className="tabular-nums font-medium text-neutral-900">
-            {hasPool ? `£${money.format(poolCost)}` : '—'}
+            {hasPool ? `£${formatGbpAmount(poolCost)}` : '—'}
           </dd>
         </div>
         <div className="sm:col-span-2 lg:col-span-1">
@@ -307,27 +299,27 @@ function CgtDisposalOutcomeSection({
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Price/share (£)</dt>
-          <dd className="tabular-nums font-medium text-red-900">£{money.format(summaryPricePerShare)}</dd>
+          <dd className="tabular-nums font-medium text-red-900">£{formatGbpAmount(summaryPricePerShare)}</dd>
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Gross (£)</dt>
-          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.grossProceedsGbp)}</dd>
+          <dd className="tabular-nums font-medium text-red-900">£{formatGbpAmount(r.grossProceedsGbp)}</dd>
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Fees (£)</dt>
-          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.disposalFeesGbp)}</dd>
+          <dd className="tabular-nums font-medium text-red-900">£{formatGbpAmount(r.disposalFeesGbp)}</dd>
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Net proceeds (£)</dt>
-          <dd className="tabular-nums font-medium text-red-900">£{money.format(netProceeds)}</dd>
+          <dd className="tabular-nums font-medium text-red-900">£{formatGbpAmount(netProceeds)}</dd>
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Allowable cost (£)</dt>
-          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.allowableCostGbp)}</dd>
+          <dd className="tabular-nums font-medium text-red-900">£{formatGbpAmount(r.allowableCostGbp)}</dd>
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Gain/loss (£)</dt>
-          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.gainOrLossGbp)}</dd>
+          <dd className="tabular-nums font-medium text-red-900">£{formatGbpAmount(r.gainOrLossGbp)}</dd>
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Pool shares</dt>
@@ -335,7 +327,7 @@ function CgtDisposalOutcomeSection({
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Pool cost (£)</dt>
-          <dd className="tabular-nums font-medium text-red-900">£{money.format(r.poolCostGbpAfter)}</dd>
+          <dd className="tabular-nums font-medium text-red-900">£{formatGbpAmount(r.poolCostGbpAfter)}</dd>
         </div>
         <div>
           <dt className="text-xs text-red-700/90">Avg cost/share (£)</dt>
@@ -365,7 +357,7 @@ function CgtDisposalOutcomeSection({
                       <td className="py-1.5 pl-2 pr-3">{formatMatchingSourceLabel(t.source)}</td>
                       <td className="py-1.5 pr-3 tabular-nums text-red-800/90">{t.acquisitionDate ?? '—'}</td>
                       <td className="py-1.5 pr-3 text-right tabular-nums">{t.quantity}</td>
-                      <td className="py-1.5 pr-2 text-right tabular-nums">£{money.format(t.allowableCostGbp)}</td>
+                      <td className="py-1.5 pr-2 text-right tabular-nums">£{formatGbpAmount(t.allowableCostGbp)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -469,7 +461,7 @@ export function TaxYearPanel({ group, holdingSymbol }: TaxYearPanelProps): React
               group.totalNetRealisedGainOrLossGbp,
             )}`}
           >
-            £{money.format(group.totalNetRealisedGainOrLossGbp)}
+            £{formatGbpAmount(group.totalNetRealisedGainOrLossGbp)}
           </span>
         </p>
         <p className="mb-0 mt-3 text-xs text-neutral-600">
@@ -482,7 +474,7 @@ export function TaxYearPanel({ group, holdingSymbol }: TaxYearPanelProps): React
           </li>
           <li>
             <span className="text-neutral-600">Pool cost (£)</span>
-            <span className="tabular-nums font-medium text-neutral-900"> £{money.format(group.openingPoolCostGbp)}</span>
+            <span className="tabular-nums font-medium text-neutral-900"> £{formatGbpAmount(group.openingPoolCostGbp)}</span>
           </li>
           <li>
             <span className="text-neutral-600">Average cost/share (£)</span>

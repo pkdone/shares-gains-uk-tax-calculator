@@ -1,9 +1,9 @@
+import { filterEtradeDisposalDraftsForHoldingSymbol } from '@/application/import/filter-etrade-disposal-drafts-for-holding-symbol';
 import type { ShareDisposalPdfImportDraft } from '@/domain/schemas/share-disposal';
 import type { EtradeStockPlanOrderParsedDraft } from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
 import { parseEtradeStockPlanOrdersPdfText } from '@/infrastructure/import/etrade/etrade-stock-plan-orders-pdf';
 
-import { filterEtradeDisposalDraftsForHoldingSymbol } from '@/application/import/filter-etrade-disposal-drafts-for-holding-symbol';
-import { computeEtradeDisposalImportFingerprint } from '@/application/import/hash-etrade-disposal-import-fingerprint';
+import { computeEtradeDisposalImportFingerprint } from '@/infrastructure/import/etrade/hash-etrade-disposal-import-fingerprint';
 
 function parsedDraftToImportDraft(d: EtradeStockPlanOrderParsedDraft): ShareDisposalPdfImportDraft {
   return {
@@ -38,7 +38,7 @@ export type EtradePdfDisposalImportPreviewResult =
     };
 
 /**
- * Parses PDF text, validates header symbol vs holding, filters by symbol, and removes rows already imported (fingerprint).
+ * Parses E*Trade Stock Plan Orders PDF text, validates header symbol, filters by holding, dedupes by fingerprint.
  */
 export function buildEtradePdfDisposalImportPreview(params: {
   readonly text: string;

@@ -17,7 +17,7 @@ Users need to import **executed Sell Restricted Stock** orders from the e\*Trade
 3. **Domain:** `parseEtradeStockPlanOrdersPdfText` splits on `Order Summary`, parses Order Type / shares / disbursement / first `Order Executed` line; includes only **Sell Restricted Stock** order types **without** “Performance”; requires an **Order Executed** datetime.
 4. **Symbol:** Header `Stock Plan (TICKER)` must match the open holding; otherwise return a clear error. Per-order symbol filtering mirrors XLSX via `filterEtradeDisposalDraftsForHoldingSymbol` when multiple symbols appear.
 5. **Idempotency:** `formatEtradeDisposalImportFingerprintMaterial` + SHA-256 hex; stored as optional `importSourceFingerprint` on disposal documents. Unique partial index on `(holdingId, userId, importSourceFingerprint)`. Preview and commit skip rows whose fingerprint already exists.
-6. **Application:** `buildEtradePdfDisposalImportPreview`, `commitEtradeStockPlanOrdersPdfImport`; batch insert via `insertManyPdfImportBatch`.
+6. **Infrastructure (preview):** `buildEtradePdfDisposalImportPreview` (E*Trade PDF text → drafts; uses application-layer symbol filter). **Application (commit):** `commitEtradeStockPlanOrdersPdfImport` accepts an injected fingerprint function so the use case stays broker-agnostic at compile time; batch insert via `insertManyPdfImportBatch`.
 
 ### Disposal date
 
@@ -37,4 +37,4 @@ Calendar date from the **first `Order Executed`** line (MM/DD/YYYY segment), sto
 ## Related
 
 - ADR-005 (`docs/adrs/005-import-pipeline-design.md`) — updated non-goals for disposal PDF.
-- `src/infrastructure/import/etrade/etrade-stock-plan-orders-pdf.ts`, `src/application/import/preview-etrade-stock-plan-orders-pdf-import.ts`, `src/app/holdings/import-disposal-pdf-actions.ts`.
+- `src/infrastructure/import/etrade/etrade-stock-plan-orders-pdf.ts`, `src/infrastructure/import/etrade/build-etrade-pdf-disposal-import-preview.ts`, `src/infrastructure/import/etrade/hash-etrade-disposal-import-fingerprint.ts`, `src/application/import/commit-etrade-stock-plan-orders-pdf-import.ts`, `src/app/holdings/import-disposal-pdf-actions.ts`.

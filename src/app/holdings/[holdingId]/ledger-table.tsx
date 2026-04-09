@@ -11,6 +11,10 @@ import {
   type ReactNode,
 } from 'react';
 
+import {
+  formatUsdPlainAmount,
+  formatUsdPricePerShare,
+} from '@/application/calculation/calculation-amount-format';
 import type { LedgerTaxYearGroup } from '@/application/ledger/ledger-types';
 import type { ShareAcquisition } from '@/domain/schemas/share-acquisition';
 import {
@@ -21,16 +25,6 @@ import {
 
 import { deleteLedgerEntriesBulkAction } from '@/app/holdings/actions';
 import type { FormActionState } from '@/app/holdings/types';
-
-const money = new Intl.NumberFormat('en-GB', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const priceUsd = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 4,
-});
 
 function acquisitionGrantCell(a: ShareAcquisition): ReactNode {
   if (a.economicsKind === 'manual_usd') {
@@ -291,17 +285,19 @@ export function HoldingLedgerTable({
                           <td className="px-3 py-2 text-right tabular-nums">{line.data.quantity}</td>
                           <td className="px-3 py-2 text-right tabular-nums text-neutral-700">
                             $
-                            {priceUsd.format(
+                            {formatUsdPricePerShare(
                               pricePerShare(line.data.considerationUsd, line.data.quantity),
                             )}
                           </td>
                           <td className="px-3 py-2 text-right tabular-nums">
-                            ${money.format(line.data.considerationUsd)}
+                            ${formatUsdPlainAmount(line.data.considerationUsd)}
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums">${money.format(line.data.feesUsd)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            ${formatUsdPlainAmount(line.data.feesUsd)}
+                          </td>
                           <td className="px-3 py-2 text-right tabular-nums font-medium">
                             $
-                            {money.format(
+                            {formatUsdPlainAmount(
                               totalAcquisitionCostUsd(
                                 line.data.considerationUsd,
                                 line.data.feesUsd,
@@ -331,15 +327,19 @@ export function HoldingLedgerTable({
                           <td className="px-3 py-2 text-right tabular-nums">{line.data.quantity}</td>
                           <td className="px-3 py-2 text-right tabular-nums">
                             $
-                            {priceUsd.format(
+                            {formatUsdPricePerShare(
                               pricePerShare(line.data.grossProceedsUsd, line.data.quantity),
                             )}
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums">${money.format(line.data.grossProceedsUsd)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">${money.format(line.data.feesUsd)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            ${formatUsdPlainAmount(line.data.grossProceedsUsd)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            ${formatUsdPlainAmount(line.data.feesUsd)}
+                          </td>
                           <td className="px-3 py-2 text-right tabular-nums font-medium">
                             $
-                            {money.format(
+                            {formatUsdPlainAmount(
                               netDisposalProceedsUsd(line.data.grossProceedsUsd, line.data.feesUsd),
                             )}
                           </td>
@@ -368,19 +368,19 @@ export function HoldingLedgerTable({
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
                 <dt className="text-neutral-600">Total acquisitions (incl. fees)</dt>
                 <dd className="tabular-nums font-semibold text-neutral-900">
-                  ${money.format(totalAcquisitionsUsd)}
+                  ${formatUsdPlainAmount(totalAcquisitionsUsd)}
                 </dd>
               </div>
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
                 <dt className="text-neutral-600">Total disposals (net of fees)</dt>
                 <dd className="tabular-nums font-semibold text-red-800">
-                  ${money.format(totalDisposalsUsd)}
+                  ${formatUsdPlainAmount(totalDisposalsUsd)}
                 </dd>
               </div>
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-1.5">
                 <dt className="font-medium text-neutral-800">Difference</dt>
                 <dd className="tabular-nums font-semibold text-neutral-900">
-                  ${money.format(differenceUsd)}
+                  ${formatUsdPlainAmount(differenceUsd)}
                 </dd>
               </div>
             </dl>

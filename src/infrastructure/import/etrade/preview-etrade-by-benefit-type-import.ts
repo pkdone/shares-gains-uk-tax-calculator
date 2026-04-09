@@ -1,5 +1,5 @@
-import { parseEtradeByBenefitTypeGrid } from '@/infrastructure/import/etrade/by-benefit-type';
 import type { ShareAcquisitionImportUsd } from '@/domain/schemas/share-acquisition';
+import { parseEtradeByBenefitTypeGrid } from '@/infrastructure/import/etrade/by-benefit-type';
 
 export type EtradePreviewOutcome = {
   readonly drafts: readonly ShareAcquisitionImportUsd[];
@@ -8,7 +8,7 @@ export type EtradePreviewOutcome = {
 };
 
 /**
- * Runs the By Benefit Type grid through the domain parser (pure).
+ * Runs the By Benefit Type grid through the broker parser (anti-corruption layer).
  */
 export function previewEtradeByBenefitTypeImport(grid: readonly (readonly string[])[]): EtradePreviewOutcome {
   const { drafts, issues } = parseEtradeByBenefitTypeGrid(grid);

@@ -1,4 +1,4 @@
-import { buildEtradePdfDisposalImportPreview } from '@/application/import/preview-etrade-stock-plan-orders-pdf-import';
+import { buildEtradePdfDisposalImportPreview } from '@/infrastructure/import/etrade/build-etrade-pdf-disposal-import-preview';
 
 describe('buildEtradePdfDisposalImportPreview', () => {
   it('errors when PDF header symbol does not match holding', () => {
