@@ -610,21 +610,21 @@ This appendix does **not** restate tax law. It tells **product and engineering**
 
 | File | Purpose |
 |------|---------|
-| `docs/HS284_Example_3_2024.pdf` | **HMRC Help Sheet HS284** — Example 3 (2024 version as stored in the repo). Authoritative **layout, narrative, and figures** for that worked example. |
+| `docs/references/HS284_Example_3_2024.pdf` | **HMRC Help Sheet HS284** — Example 3 (2024 version as stored in the repo). Authoritative **layout, narrative, and figures** for that worked example. |
 | `docs/references/hs284-example-3-2024-notes.md` | **Companion notes** in Markdown: what to verify against the PDF, cross-links to PRD validation points, and space to record key figures in plain text for reviews and AI-assisted work. |
 
 Commit the PDF under `docs/` so paths remain stable. If the PDF filename or tax year label changes, update this appendix and the notes file.
 
 ### A5.2 How these materials should be used
 
-- **Engineering and QA:** When implementing or testing **Section 104 pooling**, **partial disposals**, and **pool roll-forward** behaviour described in this PRD (including **Appendix 4** acceptance tests), consult **`docs/HS284_Example_3_2024.pdf`** and align explanations and arithmetic with that example unless this PRD explicitly differs.
+- **Engineering and QA:** When implementing or testing **Section 104 pooling**, **partial disposals**, and **pool roll-forward** behaviour described in this PRD (including **Appendix 4** acceptance tests), consult **`docs/references/HS284_Example_3_2024.pdf`** and align explanations and arithmetic with that example unless this PRD explicitly differs.
 - **AI-assisted implementation:** Treat the **PDF** as the visual and numeric reference; treat **`docs/references/hs284-example-3-2024-notes.md`** as the first text-native place to anchor automated reasoning. Prefer updating the notes file with transcribed tables or step summaries when the PDF is hard to index.
 - **Users and support:** The application remains a self-service tool, not a filing service. These files support **internal correctness**, not end-user filing instructions.
 
 ### A5.3 Precedence if sources disagree
 
 1. **`docs/PRD.md`** (including appendices 1–4) defines **product scope and domain rules** for this application.
-2. **`docs/HS284_Example_3_2024.pdf`** is the reference for **alignment with HMRC’s published Example 3** for the behaviours this PRD says must match it (see **Appendix 4**).
+2. **`docs/references/HS284_Example_3_2024.pdf`** is the reference for **alignment with HMRC’s published Example 3** for the behaviours this PRD says must match it (see **Appendix 4**).
 3. If the **PDF** (or HMRC guidance) appears to conflict with **`docs/PRD.md`**, **the PRD wins** for product behaviour; record the deliberate divergence (or error) in an ADR or PRD change note—do not silently follow the PDF.
 
 ### A5.4 Relationship to Appendix 4

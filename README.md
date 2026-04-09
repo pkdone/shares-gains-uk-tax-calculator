@@ -2,7 +2,7 @@
 
 # Shares Gains UK Tax Calculator
 
-UK capital gains workflow for taxpayers with US employer equity compensation (especially RSUs and related share disposals). Imports include **E\*TRADE** / Morgan Stanley at Work–style sources; the product is not limited to one broker. The app **calculates capital gains and losses for each holding (stock ticker)** you import, grouped by UK tax year. It does **not** calculate your overall annual CGT liability: other disposals, brought-forward losses, reliefs, and your rate band—which this application does not track—can change what you owe in total.
+UK capital gains calculation tool for taxpayers with US employer equity compensation (especially RSUs and related share disposals). Imports include E\*TRADE (Morgan Stanley) at Work–style sources, but the tool is not limited to one broker. The app calculates capital gains and losses for each holding (stock ticker) you import, grouped by UK tax year. It does not calculate your overall annual CGT liability because the app does not track other disposals, brought-forward losses, reliefs, and your rate band, which can change what you owe in total.
 
 ## Table of contents
 
