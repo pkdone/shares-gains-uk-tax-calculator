@@ -17,7 +17,7 @@ function compareEvents(a: CalcEvent, b: CalcEvent): number {
 }
 
 function assertSortedEvents(events: readonly CalcEvent[]): CalcEvent[] {
-  const sorted = [...events].sort(compareEvents);
+  const sorted = events.toSorted(compareEvents);
   for (let i = 0; i < events.length; i += 1) {
     const orig = events[i];
     const exp = sorted[i];

@@ -15,6 +15,14 @@ type WorksheetWithMerges = ExcelJS.Worksheet & {
   readonly _merges: Record<string, ExcelJS.Range>;
 };
 
+function worksheetHasMerges(sheet: ExcelJS.Worksheet): sheet is WorksheetWithMerges {
+  if (!Object.hasOwn(sheet, '_merges')) {
+    return false;
+  }
+  const merges = (sheet as WorksheetWithMerges)._merges;
+  return merges !== undefined && typeof merges === 'object';
+}
+
 /** Prefer Excel display text, then normalise raw value (numbers, Excel serial dates). */
 function cellDisplayString(cell: ExcelJS.Cell): string {
   const text = cell.text?.trim();
@@ -31,9 +39,11 @@ function cellDisplayString(cell: ExcelJS.Cell): string {
  * Exported for unit tests.
  */
 export function applyMergedRegionsToGrid(grid: string[][], sheet: ExcelJS.Worksheet): string[][] {
-  const ws = sheet as WorksheetWithMerges;
-  const merges = ws._merges;
-  if (merges === undefined || Object.keys(merges).length === 0) {
+  if (!worksheetHasMerges(sheet)) {
+    return grid;
+  }
+  const merges = sheet._merges;
+  if (Object.keys(merges).length === 0) {
     return grid;
   }
 
@@ -131,10 +141,8 @@ function sheetToGrid(sheet: ExcelJS.Worksheet | undefined): string[][] {
     const out: string[] = [];
     for (let c = 0; c < maxC; c++) {
       const a = cellToGridStringFromRaw(rawRow[c]);
-      const b =
-        typeof fmtRow[c] === 'string'
-          ? (fmtRow[c] as string)
-          : cellToGridStringFromRaw(fmtRow[c]);
+      const fmtCell = fmtRow[c];
+      const b = typeof fmtCell === 'string' ? fmtCell : cellToGridStringFromRaw(fmtCell);
       out.push(b.length > 0 ? b : a);
     }
     merged.push(out);

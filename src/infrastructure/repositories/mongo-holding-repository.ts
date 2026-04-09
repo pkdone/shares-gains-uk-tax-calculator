@@ -1,8 +1,10 @@
 import { MongoServerError, ObjectId, type WithId } from 'mongodb';
 
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
+import type { RepositoryWriteOptions } from '@/domain/repositories/repository-write-options';
 import type { Holding, HoldingCreate } from '@/domain/schemas/holding';
 import { getMongoClient } from '@/infrastructure/persistence/mongodb-client';
+import { mongoSessionForWrites } from '@/infrastructure/persistence/mongo-write-session';
 import type { HoldingDocument } from '@/infrastructure/persistence/schemas/holding-record';
 import { COLLECTION_HOLDINGS } from '@/infrastructure/persistence/schema-registry';
 import { DomainError } from '@/domain/errors/domain-error';
@@ -69,7 +71,11 @@ export class MongoHoldingRepository implements HoldingRepository {
     }
   }
 
-  async deleteByIdForUser(holdingId: string, userId: string): Promise<boolean> {
+  async deleteByIdForUser(
+    holdingId: string,
+    userId: string,
+    options?: RepositoryWriteOptions,
+  ): Promise<boolean> {
     if (!ObjectId.isValid(holdingId)) {
       return false;
     }
@@ -77,7 +83,10 @@ export class MongoHoldingRepository implements HoldingRepository {
     try {
       const client = await getMongoClient();
       const coll = client.db().collection<WithId<HoldingDocument>>(COLLECTION_HOLDINGS);
-      const res = await coll.deleteOne({ _id: new ObjectId(holdingId), userId });
+      const res = await coll.deleteOne(
+        { _id: new ObjectId(holdingId), userId },
+        mongoSessionForWrites(options),
+      );
       return res.deletedCount === 1;
     } catch (err) {
       throw new PersistenceError('Failed to delete holding', { cause: err });

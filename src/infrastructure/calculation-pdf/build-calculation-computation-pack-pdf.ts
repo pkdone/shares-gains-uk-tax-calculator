@@ -14,7 +14,7 @@ import { formatGbpAmount, formatUsdCurrency } from '@/application/calculation/ca
 import type { AcquisitionMatchingAttribution } from '@/application/calculation/acquisition-matching-attribution';
 import type { MatchingSource } from '@/domain/schemas/calculation';
 import { formatUkTaxYearLabelForDisplay } from '@/domain/services/uk-tax-year';
-import { CALCULATION_EXPORT_FX_ASSUMPTION_NOTE } from '@/shared/calculation-export-fx-assumption-note';
+import { CALCULATION_EXPORT_FX_ASSUMPTION_NOTE } from '@/application/calculation/calculation-export-fx-assumption-note';
 
 import { linesFromJspdfSplitTextToSize } from './lines-from-jspdf-split-text-to-size';
 

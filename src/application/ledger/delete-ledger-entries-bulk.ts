@@ -1,3 +1,4 @@
+import type { RunPersistenceTransaction } from '@/application/ports/run-persistence-transaction';
 import { requireHoldingForUser } from '@/application/holding/require-holding';
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
@@ -12,6 +13,7 @@ export type BulkLedgerEntryRow = {
 };
 
 export async function deleteLedgerEntriesBulk(
+  runTransaction: RunPersistenceTransaction,
   holdingRepository: HoldingRepository,
   acquisitionRepository: ShareAcquisitionRepository,
   disposalRepository: ShareDisposalRepository,
@@ -31,25 +33,31 @@ export async function deleteLedgerEntriesBulk(
   const acquisitionIds = [...new Set(entries.filter((e) => e.kind === 'ACQUISITION').map((e) => e.entryId))];
   const disposalIds = [...new Set(entries.filter((e) => e.kind === 'DISPOSAL').map((e) => e.entryId))];
 
-  const acqRemoved =
-    acquisitionIds.length === 0
-      ? 0
-      : await acquisitionRepository.deleteManyByIdsForHoldingUser(
-          input.holdingId,
-          input.userId,
-          acquisitionIds,
-        );
+  await runTransaction(async (session) => {
+    const opts = session === undefined ? undefined : { session };
 
-  const dispRemoved =
-    disposalIds.length === 0
-      ? 0
-      : await disposalRepository.deleteManyByIdsForHoldingUser(
-          input.holdingId,
-          input.userId,
-          disposalIds,
-        );
+    const acqRemoved =
+      acquisitionIds.length === 0
+        ? 0
+        : await acquisitionRepository.deleteManyByIdsForHoldingUser(
+            input.holdingId,
+            input.userId,
+            acquisitionIds,
+            opts,
+          );
 
-  if (acqRemoved !== acquisitionIds.length || dispRemoved !== disposalIds.length) {
-    throw new DomainError('One or more entries were not found');
-  }
+    const dispRemoved =
+      disposalIds.length === 0
+        ? 0
+        : await disposalRepository.deleteManyByIdsForHoldingUser(
+            input.holdingId,
+            input.userId,
+            disposalIds,
+            opts,
+          );
+
+    if (acqRemoved !== acquisitionIds.length || dispRemoved !== disposalIds.length) {
+      throw new DomainError('One or more entries were not found');
+    }
+  });
 }

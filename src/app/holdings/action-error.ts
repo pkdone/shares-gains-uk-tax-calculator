@@ -1,9 +1,34 @@
 import { inspect } from 'node:util';
 
+import type { z } from 'zod';
+
 import type { FormActionState } from '@/app/holdings/types';
 import { DomainError } from '@/domain/errors/domain-error';
 import { logError } from '@/shared/app-logger';
 import { AppError } from '@/shared/errors/app-error';
+
+/**
+ * First user-facing message from a Zod error (form-level, then first field).
+ */
+export function formatZodErrorMessage(error: z.ZodError, fallback: string): string {
+  const flat = error.flatten();
+  return flat.formErrors[0] ?? Object.values(flat.fieldErrors)[0]?.[0] ?? fallback;
+}
+
+/**
+ * Maps a Zod error to {@link FormActionState} fields returned by server actions that surface field errors.
+ */
+export function zodErrorToFormActionFields(
+  error: z.ZodError,
+  fallback: string,
+): Pick<FormActionState, 'error' | 'fieldErrors'> {
+  const flat = error.flatten();
+  const message = formatZodErrorMessage(error, fallback);
+  return {
+    error: message,
+    fieldErrors: flat.fieldErrors as FormActionState['fieldErrors'],
+  };
+}
 
 function logUnexpectedFormActionError(err: unknown, context: string): void {
   if (err instanceof Error) {

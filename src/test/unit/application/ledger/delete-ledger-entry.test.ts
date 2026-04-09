@@ -35,6 +35,7 @@ describe('deleteLedgerEntry', () => {
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -43,6 +44,7 @@ describe('deleteLedgerEntry', () => {
       insertManyPdfImportBatch: jest.fn(),
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -75,6 +77,7 @@ describe('deleteLedgerEntry', () => {
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn().mockResolvedValue(false),
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -83,6 +86,7 @@ describe('deleteLedgerEntry', () => {
       insertManyPdfImportBatch: jest.fn(),
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -106,6 +110,7 @@ describe('deleteLedgerEntry', () => {
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -114,6 +119,7 @@ describe('deleteLedgerEntry', () => {
       insertManyPdfImportBatch: jest.fn(),
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn().mockResolvedValue(false),
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -138,6 +144,7 @@ describe('deleteLedgerEntry', () => {
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -146,6 +153,7 @@ describe('deleteLedgerEntry', () => {
       insertManyPdfImportBatch: jest.fn(),
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -169,6 +177,7 @@ describe('deleteLedgerEntry', () => {
       insertMany: jest.fn(),
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteAcquisition,
       deleteAllForHoldingUser: jest.fn(),
     };
@@ -177,6 +186,7 @@ describe('deleteLedgerEntry', () => {
       insertManyPdfImportBatch: jest.fn(),
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteByIdForHoldingUser: deleteDisposal,
       deleteAllForHoldingUser: jest.fn(),
     };

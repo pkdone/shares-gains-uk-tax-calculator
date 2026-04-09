@@ -1,5 +1,7 @@
 import { ObjectId, type WithId } from 'mongodb';
 
+import type { RepositoryWriteOptions } from '@/domain/repositories/repository-write-options';
+
 import type {
   CreateShareAcquisition,
   ShareAcquisitionRepository,
@@ -7,6 +9,7 @@ import type {
 } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareAcquisition, ShareAcquisitionImportUsd } from '@/domain/schemas/share-acquisition';
 import { getMongoClient } from '@/infrastructure/persistence/mongodb-client';
+import { mongoSessionForWrites } from '@/infrastructure/persistence/mongo-write-session';
 import type { AcquisitionDocument } from '@/infrastructure/persistence/schemas/acquisition-record';
 import { COLLECTION_ACQUISITIONS } from '@/infrastructure/persistence/schema-registry';
 import { PersistenceError } from '@/shared/errors/app-error';
@@ -292,6 +295,7 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
     holdingId: string,
     userId: string,
     ids: readonly string[],
+    options?: RepositoryWriteOptions,
   ): Promise<number> {
     if (!ObjectId.isValid(holdingId) || ids.length === 0) {
       return 0;
@@ -308,18 +312,25 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
     try {
       const client = await getMongoClient();
       const coll = client.db().collection<AcquisitionDoc>(COLLECTION_ACQUISITIONS);
-      const res = await coll.deleteMany({
-        _id: { $in: objectIds },
-        holdingId: new ObjectId(holdingId),
-        userId,
-      });
+      const res = await coll.deleteMany(
+        {
+          _id: { $in: objectIds },
+          holdingId: new ObjectId(holdingId),
+          userId,
+        },
+        mongoSessionForWrites(options),
+      );
       return res.deletedCount;
     } catch (err) {
       throw new PersistenceError('Failed to delete acquisitions', { cause: err });
     }
   }
 
-  async deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number> {
+  async deleteAllForHoldingUser(
+    holdingId: string,
+    userId: string,
+    options?: RepositoryWriteOptions,
+  ): Promise<number> {
     if (!ObjectId.isValid(holdingId)) {
       return 0;
     }
@@ -327,10 +338,13 @@ export class MongoShareAcquisitionRepository implements ShareAcquisitionReposito
     try {
       const client = await getMongoClient();
       const coll = client.db().collection<AcquisitionDoc>(COLLECTION_ACQUISITIONS);
-      const res = await coll.deleteMany({
-        holdingId: new ObjectId(holdingId),
-        userId,
-      });
+      const res = await coll.deleteMany(
+        {
+          holdingId: new ObjectId(holdingId),
+          userId,
+        },
+        mongoSessionForWrites(options),
+      );
       return res.deletedCount;
     } catch (err) {
       throw new PersistenceError('Failed to delete acquisitions for holding', { cause: err });

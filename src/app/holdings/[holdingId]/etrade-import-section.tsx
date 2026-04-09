@@ -37,14 +37,14 @@ export function EtradeImportSection({
   onCommitSuccess,
 }: EtradeImportSectionProps): React.ReactElement {
   const router = useRouter();
-  const [previewState, previewAction, previewPending] = useActionState(
-    previewEtradeImportAction,
-    undefined as EtradeImportPreviewState | undefined,
-  );
-  const [commitState, commitAction, commitPending] = useActionState(
-    commitEtradeImportAction,
-    undefined as EtradeImportCommitState | undefined,
-  );
+  const [previewState, previewAction, previewPending] = useActionState<
+    EtradeImportPreviewState | undefined,
+    FormData
+  >(previewEtradeImportAction, undefined);
+  const [commitState, commitAction, commitPending] = useActionState<
+    EtradeImportCommitState | undefined,
+    FormData
+  >(commitEtradeImportAction, undefined);
 
   useEffect(() => {
     if (commitState?.ok === true) {

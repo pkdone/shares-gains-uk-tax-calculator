@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   try {
     const db = client.db();
     /** Drop dependent data first (no FK enforcement, but logical order). */
-    const appDropOrder = [...MANAGED_COLLECTION_NAMES].toReversed();
+    const appDropOrder = MANAGED_COLLECTION_NAMES.toReversed();
     /** Session/account before user; verification and rateLimit are independent. */
     const authDropOrder = [...BETTER_AUTH_COLLECTION_NAMES];
     const dropOrder = [...appDropOrder, ...authDropOrder];

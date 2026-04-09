@@ -105,7 +105,7 @@ export type CalculationTransactionTableGroup = {
 function buildCalcEventsFromSuccessfulHoldingCalculation(
   calc: SuccessfulHoldingCalculation,
 ): readonly CalcEvent[] {
-  const sorted = [...calc.ledgerLines].sort(compareLedgerLines);
+  const sorted = calc.ledgerLines.toSorted(compareLedgerLines);
   const events: CalcEvent[] = [];
   for (const line of sorted) {
     if (line.kind === 'ACQUISITION') {
@@ -244,11 +244,20 @@ export function buildCalculationTransactionTableModel(
   calc: SuccessfulHoldingCalculation,
 ): readonly CalculationTransactionTableGroup[] {
   const calcEvents = buildCalcEventsFromSuccessfulHoldingCalculation(calc);
-  const sortedLines = [...calc.ledgerLines].sort(compareLedgerLines);
+  const sortedLines = calc.ledgerLines.toSorted(compareLedgerLines);
 
-  const dates = [...new Set(sortedLines.map((l) => l.data.eventDate))].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const linesByDate = new Map<string, LedgerLine[]>();
+  for (const line of sortedLines) {
+    const d = line.data.eventDate;
+    const existing = linesByDate.get(d);
+    if (existing === undefined) {
+      linesByDate.set(d, [line]);
+    } else {
+      existing.push(line);
+    }
+  }
+
+  const dates = [...linesByDate.keys()].toSorted((a, b) => a.localeCompare(b));
 
   const disposalResultByDate = new Map(
     calc.output.disposalResults.map((d) => [d.eventDate, d] as const),
@@ -257,7 +266,7 @@ export function buildCalculationTransactionTableModel(
   const blocksByYear = new Map<string, CalculationTransactionDateBlock[]>();
 
   for (const date of dates) {
-    const linesOnDate = sortedLines.filter((l) => l.data.eventDate === date);
+    const linesOnDate = linesByDate.get(date) ?? [];
     const taxYearLabel = ukTaxYearLabelFromDateOnly(date);
     const acquisitionLines = linesOnDate.filter(
       (l): l is Extract<LedgerLine, { kind: 'ACQUISITION' }> => l.kind === 'ACQUISITION',
@@ -351,7 +360,7 @@ export function buildCalculationTransactionTableModel(
     }
   }
 
-  const sortedYearLabels = [...blocksByYear.keys()].sort((a, b) => a.localeCompare(b));
+  const sortedYearLabels = [...blocksByYear.keys()].toSorted((a, b) => a.localeCompare(b));
   return sortedYearLabels.map((taxYearLabel) => {
     const dateBlocks = blocksByYear.get(taxYearLabel) ?? [];
     let totalNet = 0;

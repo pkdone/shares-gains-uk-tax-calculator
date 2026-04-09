@@ -1,3 +1,4 @@
+import type { RepositoryWriteOptions } from '@/domain/repositories/repository-write-options';
 import type { Holding, HoldingCreate } from '@/domain/schemas/holding';
 
 export interface HoldingRepository {
@@ -10,5 +11,9 @@ export interface HoldingRepository {
   /**
    * Deletes the holding document when it belongs to the user. Returns true if a document was removed.
    */
-  deleteByIdForUser(holdingId: string, userId: string): Promise<boolean>;
+  deleteByIdForUser(
+    holdingId: string,
+    userId: string,
+    options?: RepositoryWriteOptions,
+  ): Promise<boolean>;
 }

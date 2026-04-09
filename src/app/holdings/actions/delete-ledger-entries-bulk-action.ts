@@ -1,11 +1,12 @@
 'use server';
 
 import { deleteLedgerEntriesBulk } from '@/application/ledger/delete-ledger-entries-bulk';
-import { toFormActionError } from '@/app/holdings/action-error';
+import { formatZodErrorMessage, toFormActionError } from '@/app/holdings/action-error';
 import { bulkDeleteLedgerEntriesRowsSchema } from '@/app/holdings/form-parsing';
 import { revalidateHoldingDetailAndCalculation } from '@/app/holdings/revalidate-holding-caches';
 import type { FormActionState } from '@/app/holdings/types';
 import { requireVerifiedUserId } from '@/infrastructure/auth/session';
+import { runMongoTransaction } from '@/infrastructure/persistence/mongo-transaction';
 
 import { acquisitionRepo, disposalRepo, holdingRepo } from './repos';
 
@@ -34,17 +35,14 @@ export async function deleteLedgerEntriesBulkAction(
 
   const rowsParsed = bulkDeleteLedgerEntriesRowsSchema.safeParse(parsedJson);
   if (!rowsParsed.success) {
-    const first =
-      rowsParsed.error.flatten().formErrors[0] ??
-      Object.values(rowsParsed.error.flatten().fieldErrors)[0]?.[0];
-    return { error: first ?? 'Invalid entries' };
+    return { error: formatZodErrorMessage(rowsParsed.error, 'Invalid entries') };
   }
 
   const userId = await requireVerifiedUserId();
   const entries = rowsParsed.data;
 
   try {
-    await deleteLedgerEntriesBulk(holdingRepo, acquisitionRepo, disposalRepo, {
+    await deleteLedgerEntriesBulk(runMongoTransaction, holdingRepo, acquisitionRepo, disposalRepo, {
       holdingId,
       userId,
       entries,

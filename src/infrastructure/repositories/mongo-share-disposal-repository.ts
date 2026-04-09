@@ -1,5 +1,6 @@
 import { ObjectId, type WithId } from 'mongodb';
 
+import type { RepositoryWriteOptions } from '@/domain/repositories/repository-write-options';
 import type {
   CreateShareDisposal,
   PdfImportDisposalInsertRow,
@@ -7,6 +8,7 @@ import type {
 } from '@/domain/repositories/share-disposal-repository';
 import type { ShareDisposal } from '@/domain/schemas/share-disposal';
 import { getMongoClient } from '@/infrastructure/persistence/mongodb-client';
+import { mongoSessionForWrites } from '@/infrastructure/persistence/mongo-write-session';
 import type { DisposalDocument } from '@/infrastructure/persistence/schemas/disposal-record';
 import { COLLECTION_DISPOSALS } from '@/infrastructure/persistence/schema-registry';
 import { PersistenceError } from '@/shared/errors/app-error';
@@ -184,6 +186,7 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
     holdingId: string,
     userId: string,
     ids: readonly string[],
+    options?: RepositoryWriteOptions,
   ): Promise<number> {
     if (!ObjectId.isValid(holdingId) || ids.length === 0) {
       return 0;
@@ -200,18 +203,25 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
     try {
       const client = await getMongoClient();
       const coll = client.db().collection<DisposalDoc>(COLLECTION_DISPOSALS);
-      const res = await coll.deleteMany({
-        _id: { $in: objectIds },
-        holdingId: new ObjectId(holdingId),
-        userId,
-      });
+      const res = await coll.deleteMany(
+        {
+          _id: { $in: objectIds },
+          holdingId: new ObjectId(holdingId),
+          userId,
+        },
+        mongoSessionForWrites(options),
+      );
       return res.deletedCount;
     } catch (err) {
       throw new PersistenceError('Failed to delete disposals', { cause: err });
     }
   }
 
-  async deleteAllForHoldingUser(holdingId: string, userId: string): Promise<number> {
+  async deleteAllForHoldingUser(
+    holdingId: string,
+    userId: string,
+    options?: RepositoryWriteOptions,
+  ): Promise<number> {
     if (!ObjectId.isValid(holdingId)) {
       return 0;
     }
@@ -219,10 +229,13 @@ export class MongoShareDisposalRepository implements ShareDisposalRepository {
     try {
       const client = await getMongoClient();
       const coll = client.db().collection<DisposalDoc>(COLLECTION_DISPOSALS);
-      const res = await coll.deleteMany({
-        holdingId: new ObjectId(holdingId),
-        userId,
-      });
+      const res = await coll.deleteMany(
+        {
+          holdingId: new ObjectId(holdingId),
+          userId,
+        },
+        mongoSessionForWrites(options),
+      );
       return res.deletedCount;
     } catch (err) {
       throw new PersistenceError('Failed to delete disposals for holding', { cause: err });

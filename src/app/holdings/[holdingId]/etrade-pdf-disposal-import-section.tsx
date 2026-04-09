@@ -30,14 +30,14 @@ export function EtradePdfDisposalImportSection({
   onCommitSuccess,
 }: EtradePdfDisposalImportSectionProps): React.ReactElement {
   const router = useRouter();
-  const [previewState, previewAction, previewPending] = useActionState(
-    previewEtradePdfDisposalImportAction,
-    undefined as EtradePdfDisposalImportPreviewState | undefined,
-  );
-  const [commitState, commitAction, commitPending] = useActionState(
-    commitEtradePdfDisposalImportAction,
-    undefined as EtradePdfDisposalImportCommitState | undefined,
-  );
+  const [previewState, previewAction, previewPending] = useActionState<
+    EtradePdfDisposalImportPreviewState | undefined,
+    FormData
+  >(previewEtradePdfDisposalImportAction, undefined);
+  const [commitState, commitAction, commitPending] = useActionState<
+    EtradePdfDisposalImportCommitState | undefined,
+    FormData
+  >(commitEtradePdfDisposalImportAction, undefined);
 
   useEffect(() => {
     if (commitState?.ok === true) {

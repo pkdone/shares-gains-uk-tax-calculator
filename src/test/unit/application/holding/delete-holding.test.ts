@@ -1,4 +1,5 @@
 import { deleteHolding } from '@/application/holding/delete-holding';
+import type { RunPersistenceTransaction } from '@/application/ports/run-persistence-transaction';
 import type { HoldingRepository } from '@/domain/repositories/holding-repository';
 import type { ShareAcquisitionRepository } from '@/domain/repositories/share-acquisition-repository';
 import type { ShareDisposalRepository } from '@/domain/repositories/share-disposal-repository';
@@ -13,6 +14,8 @@ describe('deleteHolding', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+
+  const runTransactionImmediate: RunPersistenceTransaction = async (fn) => fn(undefined);
 
   it('throws when holding is not found', async () => {
     const holdingRepository: HoldingRepository = {
@@ -29,6 +32,7 @@ describe('deleteHolding', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: deleteAllAcq,
     };
     const disposalRepo: ShareDisposalRepository = {
@@ -37,18 +41,19 @@ describe('deleteHolding', () => {
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: deleteAllDisp,
     };
 
     await expect(
-      deleteHolding(holdingRepository, acquisitionRepo, disposalRepo, {
+      deleteHolding(runTransactionImmediate, holdingRepository, acquisitionRepo, disposalRepo, {
         holdingId: 'h1',
         userId: 'u1',
       }),
     ).rejects.toThrow(DomainError);
 
     await expect(
-      deleteHolding(holdingRepository, acquisitionRepo, disposalRepo, {
+      deleteHolding(runTransactionImmediate, holdingRepository, acquisitionRepo, disposalRepo, {
         holdingId: 'h1',
         userId: 'u1',
       }),
@@ -74,6 +79,7 @@ describe('deleteHolding', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: deleteAllAcq,
     };
     const disposalRepo: ShareDisposalRepository = {
@@ -82,17 +88,18 @@ describe('deleteHolding', () => {
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: deleteAllDisp,
     };
 
-    await deleteHolding(holdingRepository, acquisitionRepo, disposalRepo, {
+    await deleteHolding(runTransactionImmediate, holdingRepository, acquisitionRepo, disposalRepo, {
       holdingId: 'h1',
       userId: 'u1',
     });
 
-    expect(deleteAllAcq).toHaveBeenCalledWith('h1', 'u1');
-    expect(deleteAllDisp).toHaveBeenCalledWith('h1', 'u1');
-    expect(deleteHoldingDoc).toHaveBeenCalledWith('h1', 'u1');
+    expect(deleteAllAcq).toHaveBeenCalledWith('h1', 'u1', undefined);
+    expect(deleteAllDisp).toHaveBeenCalledWith('h1', 'u1', undefined);
+    expect(deleteHoldingDoc).toHaveBeenCalledWith('h1', 'u1', undefined);
   });
 
   it('throws when holding document delete removes nothing', async () => {
@@ -108,6 +115,7 @@ describe('deleteHolding', () => {
       upsertImportUsdBatch: jest.fn(),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: jest.fn().mockResolvedValue(0),
     };
     const disposalRepo: ShareDisposalRepository = {
@@ -116,11 +124,12 @@ describe('deleteHolding', () => {
       findExistingImportFingerprints: jest.fn().mockResolvedValue(new Set()),
       listByHoldingForUser: jest.fn(),
       deleteByIdForHoldingUser: jest.fn(),
+      deleteManyByIdsForHoldingUser: jest.fn(),
       deleteAllForHoldingUser: jest.fn().mockResolvedValue(0),
     };
 
     await expect(
-      deleteHolding(holdingRepository, acquisitionRepo, disposalRepo, {
+      deleteHolding(runTransactionImmediate, holdingRepository, acquisitionRepo, disposalRepo, {
         holdingId: 'h1',
         userId: 'u1',
       }),
